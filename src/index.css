@@ -1,0 +1,426 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Hardware-accelerated smooth momentum scrolling */
+html {
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-top: 80px;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom premium visual animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0px); }
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.95); opacity: 0; filter: blur(6px); }
+  to { transform: scale(1); opacity: 1; filter: blur(0px); }
+}
+
+@keyframes float-idle {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(0.5deg); }
+}
+
+@keyframes slow-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.15); }
+  50% { box-shadow: 0 0 35px rgba(168, 85, 247, 0.35); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-zoom-in {
+  animation: zoomIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float-idle {
+  animation: float-idle 6s ease-in-out infinite;
+}
+
+.animate-slow-glow {
+  animation: slow-glow 4s ease-in-out infinite;
+}
+
+/* iOS Spring Interactive Presets */
+.card-ios {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.4s ease, 
+              background-color 0.4s ease,
+              filter 0.5s ease;
+  will-change: transform, box-shadow;
+}
+
+.card-ios:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 22px 40px -10px rgba(147, 51, 234, 0.25);
+  border-color: rgba(168, 85, 247, 0.35);
+}
+
+.button-ios {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+              background-color 0.3s ease, 
+              box-shadow 0.3s ease, 
+              border-color 0.3s ease;
+  will-change: transform;
+}
+
+.button-ios:active {
+  transform: scale(0.96);
+}
+
+.img-ios-zoom {
+  transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
+  will-change: transform;
+}
+
+.img-ios-zoom:hover {
+  transform: scale(1.05);
+}
+
+/* Glassmorphism utility presets */
+.glass-panel {
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Global utility overrides to map the Immersive UI design theme specs seamlessly */
+.border-white\/5 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.bg-black\/60,
+.bg-black\/50,
+.bg-black\/45,
+.bg-black\/40 {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+}
+
+.bg-white\/\[0\.02\],
+.bg-white\/\[0\.03\],
+.bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.glow-purple {
+  box-shadow: 0 0 35px -5px rgba(168, 85, 247, 0.25);
+}
+
+/* Scrollbar styling for playlist lists */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(147, 51, 234, 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(147, 51, 234, 0.5);
+}
+
+/* Light Mode overrides to translate dark glassmorphism into a premium high-contrast white lilac theme */
+.light {
+  color-scheme: light;
+}
+
+.light .glass-panel {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border-color: rgba(147, 51, 234, 0.15) !important;
+  color: #1a0f30 !important;
+}
+
+.light .border-white\/10,
+.light .border-white\/5,
+.light .border-purple-500\/20 {
+  border-color: rgba(147, 51, 234, 0.15) !important;
+}
+
+.light .bg-black\/60,
+.light .bg-black\/50,
+.light .bg-black\/45,
+.light .bg-black\/40 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  color: #1a0f30 !important;
+}
+
+.light .bg-white\/\[0\.01\],
+.light .bg-white\/\[0\.02\],
+.light .bg-white\/\[0\.03\],
+.light .bg-white\/5,
+.light .bg-white\/10 {
+  background-color: rgba(147, 51, 234, 0.05) !important;
+}
+
+.light .text-white,
+.light h1,
+.light h2,
+.light h3,
+.light h4,
+.light h5,
+.light h6 {
+  color: #11052c !important;
+}
+
+.light .text-gray-400,
+.light .text-slate-400,
+.light .text-gray-300,
+.light .text-slate-300 {
+  color: #3b2b4e !important;
+}
+
+.light .text-gray-500,
+.light .text-slate-500 {
+  color: #5d4d6e !important;
+}
+
+.light .text-purple-300 {
+  color: #7c3aed !important;
+}
+
+.light .text-purple-400 {
+  color: #6d28d9 !important;
+}
+
+.light .bg-purple-950\/10,
+.light .bg-purple-950\/25,
+.light .bg-purple-950\/40,
+.light .bg-[#0d071a]\/40,
+.light .bg-[#0c0617]\/90,
+.light .bg-[#05000a]\/95 {
+  background-color: rgba(250, 245, 255, 0.96) !important;
+}
+
+.light .bg-purple-950\/20 {
+  background-color: rgba(147, 51, 234, 0.12) !important;
+}
+
+.light .bg-[#05000a] {
+  background-color: #faf8fd !important;
+}
+
+.light input,
+.light select,
+.light textarea {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(147, 51, 234, 0.2) !important;
+  color: #11052c !important;
+}
+
+.light input::placeholder,
+.light textarea::placeholder {
+  color: #8c7d9a !important;
+}
+
+.light button:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600) {
+  background-color: rgba(147, 51, 234, 0.08) !important;
+  color: #6d28d9 !important;
+  border-color: rgba(147, 51, 234, 0.2) !important;
+}
+
+.light button:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600):hover {
+  background-color: rgba(147, 51, 234, 0.15) !important;
+  color: #5b21b6 !important;
+}
+
+/* ==========================================
+   ULTRA-PREMIUM BTS PURPLE ADMIN Facelift
+   ========================================== */
+
+/* Main layout cosmic background */
+.bts-admin-dashboard {
+  background: radial-gradient(circle at 10% 20%, rgba(13, 6, 28, 1) 0%, rgba(4, 1, 10, 1) 100%) !important;
+  color: #f1f5f9 !important;
+}
+
+/* Premium Glassmorphic Header & Sidebar */
+.bts-admin-dashboard header {
+  background: rgba(11, 4, 24, 0.5) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.1) !important;
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+}
+
+.bts-admin-dashboard aside {
+  background: rgba(8, 3, 18, 0.6) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  border-right: 1px solid rgba(168, 85, 247, 0.08) !important;
+}
+
+/* Redesigned Sidebar Items */
+.bts-admin-dashboard aside button {
+  border-radius: 12px !important;
+  margin-top: 2px !important;
+  margin-bottom: 2px !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  font-weight: 600 !important;
+  font-family: inherit !important;
+}
+
+.bts-admin-dashboard aside button:hover {
+  background: rgba(168, 85, 247, 0.06) !important;
+  color: #fff !important;
+  transform: translateX(4px) !important;
+}
+
+/* Premium Cards, Panels and List Items */
+.bts-admin-dashboard main .bg-purple-950\/10,
+.bts-admin-dashboard main .bg-purple-950\/15,
+.bts-admin-dashboard main .bg-purple-950\/20,
+.bts-admin-dashboard main .bg-purple-950\/25,
+.bts-admin-dashboard main .bg-black\/40,
+.bts-admin-dashboard main .border-purple-500\/10,
+.bts-admin-dashboard main .border-purple-500\/15,
+.bts-admin-dashboard main .border-purple-500\/20 {
+  background-color: rgba(255, 255, 255, 0.015) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(168, 85, 247, 0.08) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.bts-admin-dashboard main .bg-purple-950\/10:hover,
+.bts-admin-dashboard main .bg-purple-950\/15:hover,
+.bts-admin-dashboard main .bg-purple-950\/20:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(168, 85, 247, 0.22) !important;
+  box-shadow: 0 10px 40px -10px rgba(147, 51, 234, 0.12) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Crisp & Sleek Typography and Spacing */
+.bts-admin-dashboard main h3 {
+  font-family: "Inter", sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em !important;
+  text-transform: none !important;
+  font-size: 1.25rem !important;
+}
+
+.bts-admin-dashboard main h4 {
+  font-family: "Inter", sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  text-transform: none !important;
+}
+
+/* Redesigned High-Quality Form Controls */
+.bts-admin-dashboard main input[type="text"],
+.bts-admin-dashboard main input[type="password"],
+.bts-admin-dashboard main input[type="date"],
+.bts-admin-dashboard main input[type="number"],
+.bts-admin-dashboard main select,
+.bts-admin-dashboard main textarea {
+  background: rgba(4, 1, 10, 0.6) !important;
+  border: 1px solid rgba(168, 85, 247, 0.15) !important;
+  border-radius: 12px !important;
+  color: #f8fafc !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.8125rem !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  outline: none !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.bts-admin-dashboard main input[type="text"]:focus,
+.bts-admin-dashboard main input[type="password"]:focus,
+.bts-admin-dashboard main input[type="date"]:focus,
+.bts-admin-dashboard main select:focus,
+.bts-admin-dashboard main textarea:focus {
+  border-color: rgba(168, 85, 247, 0.5) !important;
+  background: rgba(4, 1, 10, 0.8) !important;
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.15), inset 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Beautiful Interactive Buttons */
+.bts-admin-dashboard button {
+  border-radius: 10px !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer !important;
+}
+
+.bts-admin-dashboard main button:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.15) !important;
+}
+
+.bts-admin-dashboard main button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97) !important;
+}
+
+/* Table Design Overhaul */
+.bts-admin-dashboard main table {
+  border-collapse: separate !important;
+  border-spacing: 0 6px !important;
+}
+
+.bts-admin-dashboard main tr {
+  background-color: rgba(255, 255, 255, 0.01) !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.bts-admin-dashboard main tr:hover {
+  background-color: rgba(255, 255, 255, 0.025) !important;
+}
+
+.bts-admin-dashboard main td,
+.bts-admin-dashboard main th {
+  padding: 1rem 1.25rem !important;
+  border: none !important;
+}
+
+.bts-admin-dashboard main th {
+  font-family: var(--font-mono) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  font-size: 0.65rem !important;
+  color: #a855f7 !important;
+}
+
+/* Slick Custom Glass Scrollbar for Admin Area */
+.bts-admin-dashboard ::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.bts-admin-dashboard ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+
+.bts-admin-dashboard ::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.2) !important;
+  border-radius: 99px !important;
+  border: 2px solid transparent !important;
+}
+
+.bts-admin-dashboard ::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.4) !important;
+}
+

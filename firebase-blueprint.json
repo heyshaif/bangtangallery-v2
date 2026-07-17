@@ -1,0 +1,220 @@
+{
+  "entities": {
+    "RegisteredUser": {
+      "title": "RegisteredUser",
+      "description": "A user profile registered on the platform",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "The lowercase unique username handle"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name shown on comments and uploads"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL to the avatar image"
+        }
+      },
+      "required": ["username", "displayName"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A comment on a media card",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "displayName": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "username", "displayName", "content", "timestamp"]
+    },
+    "MediaItem": {
+      "title": "MediaItem",
+      "description": "A shared media card containing a video feed or image asset",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique media item identifier"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["youtube", "facebook", "instagram", "x", "image"]
+        },
+        "url": {
+          "type": "string",
+          "description": "Source link or reference URL"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the post"
+        },
+        "description": {
+          "type": "string",
+          "description": "Caption or user-supplied details"
+        },
+        "username": {
+          "type": "string",
+          "description": "Username of the poster"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Name of the poster"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category tag filter"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Sub-topics array"
+        },
+        "uploadedAt": {
+          "type": "string",
+          "description": "ISO timestamp of upload"
+        },
+        "likes": {
+          "type": "array",
+          "description": "List of session UIDs who liked this"
+        },
+        "sharesCount": {
+          "type": "number",
+          "description": "Share event tracking count"
+        },
+        "saves": {
+          "type": "array",
+          "description": "List of session UIDs who saved"
+        },
+        "bookmarks": {
+          "type": "array",
+          "description": "List of session UIDs who bookmarked"
+        },
+        "reports": {
+          "type": "number",
+          "description": "Review flag indicator count"
+        }
+      },
+      "required": ["id", "type", "title", "username", "displayName", "uploadedAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System or user activity stream notice",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["like", "comment", "reply", "share", "follower", "mention"]
+        },
+        "user": {
+          "type": "string",
+          "description": "Triggering user identity"
+        },
+        "content": {
+          "type": "string",
+          "description": "Description of event context"
+        },
+        "targetId": {
+          "type": "string",
+          "description": "Associated item identifier"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO timestamp"
+        }
+      },
+      "required": ["id", "type", "user", "content", "timestamp"]
+    },
+    "Stats": {
+      "title": "Stats",
+      "description": "Aggregated interaction counters",
+      "type": "object",
+      "properties": {
+        "total_views": { "type": "number" },
+        "shares": { "type": "number" }
+      },
+      "required": ["total_views", "shares"]
+    },
+    "SyncConfig": {
+      "title": "SyncConfig",
+      "description": "Synchronization preferences for Spotify and YouTube feeds",
+      "type": "object",
+      "properties": {
+        "spotifyUrl": { "type": "string" },
+        "youtubeUrl": { "type": "string" }
+      },
+      "required": ["spotifyUrl", "youtubeUrl"]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Form submission securely saved from the contact page",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "ip": { "type": "string" },
+        "country": { "type": "string" },
+        "browser": { "type": "string" },
+        "device": { "type": "string" },
+        "status": { "type": "string", "enum": ["Unread", "Read", "Replied"] }
+      },
+      "required": ["id", "name", "email", "message", "createdAt", "status"]
+    },
+    "LiveChatMessage": {
+      "title": "LiveChatMessage",
+      "description": "Real-time live streaming chat message",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "isModerator": { "type": "boolean" },
+        "isSystem": { "type": "boolean" },
+        "avatarUrl": { "type": "string" }
+      },
+      "required": ["id", "username", "text", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "RegisteredUser",
+      "description": "Users who have registered a pseudonym in the portal"
+    },
+    "/media/{mediaId}": {
+      "schema": "MediaItem",
+      "description": "Published multimedia content and feedback"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Live feed updates of global user interactions"
+    },
+    "/stats/{statDocId}": {
+      "schema": "Stats",
+      "description": "Aggregated platform counters"
+    },
+    "/config/{configId}": {
+      "schema": "SyncConfig",
+      "description": "Admin configuration values"
+    },
+    "/contact_messages/{id}": {
+      "schema": "ContactMessage",
+      "description": "Form submissions securely saved from the contact page"
+    },
+    "/live_chat/{chatId}": {
+      "schema": "LiveChatMessage",
+      "description": "Real-time streaming conversation logs"
+    }
+  }
+}

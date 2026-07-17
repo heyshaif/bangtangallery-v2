@@ -1,0 +1,189 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    function incoming(req) {
+      return req.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation functions
+    function isValidRegisteredUser(data) {
+      return data.keys().hasAll(['username', 'displayName']) &&
+             data.keys().size() <= 4 &&
+             data.username is string && data.username.size() <= 128 &&
+             data.displayName is string && data.displayName.size() <= 128 &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 2048));
+    }
+
+    function isValidMediaItem(data) {
+      return data.keys().hasAll(['id', 'type', 'url', 'title', 'description', 'username', 'displayName', 'category', 'tags', 'uploadedAt', 'likes', 'comments', 'sharesCount', 'saves', 'bookmarks', 'reports']) &&
+             data.keys().size() <= 17 &&
+             data.id is string && data.id.size() <= 128 &&
+             data.type is string && data.type.size() <= 32 &&
+             data.url is string && data.url.size() <= 5000 &&
+             data.title is string && data.title.size() <= 512 &&
+             data.description is string && data.description.size() <= 10000 &&
+             data.username is string && data.username.size() <= 128 &&
+             data.displayName is string && data.displayName.size() <= 128 &&
+             data.category is string && data.category.size() <= 128 &&
+             data.tags is list && data.tags.size() <= 50 &&
+             data.uploadedAt is string && data.uploadedAt.size() <= 128 &&
+             data.likes is list && data.likes.size() <= 10000 &&
+             data.comments is list && data.comments.size() <= 5000 &&
+             data.sharesCount is int &&
+             data.saves is list && data.saves.size() <= 10000 &&
+             data.bookmarks is list && data.bookmarks.size() <= 10000 &&
+             data.reports is int;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['id', 'type', 'user', 'content', 'timestamp']) &&
+             data.keys().size() <= 6 &&
+             data.id is string && data.id.size() <= 128 &&
+             data.type is string && data.type.size() <= 32 &&
+             data.user is string && data.user.size() <= 128 &&
+             data.content is string && data.content.size() <= 1024 &&
+             data.timestamp is string && data.timestamp.size() <= 128 &&
+             (!('targetId' in data) || (data.targetId is string && data.targetId.size() <= 128));
+    }
+
+    function isValidStats(data) {
+      return data.keys().hasAll(['total_views', 'shares']) &&
+             data.keys().size() <= 3 &&
+             data.total_views is int && data.total_views >= 0 &&
+             data.shares is int && data.shares >= 0;
+    }
+
+    function isValidSyncConfig(data) {
+      return data.keys().hasAll(['spotifyUrl', 'youtubeUrl']) &&
+             data.keys().size() <= 3 &&
+             data.spotifyUrl is string && data.spotifyUrl.size() <= 2048 &&
+             data.youtubeUrl is string && data.youtubeUrl.size() <= 2048;
+    }
+
+    function isValidContactMessage(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'message', 'createdAt', 'status']) &&
+             data.keys().size() <= 12 &&
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 256 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.message is string && data.message.size() <= 10000 &&
+             data.createdAt is string && data.createdAt.size() <= 128 &&
+             data.status is string && (data.status == 'Unread' || data.status == 'Read' || data.status == 'Replied') &&
+             (!('subject' in data) || (data.subject is string && data.subject.size() <= 512)) &&
+             (!('ip' in data) || (data.ip is string && data.ip.size() <= 128)) &&
+             (!('country' in data) || (data.country is string && data.country.size() <= 128)) &&
+             (!('browser' in data) || (data.browser is string && data.browser.size() <= 256)) &&
+             (!('device' in data) || (data.device is string && data.device.size() <= 256));
+    }
+
+    function isValidLiveChatMessage(data) {
+      return data.keys().hasAll(['id', 'username', 'text', 'timestamp']) &&
+             data.keys().size() <= 8 &&
+             data.id is string && data.id.size() <= 128 &&
+             data.username is string && data.username.size() <= 128 &&
+             data.text is string && data.text.size() <= 1000 &&
+             data.timestamp is string && data.timestamp.size() <= 128 &&
+             (!('isModerator' in data) || data.isModerator is bool) &&
+             (!('isSystem' in data) || data.isSystem is bool) &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 2048));
+    }
+
+    // Rules matching individual paths
+
+    match /users/{userId} {
+      allow get: if isValidId(userId);
+      allow list: if true;
+      allow create, update: if isValidId(userId) && isValidRegisteredUser(incoming(request));
+      allow delete: if false; // Profiles cannot be randomly destroyed by users
+    }
+
+    match /media/{mediaId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(mediaId) && isValidMediaItem(incoming(request));
+      allow delete: if true; // Allows poster cleanup
+    }
+
+    match /notifications/{notificationId} {
+      allow get, list: if true;
+      allow create: if isValidId(notificationId) && isValidNotification(incoming(request));
+      allow update, delete: if false; // Notifications are immutable streams
+    }
+
+    match /stats/{statDocId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(statDocId) && isValidStats(incoming(request));
+      allow delete: if false;
+    }
+
+    match /config/{configId} {
+      allow read, write: if isValidId(configId);
+    }
+
+    match /contact_messages/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id) && isValidContactMessage(incoming(request));
+      allow delete: if true;
+    }
+
+    match /live_chat/{chatId} {
+      allow get, list: if true;
+      allow create: if isValidId(chatId) && isValidLiveChatMessage(incoming(request));
+      allow update, delete: if false;
+    }
+
+    match /persistent_media/{id} {
+      allow read, write: if id is string && id.size() <= 128;
+    }
+
+    match /feedbacks/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id);
+      allow delete: if false;
+    }
+
+    match /fan_arts/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id);
+      allow delete: if false;
+    }
+
+    match /music_submissions/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id);
+      allow delete: if true;
+    }
+
+    match /video_submissions/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id);
+      allow delete: if true;
+    }
+
+    match /voting_submissions/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id);
+      allow delete: if true;
+    }
+
+    match /news_comments/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id);
+      allow delete: if true;
+    }
+  }
+}

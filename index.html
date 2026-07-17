@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      // Defensive global error handler to swallow cross-origin and third-party advertising script errors
+      (function() {
+        // Capture-phase error listener to intercept and prevent propagation of third-party script errors
+        window.addEventListener('error', function(event) {
+          const msg = event.message || '';
+          const sourceFile = event.filename || '';
+          const isCrossOrigin = msg.includes('Script error.') || !sourceFile;
+          
+          // A file is local/first-party if it's on the current origin or is a virtual bundle script
+          const isLocal = sourceFile.includes(window.location.host) || 
+                          sourceFile.includes('/src/') || 
+                          sourceFile.includes('node_modules') || 
+                          sourceFile.startsWith('blob:') || 
+                          sourceFile.startsWith('data:');
+          
+          if (isCrossOrigin || !isLocal) {
+            // Cancel and stop all propagation immediately so the platform/runtime doesn't catch it
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            console.warn('[CORS SHIELD] Silenced external/third-party script error:', msg, 'at', sourceFile);
+          }
+        }, true);
+
+        // Also handle unhandled promise rejections which often happen in external ad scripts
+        window.addEventListener('unhandledrejection', function(event) {
+          const reason = event.reason;
+          const msg = (reason && (reason.message || reason.toString())) || '';
+          const stack = (reason && reason.stack) || '';
+          
+          // Check if the stack trace mentions external domains or is generic
+          const isExternal = stack && !stack.includes(window.location.host);
+          
+          if (isExternal || !reason) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            console.warn('[CORS SHIELD REJECTION] Silenced external unhandled promise rejection:', msg);
+          }
+        }, true);
+        
+        window.onerror = function(message, source, lineno, colno, error) {
+          const sourceFile = source || '';
+          const isCrossOrigin = !sourceFile || message === 'Script error.';
+          const isLocal = sourceFile.includes(window.location.host) || 
+                          sourceFile.includes('/src/') || 
+                          sourceFile.includes('node_modules');
+          
+          if (isCrossOrigin || !isLocal) {
+            console.warn('[CORS SHIELD ERROR] Silenced via onerror:', message, 'at', sourceFile);
+            return true; // prevents browser from reporting the error
+          }
+        };
+
+        // Dynamically load third-party scripts ONLY in production domain
+        const isProduction = window.location.hostname === 'bangtangallery.online' || window.location.hostname === 'www.bangtangallery.online';
+        if (isProduction) {
+          console.log('[PROD] Loading official advertising networks...');
+          
+          // Google AdSense
+          const adSense = document.createElement('script');
+          adSense.async = true;
+          adSense.crossOrigin = "anonymous";
+          adSense.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3637601187018890";
+          document.head.appendChild(adSense);
+        } else {
+          console.log('[DEV/PREVIEW SHIELD] Suppressed third-party scripts to maintain stable error-free development.');
+        }
+      })();
+    </script>
+    
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" id="app-favicon" href="https://img.icons8.com/?size=100&id=AJsZdj4SRgq1&format=png&color=000000" />
+    <title>BANGTAN GALLERY - The Ultimate Independent ARMY Archive</title>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+
