@@ -1,0 +1,12 @@
+services:
+  - type: static
+    name: bangtan-gallery
+    buildCommand: npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://api.bangtangallery.online/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
