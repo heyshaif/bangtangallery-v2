@@ -10,8 +10,8 @@ export const MEMBERS: Member[] = [
     id: 'rm',
     name: 'RM',
     fullName: 'Kim Nam-joon (김남준)',
-    portraitUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80',
+    portraitUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
     biography: 'Known as the intelligent and eloquent leader of BTS, RM (formerly Rap Monster) is a brilliant songwriter, record producer, and fluent English speaker who famously represented BTS at the United Nations. He is renowned for his philosophical lyrics and love for art.',
     birthday: 'September 12, 1994',
     age: 31,
@@ -43,8 +43,8 @@ export const MEMBERS: Member[] = [
       'Multiple Billboard Chart entries as songwriter'
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80'
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
     ],
     videoIds: ['qOOYn6o-lD0', 'unOdB0GMc8g'],
     quotes: [
@@ -64,8 +64,8 @@ export const MEMBERS: Member[] = [
     id: 'jin',
     name: 'Jin',
     fullName: 'Kim Seok-jin (김석진)',
-    portraitUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80',
+    portraitUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
     biography: 'The oldest member of BTS, Jin is the group\'s powerful sub-vocalist and visual, famously dubbing himself "Worldwide Handsome." Jin is known for his silver voice, incredible high notes, dad jokes, cooking skills, and the highly successful solo track "The Astronaut".',
     birthday: 'December 4, 1992',
     age: 33,
@@ -97,8 +97,8 @@ export const MEMBERS: Member[] = [
       'Melon Music Awards Nominee for Original Soundtrack Yours'
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=600&q=80'
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
     ],
     videoIds: ['c6AS_yT9aXw', 'Yis8E8G27mE'],
     quotes: [
@@ -118,8 +118,8 @@ export const MEMBERS: Member[] = [
     id: 'suga',
     name: 'SUGA',
     fullName: 'Min Yoon-gi (민윤기) / Agust D',
-    portraitUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80',
+    portraitUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
     biography: 'SUGA is BTS\'s fierce lead rapper, genius producer, and songwriter who also releases absolute masterworks under his solo moniker Agust D. He has over 100 registered KOMCA songs and is known for producing hits for international superstars (Coldplay, IU, Halsey, PSY).',
     birthday: 'March 9, 1993',
     age: 33,
@@ -150,8 +150,8 @@ export const MEMBERS: Member[] = [
       'Golden Disc Awards - Best Rap/Hip-Hop Award (2023)'
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1501196354995-1db51d65a70f?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=600&q=80'
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
     ],
     videoIds: ['qGjAWJ2zWWI', 'H_atG_S_t4o'],
     quotes: [
@@ -170,8 +170,8 @@ export const MEMBERS: Member[] = [
     id: 'jhope',
     name: 'j-hope',
     fullName: 'Jung Ho-seok (정호석)',
-    portraitUrl: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?auto=format&fit=crop&w=800&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=1200&q=80',
+    portraitUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
     biography: 'Known as the group\'s master dancer, "j-hope" acts as the sunshine and source of hope for both the team and ARMY. A former street-dancer in Gwangju, he acts as the main choreographer who guides BTS performances, while releasing highly original, boundary-pushing solo work.',
     birthday: 'February 18, 1994',
     age: 32,
@@ -203,8 +203,8 @@ export const MEMBERS: Member[] = [
       'Billboard 200 Top 10 with Hope on the Street Vol 1'
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1506803682981-6e718a9dd3ee?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=600&q=80'
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
     ],
     videoIds: ['r6WbbU_LRmU', 'i6m47S_VpMc'],
     quotes: [
@@ -223,8 +223,8 @@ export const MEMBERS: Member[] = [
     id: 'jimin',
     name: 'Jimin',
     fullName: 'Park Ji-min (박지민)',
-    portraitUrl: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?auto=format&fit=crop&w=800&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=1200&q=80',
+    portraitUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
     biography: 'Known for his angelic vocals and contemporary dance training, Jimin was the top student in modern dance at the Busan High School of Arts. He is respected for his graceful stage presence, extreme work ethic, and sweet personality. His solo "Like Crazy" debuted at #1 on Billboard Hot 100.',
     birthday: 'October 13, 1995',
     age: 30,
@@ -255,8 +255,8 @@ export const MEMBERS: Member[] = [
       'Melon Music Awards - Best Male Solo (2023)'
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1489980508314-941910ded1f4?auto=format&fit=crop&w=600&q=80'
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
     ],
     videoIds: ['nOCO_3G4upg', 'cDQ3L9S7t3Y'],
     quotes: [
@@ -275,8 +275,8 @@ export const MEMBERS: Member[] = [
     id: 'v',
     name: 'V',
     fullName: 'Kim Tae-hyung (김태형)',
-    portraitUrl: 'https://images.unsplash.com/photo-1504257400765-1d12931d6a98?auto=format&fit=crop&w=800&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=1200&q=80',
+    portraitUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
     biography: 'V is renowned for his deep, rich soulful baritone, striking visual elegance, and artistic personality. Combining jazz, R&B, and neo-soul inflections, V charms critics with his distinct, smooth fashion and love for classical art, film photography, and saxophone playing.',
     birthday: 'December 30, 1995',
     age: 30,
@@ -308,8 +308,8 @@ export const MEMBERS: Member[] = [
       'British NME Awards Winner (2023)'
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80'
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
     ],
     videoIds: ['jN0Y_vTidp0', 'QK7O74Rz3lA'],
     quotes: [
@@ -327,8 +327,8 @@ export const MEMBERS: Member[] = [
     id: 'jungkook',
     name: 'Jung Kook',
     fullName: 'Jeon Jung-kook (전정국)',
-    portraitUrl: 'https://images.unsplash.com/photo-1480429370139-e0132c086e2a?auto=format&fit=crop&w=800&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?auto=format&fit=crop&w=1200&q=80',
+    portraitUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
     biography: 'Known as the "Golden Maknae" (youngest member) due to his exceptional natural talent in singing, main dancing, sports, drawing, and filmmaking. Jung Kook was scouted by 7 agencies before choosing Big Hit after watching RM rap. Hit single "Seven" reached #1 on Billboard Hot 100.',
     birthday: 'September 1, 1997',
     age: 28,
@@ -360,8 +360,8 @@ export const MEMBERS: Member[] = [
       'Billboard Music Award - Top Global K-Pop Song (Seven) (2023)'
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1542103749-8ef59b94f47e?auto=format&fit=crop&w=600&q=80'
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
     ],
     videoIds: ['QU9c0053UAU', 'UNo0QA9CjPU'],
     quotes: [
@@ -382,7 +382,7 @@ export const ALBUMS: Album[] = [
     id: 'proof',
     title: 'Proof',
     type: 'album',
-    coverUrl: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?auto=format&fit=crop&w=600&q=80',
+    coverUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
     releaseDate: 'June 10, 2022',
     description: 'Proof is an anthology album that embodies the history of BTS. As the group celebrated their 9th anniversary, this three-CD compilation contained key selected classic songs, unreleased demo tracks, and brand-new messages celebrating their journey and looking toward the future ("Yet to Come").',
     tracks: [
@@ -399,8 +399,8 @@ export const ALBUMS: Album[] = [
       { title: 'Yet To Come (Live at Busan)', videoId: 'BpcY2Ff_E6I' }
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80'
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
     ]
   },
   {
@@ -424,15 +424,15 @@ export const ALBUMS: Album[] = [
       { title: 'Dynamite Recording MV', videoId: 'gdZLi9oWNZg' }
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1542103749-8ef59b94f47e?auto=format&fit=crop&w=600&q=80'
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
     ]
   },
   {
     id: 'mots7',
     title: 'Map of the Soul: 7',
     type: 'album',
-    coverUrl: 'https://images.unsplash.com/photo-1557672172-298e090bd0f1?auto=format&fit=crop&w=600&q=80',
+    coverUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
     releaseDate: 'February 21, 2020',
     description: 'A monument of pop artistry, Map of the Soul: 7 marks seven years since debut with seven members. Exploring their deepest shadows, highest lights, and the integration of their public persona versus their inner selves, it highlights chart-topping bangers like "ON" and "Black Swan".',
     tracks: [
@@ -449,14 +449,14 @@ export const ALBUMS: Album[] = [
       { title: 'Black Swan MV', videoId: '0lapF4DQGtY' }
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=600&q=80'
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
     ]
   },
   {
     id: 'golden',
     title: 'GOLDEN',
     type: 'solo',
-    coverUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
+    coverUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
     releaseDate: 'November 3, 2023',
     description: 'GOLDEN is the debut solo studio album by Jung Kook. Drawing inspiration from the golden moments of Jung Kook as the golden maknae of BTS and a solo artist, the album features international hits produced alongside world-class artists like Andrew Watt, Diplo, and Ed Sheeran.',
     tracks: [
@@ -472,7 +472,7 @@ export const ALBUMS: Album[] = [
       { title: 'Seven (feat. Latto) Official MV', videoId: 'QU9c0053UAU' }
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80'
+      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
     ]
   }
 ];
@@ -643,14 +643,14 @@ export const DOWNLOADS: DownloadItem[] = [
     id: 'dl2',
     name: 'Bangtan Gallery Mobile Lockscreen - RM, Jin, SUGA, j-hope, Jimin, V, JK',
     type: 'Wallpaper',
-    url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1080&q=90',
+    url: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
     size: '2.8 MB'
   },
   {
     id: 'dl3',
     name: 'Bangtan Borahae Glow Vector Icons Pack (Custom SVG PNG for Theme customizers)',
     type: 'Icon',
-    url: 'https://images.unsplash.com/photo-1557672172-298e090bd0f1?auto=format&fit=crop&w=500&q=80',
+    url: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
     size: '1.4 MB'
   },
   {

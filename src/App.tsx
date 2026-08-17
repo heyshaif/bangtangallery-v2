@@ -1445,10 +1445,10 @@ export function AppContent() {
                     // Fallbacks for empty news just in case
                     const fallbackFeatured = {
                       id: 'featured-default',
-                      title: 'Welcome to the Ultimate BTS Premium Fan Portal',
+                      title: 'Welcome to the Ultimate BTS Premium Fan Portal ⟭⟬⁷ BANGTAN GALLERY',
                       summary: 'Discover active schedules, exclusive comebacks, real-time voting trends, and digital artwork curated directly for the global ARMY.',
                       category: 'Announcement',
-                      imageUrl: publishedConfig?.home?.heroImageUrl || "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80",
+                      imageUrl: publishedConfig?.home?.heroImageUrl || "https://i.pinimg.com/1200x/59/d6/15/59d615de0cb04d3a0fcd82a415b69133.jpg",
                       date: '2026-07-05',
                       slug: 'welcome'
                     };
@@ -1468,7 +1468,7 @@ export function AppContent() {
                             {/* Background Image with beautiful Ken Burns zoom style */}
                             <div className="absolute inset-0 z-0">
                               <img 
-                                src={featuredArticle.imageUrl || "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80"} 
+                                src={featuredArticle.imageUrl || "https://i.pinimg.com/1200x/59/d6/15/59d615de0cb04d3a0fcd82a415b69133.jpg"} 
                                 alt={featuredArticle.title} 
                                 className="w-full h-full object-cover scale-100 group-hover/feat:scale-105 transition-transform duration-[2000ms]"
                                 referrerPolicy="no-referrer"

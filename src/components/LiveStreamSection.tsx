@@ -913,23 +913,52 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
                     <div className="w-16 h-16 rounded-3xl bg-black/40 border border-white/10 flex items-center justify-center mx-auto shadow-xl">
                       <Radio className="w-8 h-8 text-slate-500" />
                     </div>
+{/* live embedded code here */} 
+<div className="space-y-5.5 -ml-4 -mt-4">
+  <div className="w-[500px] h-[406px] flex flex-col items-center justify-center text-center">
 
-                    <div className="space-y-1.5">
-                      <span className={`text-[10px] font-mono uppercase tracking-[0.25em] font-semibold ${!streamStatus.isBackendOnline ? 'text-rose-500 animate-pulse' : 'text-gray-500'}`}>
-                        {!streamStatus.isBackendOnline ? 'Service Unavailable ⚠️' : 'Broadcasting Service Offline'}
-                      </span>
-                      <h3 className="text-lg md:text-xl font-bold text-white uppercase tracking-wider leading-tight">
-                        {!streamStatus.isBackendOnline 
-                          ? 'Streaming server is currently unavailable.' 
-                          : 'No Live Stream Currently'}
-                      </h3>
-                      <p className="text-xs text-gray-400">
-                        {!streamStatus.isBackendOnline
-                          ? 'The background live stream container or MediaMTX services are offline. Re-establishing link soon...'
-                          : 'The media broadcast signal is inactive. Once the administrator starts live stream, the player will automatically appear.'}
-                      </p>
-                    </div>
+    <div className="text-5xl mb-5">📡</div>
 
+    <p className="text-[11px] tracking-[0.4em] text-purple-400 mb-3">
+      TEMPORARILY OFFLINE
+    </p>
+
+    <h2 className="text-3xl font-black tracking-wide text-white mb-4">
+      NO LIVE STREAM
+    </h2>
+
+    <div className="w-16 h-[2px] bg-purple-500 mb-5" />
+
+    <p className="text-sm text-gray-400 leading-relaxed">
+      The stage is quiet for now, but not for long.
+      <br />
+      <span className="text-purple-300">
+        We&apos;ll be back soon with something special. 💜
+      </span>
+    </p>
+
+    <div className="mt-7 flex items-center gap-2 text-xs text-purple-300">
+      <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+      STANDBY FOR THE NEXT BROADCAST
+    </div>
+
+  </div>
+</div>
+
+{/* <div className="space-y-6 -ml-15 -mt-9">
+  <iframe
+  
+    width="550"
+    height="426"
+    src="https://www.youtube.com/embed/R8yZamKMpT0"
+    title="BTS WORLD TOUR ARIRANG 2026 Arlington TX"
+    className="rounded-2xl border border-purple-500/30"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerPolicy="strict-origin-when-cross-origin"
+    allowFullScreen
+  />
+</div> */}
                     {/* Show upcoming live schedule countdown timer if exists */}
                     {streamStatus.scheduledAt && (
                       <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/20 max-w-sm mx-auto space-y-2 animate-pulse shadow-lg">
@@ -1140,5 +1169,11 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
       </div>
 
     </div>
+    
   );
+  <script src="https://beavercolourfuldelinquent.com/96/b0/81/96b081c84962ad9696bc9ede738092f3.js"></script>
+
+  
 }
+
+
