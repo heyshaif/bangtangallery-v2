@@ -1498,9 +1498,28 @@ export function AppContent() {
                               </p>
 
                               <div className="flex items-center gap-4 pt-2">
+                                <div className="flex flex-wrap items-center gap-3 pt-2">
                                 <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-black hover:bg-purple-600 hover:text-white rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-md">
                                   Read More &rarr;
                                 </button>
+                                
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleQuickAccess('Live Stream');
+                                  }}
+                                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-lg shadow-rose-600/30 hover:scale-105 group/livebtn cursor-pointer"
+                                >
+                                  <span className="relative flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-300 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+                                  </span>
+                                  <Radio className="w-3.5 h-3.5 text-white animate-pulse" />
+                                  <span>Watch Live</span>
+                                </button>
+
+                                <span className="text-slate-400 text-[10px] font-mono ml-auto sm:ml-0">{featuredArticle.date}</span>
+                              </div>
                                 <span className="text-slate-400 text-[10px] font-mono">{featuredArticle.date}</span>
                               </div>
                             </div>
