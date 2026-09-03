@@ -39,7 +39,7 @@ export default function TrendingCarousel({ config, onNavigate }: TrendingCarouse
       views: '410M',
       likes: '12M',
       tag: 'Remix',
-      thumbnail: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=400&q=80',
+      thumbnail: 'https://i.pinimg.com/736x/62/e9/d3/62e9d3150b8719c1356c80d6f01713d0.jpg',
       category: 'YouTube',
       published: true
     },
@@ -51,7 +51,7 @@ export default function TrendingCarousel({ config, onNavigate }: TrendingCarouse
       views: '84M',
       likes: '4.8M',
       tag: 'Concert',
-      thumbnail: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=400&q=80',
+      thumbnail: 'https://i.pinimg.com/736x/62/e9/d3/62e9d3150b8719c1356c80d6f01713d0.jpg',
       category: 'YouTube',
       published: true
     },
@@ -63,7 +63,7 @@ export default function TrendingCarousel({ config, onNavigate }: TrendingCarouse
       views: '54M',
       likes: '3.1M',
       tag: 'MV Re-release',
-      thumbnail: 'https://images.unsplash.com/photo-1487180142328-054b783fc471?auto=format&fit=crop&w=400&q=80',
+      thumbnail: 'https://i.pinimg.com/736x/62/e9/d3/62e9d3150b8719c1356c80d6f01713d0.jpg',
       category: 'Music',
       published: true
     },
@@ -75,7 +75,7 @@ export default function TrendingCarousel({ config, onNavigate }: TrendingCarouse
       views: '23M',
       likes: '1.9M',
       tag: 'Fan Creation',
-      thumbnail: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=400&q=80',
+      thumbnail: 'https://i.pinimg.com/736x/62/e9/d3/62e9d3150b8719c1356c80d6f01713d0.jpg',
       category: 'Music',
       published: true
     },
@@ -87,7 +87,7 @@ export default function TrendingCarousel({ config, onNavigate }: TrendingCarouse
       views: '19M',
       likes: '2.5M',
       tag: 'Studio Shots',
-      thumbnail: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?auto=format&fit=crop&w=400&q=80',
+      thumbnail: 'https://i.pinimg.com/736x/62/e9/d3/62e9d3150b8719c1356c80d6f01713d0.jpg',
       category: 'Gallery',
       published: true
     }

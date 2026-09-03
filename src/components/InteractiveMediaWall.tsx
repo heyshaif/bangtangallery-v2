@@ -26,72 +26,72 @@ export default function InteractiveMediaWall({ config, onTileClick }: Interactiv
     {
       id: 'rm',
       name: 'RM',
-      profileImg: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      profileImg: 'https://i.pinimg.com/736x/54/2c/1f/542c1f883a3bd13ec106c26648607235.jpg',
       postText: "Let's live while seeing beautiful things in this world. Indigo is out! 💜 Doing some Namjooning in the galleries.",
-      postImg: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80',
+      postImg: 'https://i.pinimg.com/1200x/01/c4/58/01c4582f586e3be1514f4875b2a2b944.jpg',
       weverseLink: 'https://weverse.io/bts/artist/rm',
       emoji: '🐨'
     },
     {
       id: 'jin',
       name: 'Jin',
-      profileImg: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80',
+      profileImg: 'https://i.pinimg.com/736x/71/1d/ef/711def665b44d2a7cc6fb87c05c67d21.jpg',
       postText: "ARMY, did you eat delicious food? Worldwide handsome is here to bless your feed! 🍜 Get ready for my special single.",
-      postImg: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80',
+      postImg: 'https://i.pinimg.com/1200x/01/c4/58/01c4582f586e3be1514f4875b2a2b944.jpg',
       weverseLink: 'https://weverse.io/bts/artist/jin',
       emoji: '🐹'
     },
     {
       id: 'suga',
       name: 'SUGA',
-      profileImg: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+      profileImg: 'https://i.pinimg.com/736x/8e/a1/97/8ea19755ac88dbb212fa0cd1a520b1ca.jpg',
       postText: "Working hard in the studio today. D-DAY tour memories are still fresh in my heart. Rock on! 🎹 Let's create together.",
-      postImg: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80',
+      postImg: 'https://i.pinimg.com/1200x/01/c4/58/01c4582f586e3be1514f4875b2a2b944.jpg',
       weverseLink: 'https://weverse.io/bts/artist/suga',
       emoji: '🐱'
     },
     {
       id: 'jhope',
       name: 'j-hope',
-      profileImg: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=150&q=80',
+      profileImg: 'https://i.pinimg.com/736x/fa/64/15/fa6415c33f4e45d96d40178b26749ece.jpg',
       postText: "Hope right here! ARMY, are you smiling today? Always remember I am your hope, you are my hope! ☀️ Live dance stream soon!",
-      postImg: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=600&q=80',
+      postImg: 'https://i.pinimg.com/1200x/01/c4/58/01c4582f586e3be1514f4875b2a2b944.jpg',
       weverseLink: 'https://weverse.io/bts/artist/j-hope',
       emoji: '🐿️'
     },
     {
       id: 'jimin',
       name: 'Jimin',
-      profileImg: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+      profileImg: 'https://i.pinimg.com/736x/95/ae/24/95ae248bf13dcb912809e3a34e05210f.jpg',
       postText: "Your warm thoughts are always with me. I hope you have a beautiful night, my angels. Always stay healthy and happy! 🌸",
-      postImg: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=600&q=80',
+      postImg: 'https://i.pinimg.com/1200x/01/c4/58/01c4582f586e3be1514f4875b2a2b944.jpg',
       weverseLink: 'https://weverse.io/bts/artist/jimin',
       emoji: '🐥'
     },
     {
       id: 'v',
       name: 'V',
-      profileImg: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=150&q=80',
+      profileImg: 'https://i.pinimg.com/736x/c7/e4/22/c7e42240811e1cb8f07dd0f441da8c69.jpg',
       postText: "Yeontan says hello. Listening to classic jazz on a rainy day. Take care of your health, ARMY! 🎷 Enjoying the quiet times.",
-      postImg: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=600&q=80',
+      postImg: 'https://i.pinimg.com/1200x/01/c4/58/01c4582f586e3be1514f4875b2a2b944.jpg',
       weverseLink: 'https://weverse.io/bts/artist/v',
       emoji: '🐯'
     },
     {
       id: 'jungkook',
       name: 'Jung Kook',
-      profileImg: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=150&q=80',
+      profileImg: 'https://i.pinimg.com/736x/8d/c6/46/8dc64647c2f6fc97396735d3c19e4ee8.jpg',
       postText: "Late night singing live for you guys. ARMY, what songs are you listening to right now? Missing you all so much. 🎤",
-      postImg: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=600&q=80',
+      postImg: 'https://i.pinimg.com/1200x/01/c4/58/01c4582f586e3be1514f4875b2a2b944.jpg',
       weverseLink: 'https://weverse.io/bts/artist/jungkook',
       emoji: '🐰'
     },
     {
       id: 'bts',
       name: 'BTS Group',
-      profileImg: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=150&q=80',
+      profileImg: 'https://i.pinimg.com/1200x/01/c4/58/01c4582f586e3be1514f4875b2a2b944.jpg',
       postText: "We had only seven. But we have you all now. Thank you for walking this bulletproof path with us! Borahae! ⟭⟬⁷",
-      postImg: 'https://images.unsplash.com/photo-1516280440614-37939bbacd6a?auto=format&fit=crop&w=600&q=80',
+      postImg: 'https://i.pinimg.com/1200x/01/c4/58/01c4582f586e3be1514f4875b2a2b944.jpg',
       weverseLink: 'https://weverse.io/bts/feed',
       emoji: '💜'
     }

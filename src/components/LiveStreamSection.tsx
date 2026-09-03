@@ -913,8 +913,9 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
                     <div className="w-16 h-16 rounded-3xl bg-black/40 border border-white/10 flex items-center justify-center mx-auto shadow-xl">
                       <Radio className="w-8 h-8 text-slate-500" />
                     </div>
+
 {/* live embedded code here */} 
-<div className="space-y-5.5 -ml-4 -mt-4">
+{/* <div className="space-y-5.5 -ml-4 -mt-4">
   <div className="w-[500px] h-[406px] flex flex-col items-center justify-center text-center">
 
     <div className="text-5xl mb-5">📡</div>
@@ -943,22 +944,22 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
     </div>
 
   </div>
-</div>
+</div> */}
 
-{/* <div className="space-y-6 -ml-15 -mt-9">
+<div className="space-y-9 -ml-20 -mt-25">
   <iframe
-  
-    width="550"
-    height="426"
-    src="https://www.youtube.com/embed/R8yZamKMpT0"
-    title="BTS WORLD TOUR ARIRANG 2026 Arlington TX"
+    width="660"
+    height="550"
+    src="https://www.youtube.com/embed/H2AvUznX6Yc"
+    title="BTS WORLD TOUR ARIRANG 2026"
     className="rounded-2xl border border-purple-500/30"
     frameBorder="0"
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
     referrerPolicy="strict-origin-when-cross-origin"
     allowFullScreen
   />
-</div> */}
+</div>
+
                     {/* Show upcoming live schedule countdown timer if exists */}
                     {streamStatus.scheduledAt && (
                       <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/20 max-w-sm mx-auto space-y-2 animate-pulse shadow-lg">
