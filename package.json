@@ -8,11 +8,13 @@
     "predev": "node node_modules/@firebase/util/postinstall.js",
     "prebuild": "node node_modules/@firebase/util/postinstall.js",
     "dev": "vite --port 3000 --host 0.0.0.0",
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-spa-routes.js",
     "start": "vite preview --port 3000 --host 0.0.0.0",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
+    
+    
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

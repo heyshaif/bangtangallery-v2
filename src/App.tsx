@@ -1622,7 +1622,7 @@ export function AppContent() {
                             <div className="absolute inset-0 rounded-full bg-purple-500/0 outline-none group-hover:scale-110 group-hover:bg-purple-600/35 transition-all duration-300" />
                             <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-purple-500 to-rose-500 opacity-0 group-hover:opacity-70 blur-md transition-all duration-300" />
                             <img
-                              src={m.portraitUrl || 'https://i.pinimg.com/1200x/39/3b/79/393b7932accffa8825ea8c1d1174b38b.jpg'}
+                              src={m.portraitUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200'}
                               alt={m.name}
                               className="relative w-14 h-14 md:w-20 md:h-20 rounded-full object-cover border-2 border-white/10 group-hover:border-purple-400 transition-colors shadow-lg"
                               referrerPolicy="no-referrer"
@@ -1762,7 +1762,7 @@ export function AppContent() {
                       >
                         <div className="h-64 overflow-hidden relative">
                           <img
-                            src={member.portraitUrl || 'https://i.pinimg.com/1200x/39/3b/79/393b7932accffa8825ea8c1d1174b38b.jpg'}
+                            src={member.portraitUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400'}
                             alt={member.name}
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             referrerPolicy="no-referrer"

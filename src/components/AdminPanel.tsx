@@ -3784,9 +3784,9 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                 {
                   id: 'rm',
                   name: 'RM',
-                  profileImg: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-                  postText: "Let's live while seeing beautiful things in this world. Indigo is out! 💜 Doing some Namjooning in the galleries.",
-                  postImg: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80',
+                  profileImg: 'https://i.pinimg.com/736x/54/2c/1f/542c1f883a3bd13ec106c26648607235.jpg',
+                  postText: "  ",
+                  postImg: 'https://i.pinimg.com/736x/54/2c/1f/542c1f883a3bd13ec106c26648607235.jpg',
                   weverseLink: 'https://weverse.io/bts/artist/rm',
                   emoji: '🐨'
                 },
@@ -3820,7 +3820,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                 {
                   id: 'jimin',
                   name: 'Jimin',
-                  profileImg: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+                  profileImg: 'https://i.pinimg.com/736x/95/ae/24/95ae248bf13dcb912809e3a34e05210f.jpg',
                   postText: "Your warm thoughts are always with me. I hope you have a beautiful night, my angels. Always stay healthy and happy! 🌸",
                   postImg: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=600&q=80',
                   weverseLink: 'https://weverse.io/bts/artist/jimin',

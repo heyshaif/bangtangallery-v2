@@ -243,7 +243,7 @@ const defaultSeo = {
   metaTitle: 'BANGTAN GALLERY - The Ultimate Independent ARMY Archive',
   metaDescription: 'Read biographies, listen to songs, watch and download wallpapers from BTS anniversary archives.',
   keywords: 'BTS, ARMY, Bangtan, Jungkook, Jimin, RM, Jin, Suga, V, J-Hope',
-  openGraphImage: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80',
+  openGraphImage: 'https://i.pinimg.com/736x/9b/88/35/9b88358c4e29a985bf622f9eeeb67125.jpg',
   faviconUrl: 'https://img.icons8.com/color/48/bts-logo.png'
 };
 
@@ -312,8 +312,8 @@ async function ensureSeeded() {
         adminBackupCode: 'ARMY-7777-SEVEN',
         temporaryPassDisabled: false,
         adminMedia: [
-          { id: 'm-seed-1', name: 'BTS Proof Album Cover.jpg', type: 'image', size: '142 KB', url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80', isDeleted: false, uploadDate: new Date().toISOString() },
-          { id: 'm-seed-2', name: 'BTS Festa Concert Crowd.png', type: 'image', size: '2.4 MB', url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80', isDeleted: false, uploadDate: new Date().toISOString() },
+          { id: 'm-seed-1', name: 'BTS Proof Album Cover.jpg', type: 'image', size: '142 KB', url: 'https://i.pinimg.com/736x/50/bb/88/50bb8896a2895bdd08e5a38a80665963.jpg', isDeleted: false, uploadDate: new Date().toISOString() },
+          { id: 'm-seed-2', name: 'BTS Festa Concert Crowd.png', type: 'image', size: '2.4 MB', url: 'https://i.pinimg.com/736x/50/bb/88/50bb8896a2895bdd08e5a38a80665963.jpg', isDeleted: false, uploadDate: new Date().toISOString() },
           { id: 'm-seed-3', name: 'Group Profile HD Wallpaper.jpg', type: 'image', size: '1.8 MB', url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80', isDeleted: false, uploadDate: new Date().toISOString() }
         ],
         activityLogs: []
@@ -322,7 +322,7 @@ async function ensureSeeded() {
     if (!localStorage.getItem('fs_cache_config_liveStream')) {
       saveToLocalCache('config', 'liveStream', {
         isStreaming: false,
-        title: 'BTS Festa Anniversary Countdown 💜',
+        title: 'BTS WORLD TOUR ARIRANG IN LOS ANGELES 2026 DAY-2 💜',
         category: 'Festa',
         url: '',
         streamKey: 'live_army_7777',
@@ -342,7 +342,7 @@ async function ensureSeeded() {
           id: 'vsub-seed-1',
           title: 'Mnet M Countdown Milestone',
           platform: 'Mnet Plus App',
-          coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600',
+          coverUrl: 'https://i.pinimg.com/736x/50/bb/88/50bb8896a2895bdd08e5a38a80665963.jpg',
           voteNowUrl: 'https://mnetplus.world',
           description: 'Vote for BTS on M Countdown weekly ranking to support their promotion anniversary! Follow official guides to cast daily tickets.',
           startDate: '2026-06-01',
@@ -446,7 +446,7 @@ async function ensureSeeded() {
       } else {
         const liveData = {
           isStreaming: false,
-          title: 'BTS Festa Anniversary Countdown 💜',
+          title: 'BTS WORLD TOUR IN LOS ANGELES DAY -03 💜',
           category: 'Festa',
           url: '',
           streamKey: 'live_army_7777',
