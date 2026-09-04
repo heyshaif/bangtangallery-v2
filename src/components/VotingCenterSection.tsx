@@ -82,10 +82,10 @@ export default function VotingCenterSection({ votingEvents = [], onRefresh }: Vo
 
   // Standard preset banner options for easier suggestions
   const presetCovers = [
-    { title: 'Golden FESTA Violet', url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600' },
-    { title: 'Concert Light Arena', url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600' },
-    { title: 'Euphoria Blue Stage', url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600' },
-    { title: 'Neon Magic Shop', url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600' }
+    { title: 'Golden FESTA Violet', url: 'https://i.pinimg.com/736x/bb/95/ce/bb95ce759bd3f6db21cff00d9865eb2f.jpg' },
+    { title: 'Concert Light Arena', url: 'https://i.pinimg.com/736x/bb/95/ce/bb95ce759bd3f6db21cff00d9865eb2f.jpg' },
+    { title: 'Euphoria Blue Stage', url: 'https://i.pinimg.com/736x/bb/95/ce/bb95ce759bd3f6db21cff00d9865eb2f.jpg' },
+    { title: 'Neon Magic Shop', url: 'https://i.pinimg.com/736x/bb/95/ce/bb95ce759bd3f6db21cff00d9865eb2f.jpg' }
   ];
 
   // Drag and drop handler

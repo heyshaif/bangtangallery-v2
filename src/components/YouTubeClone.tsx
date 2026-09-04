@@ -62,7 +62,7 @@ const getVideoThumbnail = (url: string, fallbackImg?: string): string => {
     return 'https://images.unsplash.com/photo-1627856013091-fed6e4e30025?w=450'; // Dark Telegram logo/symbol aesthetic
   }
   
-  return 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=450';
+  return 'https://i.pinimg.com/736x/af/87/2a/af872acf19f10a42785422e412e6ea21.jpg';
 };
 
 const getMediaEmbedUrl = (url: string): string => {

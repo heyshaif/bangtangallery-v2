@@ -519,7 +519,9 @@ export function AppContent() {
       targetPath = '/setting';
     } else if (activeTab === 'Members') {
       if (selectedMember) {
-        targetPath = `/members/${selectedMember.name.toLowerCase()}`;
+        // সুন্দর এবং পরিষ্কার ইউআরএল তৈরি করবে: /members/jungkook (কোনো %20 বা স্পেস থাকবে না)
+        const slug = (selectedMember.id || selectedMember.name.replace(/\s+/g, '')).toLowerCase();
+        targetPath = `/members/${slug}`;
       } else {
         targetPath = '/members';
       }
@@ -1622,7 +1624,7 @@ export function AppContent() {
                             <div className="absolute inset-0 rounded-full bg-purple-500/0 outline-none group-hover:scale-110 group-hover:bg-purple-600/35 transition-all duration-300" />
                             <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-purple-500 to-rose-500 opacity-0 group-hover:opacity-70 blur-md transition-all duration-300" />
                             <img
-                              src={m.portraitUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200'}
+                              src={m.portraitUrl || 'https://i.pinimg.com/736x/3a/b4/cf/3ab4cfd97022bacb6ef6474f20eed9be.jpg'}
                               alt={m.name}
                               className="relative w-14 h-14 md:w-20 md:h-20 rounded-full object-cover border-2 border-white/10 group-hover:border-purple-400 transition-colors shadow-lg"
                               referrerPolicy="no-referrer"

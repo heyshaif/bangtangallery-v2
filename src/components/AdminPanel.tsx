@@ -3519,7 +3519,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                           likes: '500K',
                           tag: 'Remix',
                           category: 'YouTube',
-                          thumbnail: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=400&q=80'
+                          thumbnail: 'https://i.pinimg.com/736x/81/dc/93/81dc9396fbf492c76459cae55f2f5c48.jpg'
                         };
                         const trendingArr = [...(draftConfig.trending || []), newItem];
                         updateDraft('trending', null, trendingArr);

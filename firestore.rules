@@ -23,22 +23,22 @@ service cloud.firestore {
     // Validation functions
     function isValidRegisteredUser(data) {
       return data.keys().hasAll(['username', 'displayName']) &&
-             data.keys().size() <= 4 &&
-             data.username is string && data.username.size() <= 128 &&
-             data.displayName is string && data.displayName.size() <= 128 &&
+             data.keys().size() <= 6 &&
+             data.username is string && data.username.size() <= 256 &&
+             data.displayName is string && data.displayName.size() <= 256 &&
              (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 2048));
     }
 
     function isValidMediaItem(data) {
       return data.keys().hasAll(['id', 'type', 'url', 'title', 'description', 'username', 'displayName', 'category', 'tags', 'uploadedAt', 'likes', 'comments', 'sharesCount', 'saves', 'bookmarks', 'reports']) &&
-             data.keys().size() <= 17 &&
+             data.keys().size() <= 20 &&
              data.id is string && data.id.size() <= 128 &&
              data.type is string && data.type.size() <= 32 &&
-             data.url is string && data.url.size() <= 5000 &&
-             data.title is string && data.title.size() <= 512 &&
+             data.url is string && data.url.size() <= 1048576 &&
+             data.title is string && data.title.size() <= 1024 &&
              data.description is string && data.description.size() <= 10000 &&
-             data.username is string && data.username.size() <= 128 &&
-             data.displayName is string && data.displayName.size() <= 128 &&
+             data.username is string && data.username.size() <= 256 &&
+             data.displayName is string && data.displayName.size() <= 256 &&
              data.category is string && data.category.size() <= 128 &&
              data.tags is list && data.tags.size() <= 50 &&
              data.uploadedAt is string && data.uploadedAt.size() <= 128 &&

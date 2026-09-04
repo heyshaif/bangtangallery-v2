@@ -96,6 +96,7 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
   const [customDisplayName, setCustomDisplayName] = useState(currentUser?.displayName || '');
   const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [isSubmittingUpload, setIsSubmittingUpload] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -137,15 +138,23 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
       }));
 
     // 2. Map static images as compatible cards
-    const staticImages = ((items && items.length > 0) ? items : GALLERY_ITEMS).map((item, idx) => {
+    const baseList = (items && items.length > 0) ? items : GALLERY_ITEMS;
+    const staticImages = baseList.map((item, idx) => {
+      // If code in btsData.ts GALLERY_ITEMS was modified directly with custom BTS photo URLs, reflect it immediately!
+      const codeMatch = GALLERY_ITEMS.find(g => g.id === item.id) || GALLERY_ITEMS[idx];
+      const customCodeUrl = (codeMatch && !codeMatch.url.includes('unsplash.com')) ? codeMatch.url : null;
+      const finalUrl = customCodeUrl || item.url;
+      const finalTitle = codeMatch?.title || item.title;
+      const finalCategory = codeMatch?.category || item.category;
+
       const interaction = localInteractions[item.id] || { likes: [], comments: [] };
       return {
         id: item.id,
-        url: item.url,
-        title: item.title,
-        description: `Official concept shoot and visual frame of ${item.category} anthology.`,
-        category: item.category,
-        tags: ['BTS', item.category, 'ConceptCard', 'HD'],
+        url: finalUrl,
+        title: finalTitle,
+        description: `Official concept shoot and visual frame of ${finalCategory} anthology.`,
+        category: finalCategory,
+        tags: ['BTS', finalCategory, 'ConceptCard', 'HD'],
         username: 'hybe_admin',
         displayName: 'HYBE official',
         uploadedAt: new Date(2025, 5, 13).toISOString(),
@@ -159,7 +168,30 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
       };
     });
 
-    const combined = [...dbImages, ...staticImages];
+    // Also include any new items newly added into GALLERY_ITEMS in btsData.ts
+    const extraCodeItems = GALLERY_ITEMS.filter(g => !baseList.some((b: any) => b.id === g.id)).map((g, idx) => {
+      const interaction = localInteractions[g.id] || { likes: [], comments: [] };
+      return {
+        id: g.id,
+        url: g.url,
+        title: g.title,
+        description: `Official concept shoot and visual frame of ${g.category} anthology.`,
+        category: g.category,
+        tags: ['BTS', g.category, 'ConceptCard', 'HD'],
+        username: 'hybe_admin',
+        displayName: 'HYBE official',
+        uploadedAt: new Date(2025, 5, 13).toISOString(),
+        likes: interaction.likes,
+        comments: interaction.comments,
+        sharesCount: 200 + idx,
+        saves: [],
+        bookmarks: [],
+        reports: 0,
+        isCustom: false
+      };
+    });
+
+    const combined = [...dbImages, ...staticImages, ...extraCodeItems];
 
     // Sort: Newly uploaded pictures (user or admin) should always be at the very top.
     // We sort strictly by uploadedAt in descending order (newest first).
@@ -228,41 +260,45 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (event) => {
+        const rawResult = (event.target?.result as string) || '';
         const img = new Image();
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
+          try {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
 
-          // Scale down to max 1200px for robust performance
-          const MAX_SIZE = 1200;
-          if (width > height) {
-            if (width > MAX_SIZE) {
-              height = Math.round((height * MAX_SIZE) / width);
-              width = MAX_SIZE;
+            // Scale down to max 1000px for optimal speed and size
+            const MAX_SIZE = 1000;
+            if (width > height) {
+              if (width > MAX_SIZE) {
+                height = Math.round((height * MAX_SIZE) / width);
+                width = MAX_SIZE;
+              }
+            } else {
+              if (height > MAX_SIZE) {
+                width = Math.round((width * MAX_SIZE) / height);
+                height = MAX_SIZE;
+              }
             }
-          } else {
-            if (height > MAX_SIZE) {
-              width = Math.round((width * MAX_SIZE) / height);
-              height = MAX_SIZE;
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+              resolve(dataUrl || rawResult);
+            } else {
+              resolve(rawResult);
             }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            // High compression quality (0.75) for amazing visuals with tiny data footprint
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
-            resolve(dataUrl);
-          } else {
-            resolve(event.target?.result as string);
+          } catch {
+            resolve(rawResult);
           }
         };
-        img.onerror = () => resolve('');
-        img.src = event.target?.result as string;
+        img.onerror = () => resolve(rawResult);
+        img.src = rawResult;
       };
       reader.onerror = () => resolve('');
       reader.readAsDataURL(file);
@@ -291,74 +327,73 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
   // Submit media image with robust parameter validation
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingUpload) return;
     setUploadError('');
     setUploadSuccess(false);
 
-    // Required fields check
-    const activeUsername = currentUser?.username || customUsername.trim().toLowerCase();
-    const activeDisplayName = currentUser?.displayName || customDisplayName.trim();
-
-    if (!activeUsername) {
-      setUploadError('Validation failed: Username is a required parameter.');
-      return;
-    }
-    if (!activeDisplayName) {
-      setUploadError('Validation failed: Display Name is a required parameter.');
-      return;
-    }
-    if (!imageTitle.trim()) {
-      setUploadError('Validation failed: Image Title is required.');
-      return;
-    }
-    if (!imageDesc.trim()) {
-      setUploadError('Validation failed: Description is required.');
-      return;
-    }
+    // Only image file is strictly required; username, display name, title & description are auto-filled if left empty!
     if (!imageFileBase64) {
-      setUploadError('Validation failed: Please choose or drop an image file first.');
+      setUploadError('Please select or drop a photo from your gallery first.');
       return;
     }
 
-    // Process Tags
-    const tagsArray = imageTags
-      .split(',')
-      .map(t => t.trim().replace('#', ''))
-      .filter(t => t.length > 0);
+    const randomSuffix = Math.random().toString(36).substring(2, 6);
+    const activeUsername = currentUser?.username || (customUsername.trim() ? customUsername.trim().toLowerCase().replace(/\s+/g, '_') : `army_${randomSuffix}`);
+    const activeDisplayName = currentUser?.displayName || (customDisplayName.trim() ? customDisplayName.trim() : 'ARMY Fan 💜');
+    const finalTitle = imageTitle.trim() || `${imageCategory} Photo 💜`;
+    const finalDesc = imageDesc.trim() || `Uploaded with love by ${activeDisplayName} in BTS Gallery`;
 
-    // Auto register if user specified nicknames
-    if (!currentUser && activeUsername && activeDisplayName) {
-      await registerUser(activeUsername, activeDisplayName);
-    }
+    setIsSubmittingUpload(true);
+    try {
+      // Process Tags
+      const tagsArray = imageTags
+        .split(',')
+        .map(t => t.trim().replace('#', ''))
+        .filter(t => t.length > 0);
 
-    // Upload payload
-    const ok = await uploadMedia({
-      type: 'image',
-      url: imageFileBase64,
-      title: imageTitle.trim(),
-      description: imageDesc.trim(),
-      category: imageCategory,
-      tags: tagsArray.length > 0 ? tagsArray : ['ARMY', imageCategory],
-      username: activeUsername,
-      displayName: activeDisplayName
-    });
+      // Auto register if user specified nicknames
+      if (!currentUser && (customUsername.trim() || customDisplayName.trim())) {
+        try {
+          await registerUser(activeUsername, activeDisplayName);
+        } catch (regErr) {
+          console.warn('Silent user registration issue:', regErr);
+        }
+      }
 
-    if (ok) {
-      setUploadSuccess(true);
-      setImageTitle('');
-      setImageDesc('');
-      setImageTags('');
-      setImageFileBase64('');
-      
-      // Auto-switch filter to All so they immediately see their new upload
-      setSelectedCategory('All');
-      
-      // Auto-close modal after 1.5 seconds to show success state clearly and return to the main gallery
-      setTimeout(() => {
-        setIsUploadOpen(false);
-        setUploadSuccess(false);
-      }, 1500);
-    } else {
-      setUploadError('Server side processing error. Try again.');
+      // Upload payload
+      const ok = await uploadMedia({
+        type: 'image',
+        url: imageFileBase64,
+        title: finalTitle,
+        description: finalDesc,
+        category: imageCategory,
+        tags: tagsArray.length > 0 ? tagsArray : ['ARMY', imageCategory, 'BTS'],
+        username: activeUsername,
+        displayName: activeDisplayName
+      });
+
+      if (ok) {
+        setUploadSuccess(true);
+        setImageTitle('');
+        setImageDesc('');
+        setImageTags('');
+        setImageFileBase64('');
+        
+        // Auto-switch filter to All so they immediately see their new upload
+        setSelectedCategory('All');
+        
+        // Auto-close modal after 1.5 seconds to show success state clearly and return to the main gallery
+        setTimeout(() => {
+          setIsUploadOpen(false);
+          setUploadSuccess(false);
+        }, 1500);
+      } else {
+        setUploadError('Upload failed. Please try again or use a smaller image file.');
+      }
+    } catch (err: any) {
+      setUploadError(`Upload failed: ${err?.message || 'Network error'}`);
+    } finally {
+      setIsSubmittingUpload(false);
     }
   };
 
@@ -951,23 +986,23 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
                 {!currentUser && (
                   <div className="grid grid-cols-2 gap-3 bg-purple-950/10 border border-purple-900/20 rounded-xl p-3">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-mono font-bold text-purple-400 uppercase">Username (No spacing) *</label>
+                      <label className="text-[10px] font-mono font-bold text-purple-400 uppercase">Username (Optional)</label>
                       <input
                         type="text"
-                        placeholder="e.g. jungkook_stan"
+                        placeholder="e.g. jungkook_stan (or leave empty)"
                         value={customUsername}
                         onChange={(e) => setCustomUsername(e.target.value)}
-                        className="w-full bg-black/55 rounded-lg border border-white/5 text-xs px-3 py-2 text-white outline-none focus:border-purple-500/50"
+                        className="w-full bg-black/55 rounded-lg border border-white/5 text-xs px-3 py-2 text-white outline-none focus:border-purple-500/50 placeholder:text-gray-600"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-mono font-bold text-purple-400 uppercase">Display Name *</label>
+                      <label className="text-[10px] font-mono font-bold text-purple-400 uppercase">Display Name (Optional)</label>
                       <input
                         type="text"
-                        placeholder="e.g. Hobi Lover 💜"
+                        placeholder="e.g. ARMY Fan 💜 (or leave empty)"
                         value={customDisplayName}
                         onChange={(e) => setCustomDisplayName(e.target.value)}
-                        className="w-full bg-black/55 rounded-lg border border-white/5 text-xs px-3 py-2 text-white outline-none focus:border-purple-500/50"
+                        className="w-full bg-black/55 rounded-lg border border-white/5 text-xs px-3 py-2 text-white outline-none focus:border-purple-500/50 placeholder:text-gray-600"
                       />
                     </div>
                   </div>
@@ -976,10 +1011,10 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
                 {/* MAIN PARAMETERS */}
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-mono font-bold text-slate-400 uppercase">Image Title *</label>
+                    <label className="text-[10px] font-mono font-bold text-slate-400 uppercase">Image Title (Optional)</label>
                     <input
                       type="text"
-                      placeholder="e.g. RM Indigo Studio Vibe"
+                      placeholder="e.g. RM Indigo Studio Vibe (or leave empty)"
                       value={imageTitle}
                       onChange={(e) => setImageTitle(e.target.value)}
                       className="w-full bg-black/45 rounded-lg border border-white/5 text-xs px-3.5 py-2.5 text-white outline-none focus:border-purple-500/50 placeholder:text-gray-600"
@@ -988,7 +1023,7 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-mono font-bold text-slate-400 uppercase">Category *</label>
+                      <label className="text-[10px] font-mono font-bold text-slate-400 uppercase">Category</label>
                       <select
                         value={imageCategory}
                         onChange={(e) => setImageCategory(e.target.value)}
@@ -1004,7 +1039,7 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
                       <label className="text-[10px] font-mono font-bold text-slate-400 uppercase">Tags (comma separated)</label>
                       <input
                         type="text"
-                        placeholder="e.g. stage, concert, hobi, RM"
+                        placeholder="e.g. stage, concert, RM"
                         value={imageTags}
                         onChange={(e) => setImageTags(e.target.value)}
                         className="w-full bg-black/45 rounded-lg border border-white/5 text-xs px-3.5 py-2.5 text-white outline-none focus:border-purple-500/50 placeholder:text-gray-600"
@@ -1013,10 +1048,10 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-mono font-bold text-slate-400 uppercase">Description *</label>
+                    <label className="text-[10px] font-mono font-bold text-slate-400 uppercase">Description (Optional)</label>
                     <textarea
-                      rows={3}
-                      placeholder="Discuss the frame composition, editorial shoot dates, or art direction motivation..."
+                      rows={2}
+                      placeholder="Add a sweet message or description (optional)..."
                       value={imageDesc}
                       onChange={(e) => setImageDesc(e.target.value)}
                       className="w-full bg-black/45 rounded-lg border border-white/5 text-xs px-3.5 py-2.5 text-white outline-none focus:border-purple-500/50 resize-none placeholder:text-gray-600"
@@ -1039,9 +1074,17 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
                   </button>
                   <button
                     type="submit"
-                    className="p-2.5 px-5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-sans text-xs font-bold shadow-lg shadow-purple-500/10 cursor-pointer transition-all"
+                    disabled={isSubmittingUpload}
+                    className="p-2.5 px-5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-sans text-xs font-bold shadow-lg shadow-purple-500/10 cursor-pointer transition-all flex items-center gap-2"
                   >
-                    Publish Automatically
+                    {isSubmittingUpload ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+                        <span>Publishing... 📡</span>
+                      </>
+                    ) : (
+                      <span>Publish Automatically</span>
+                    )}
                   </button>
                 </div>
               </form>
