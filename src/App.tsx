@@ -1764,7 +1764,7 @@ export function AppContent() {
                       >
                         <div className="h-64 overflow-hidden relative">
                           <img
-                            src={member.portraitUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400'}
+                            src={member.portraitUrl || 'https://i.pinimg.com/736x/5f/01/e4/5f01e4f756da2e5e605c7272ff16e63b.jpg'}
                             alt={member.name}
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             referrerPolicy="no-referrer"

@@ -7282,10 +7282,10 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <span className="text-2xs font-mono uppercase tracking-widest text-pink-400 font-bold">🖥️ Digital Billboard Preview</span>
                         <div className="p-4 bg-black rounded-xl border border-white/5 space-y-3">
                           <img 
-                            src={cmsEditing.data.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400'} 
+                            src={cmsEditing.data.coverUrl || 'https://i.pinimg.com/736x/5f/01/e4/5f01e4f756da2e5e605c7272ff16e63b.jpg'} 
                             alt="Preview" 
                             className="w-24 h-24 rounded-lg object-cover border border-purple-500/20"
-                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400'; }}
+                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://i.pinimg.com/736x/5f/01/e4/5f01e4f756da2e5e605c7272ff16e63b.jpg'; }}
                           />
                           <h4 className="text-base font-bold text-white">{cmsEditing.data.title || 'Untitled Spotlight'}</h4>
                           <p className="text-xs text-slate-400">{cmsEditing.data.description || 'No description yet.'}</p>
@@ -8159,7 +8159,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                 id: 'p-' + Date.now(),
                                 title: 'New Playlist Collection',
                                 description: 'Festa archives compilation.',
-                                coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400',
+                                coverUrl: 'https://i.pinimg.com/736x/5f/01/e4/5f01e4f756da2e5e605c7272ff16e63b.jpg',
                                 trackIds: []
                               };
                               const updated = [...(draftConfig.playlists || []), newPl];
@@ -9045,11 +9045,11 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <span className="text-[10px] font-mono uppercase text-purple-400 block font-bold">🖥️ CMS Real-Time Rendering Preview</span>
                         <div className="border border-white/5 bg-black/40 rounded-lg overflow-hidden flex-grow flex flex-col justify-between aspect-video relative max-w-sm mx-auto">
                           <img 
-                            src={cmsEditing.data.url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400'} 
+                            src={cmsEditing.data.url || 'https://i.pinimg.com/736x/5f/01/e4/5f01e4f756da2e5e605c7272ff16e63b.jpg'} 
                             alt="Preview"
                             className="w-full h-full object-cover rounded-t-lg"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400';
+                              (e.target as HTMLImageElement).src = 'https://i.pinimg.com/736x/5f/01/e4/5f01e4f756da2e5e605c7272ff16e63b.jpg';
                             }}
                           />
                           <div className="p-3 bg-[#0d071b] space-y-1">

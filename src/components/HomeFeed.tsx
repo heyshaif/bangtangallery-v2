@@ -74,7 +74,7 @@ export default function HomeFeed({ config }: HomeFeedProps) {
         // Respect Publish/Unpublish status (only show if published is not explicitly false)
         if (vid.published !== false) {
           const videoId = getYoutubeVideoId(vid.url || '');
-          const fallbackThumbnail = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600';
+          const fallbackThumbnail = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'https://i.pinimg.com/1200x/1d/3a/8d/1d3a8d6bfe83daa52cae58d24ea5239a.jpg';
           
           feed.push({
             id: vid.id || `vid-${Date.now()}-${Math.random()}`,
@@ -100,7 +100,7 @@ export default function HomeFeed({ config }: HomeFeedProps) {
             type: 'news',
             title: n.title || 'Untitled Article',
             description: n.summary || n.content || 'No details specified.',
-            thumbnailUrl: n.imageUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600',
+            thumbnailUrl: n.imageUrl || 'https://i.pinimg.com/736x/0b/b9/44/0bb94498ab7c1171bf03e50b35c27496.jpg',
             publishDate: n.date || 'Jun 13, 2026',
             newsLink: n.link || n.newsLink || '',
             category: n.category || 'Announcement',

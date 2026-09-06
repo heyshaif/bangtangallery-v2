@@ -11,7 +11,7 @@ export const MEMBERS: Member[] = [
     name: 'RM',
     fullName: 'Kim Nam-joon (김남준)',
     portraitUrl: 'https://i.pinimg.com/736x/9b/b5/df/9bb5dfd9291b6db89a60560d2fe7b243.jpg ',
-    bannerUrl: 'https://i.pinimg.com/736x/9b/b5/df/9bb5dfd9291b6db89a60560d2fe7b243.jpg',
+    bannerUrl: 'https://i.pinimg.com/736x/00/cf/a8/00cfa8e5bac428d6d616ed9643383a02.jpg',
     biography: 'Known as the intelligent and eloquent leader of BTS, RM (formerly Rap Monster) is a brilliant songwriter, record producer, and fluent English speaker who famously represented BTS at the United Nations. He is renowned for his philosophical lyrics and love for art.',
     birthday: 'September 12, 1994',
     age: 31,
@@ -535,10 +535,10 @@ export const VIDEOS: Video[] = [
 ];
 
 export const GALLERY_ITEMS: GalleryItem[] = [
-  { id: 'gal1', category: 'Concert', title: 'Purple Ocean Lights at Wembley Stadium, London', url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80' },
-  { id: 'gal2', category: 'Concert', title: 'BTS Stage Pyro and Laser Show in Seoul', url: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=800&q=80' },
-  { id: 'gal3', category: 'BTS', title: 'Proof Anthology Concept Group Photo', url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80' },
-  { id: 'gal4', category: 'Festa', title: 'Army Fireworks Display over Han River, Seoul', url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80' },
+  { id: 'gal1', category: 'Concert', title: '', url: 'https://i.pinimg.com/1200x/1d/3a/8d/1d3a8d6bfe83daa52cae58d24ea5239a.jpg' },
+  { id: 'gal2', category: 'Concert', title: '', url: 'https://i.pinimg.com/736x/29/a7/41/29a741e9e3a12ed9bd9b27d89d18da27.jpg' },
+  { id: 'gal3', category: 'BTS', title: '', url: 'https://i.pinimg.com/1200x/9a/09/6d/9a096da6d88525cef90e38d2c4833241.jpg' },
+  { id: 'gal4', category: 'Festa', title: '', url: 'https://i.pinimg.com/1200x/48/7c/bc/487cbcb88f71fc6211a3e785f2458864.jpg' },
   { id: 'gal5', category: 'RM', title: 'RM "Indigo" Forest Visual Shoot', url: 'https://i.pinimg.com/736x/dd/25/7b/dd257bc958f020bc2dd5fd90cdfd74b3.jpg' },
   { id: 'gal6', category: 'Jin', title: 'Jin "The Astronaut" Starlit Profile', url: 'https://i.pinimg.com/736x/32/10/17/321017f47febbd9b6a2f268f2e65caee.jpg' },
   { id: 'gal7', category: 'SUGA', title: 'Agust D "D-DAY" Traditional Sword Vibe', url: 'https://i.pinimg.com/736x/8e/a1/97/8ea19755ac88dbb212fa0cd1a520b1ca.jpg' },

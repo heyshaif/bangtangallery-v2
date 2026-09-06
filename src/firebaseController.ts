@@ -322,7 +322,7 @@ async function ensureSeeded() {
     if (!localStorage.getItem('fs_cache_config_liveStream')) {
       saveToLocalCache('config', 'liveStream', {
         isStreaming: false,
-        title: 'BTS WORLD TOUR ARIRANG IN LOS ANGELES 2026 DAY-2 💜',
+        title: 'BTS WORLD TOUR ARIRANG IN LOS ANGELES 2026',
         category: 'Festa',
         url: '',
         streamKey: 'live_army_7777',
@@ -446,7 +446,7 @@ async function ensureSeeded() {
       } else {
         const liveData = {
           isStreaming: false,
-          title: 'BTS WORLD TOUR IN LOS ANGELES DAY -03 💜',
+          title: 'BTS WORLD TOUR IN LOS ANGELES DAY 💜',
           category: 'Festa',
           url: '',
           streamKey: 'live_army_7777',
@@ -492,7 +492,7 @@ async function ensureSeeded() {
             id: 'vsub-seed-1',
             title: 'Mnet M Countdown Milestone',
             platform: 'Mnet Plus App',
-            coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600',
+            coverUrl: 'https://i.pinimg.com/1200x/e5/66/57/e56657c26946cf06b7b242f79b955af1.jpg',
             voteNowUrl: 'https://mnetplus.world',
             description: 'Vote for BTS on M Countdown weekly ranking to support their promotion anniversary! Follow official guides to cast daily tickets.',
             startDate: '2026-06-01',

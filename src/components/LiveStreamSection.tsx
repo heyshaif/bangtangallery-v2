@@ -914,6 +914,19 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
                     </div>
 
 
+<div className="w-[650px] h-[400px] -ml-19 mt-0 overflow-hidden rounded-2xl bg-black">
+  <video
+    className="w-full h-full object-cover"
+    src="/vr615n_yE7M2TNEz.mp4"
+    controls
+    autoPlay
+    muted
+    loop
+    playsInline
+  />
+</div>
+
+
 {/* <div className="w-[500px] h-[350px] -ml-20 mt-0 overflow-hidden rounded-2xl bg-black">
   <img
     src="/RES.png"
@@ -923,7 +936,8 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
 </div> */}
 
 {/* embaded in here */}
-<div className="space-y-9 -ml-25 -mt-15">
+
+{/* <div className="space-y-9 -ml-25 -mt-15">
   <iframe
     width="650"
     height="450"
@@ -935,7 +949,7 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
     referrerPolicy="strict-origin-when-cross-origin"
     allowFullScreen
   />
-</div>
+</div> */}
 
 
 
