@@ -539,14 +539,14 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   { id: 'gal2', category: 'Concert', title: 'BTS Stage Pyro and Laser Show in Seoul', url: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=800&q=80' },
   { id: 'gal3', category: 'BTS', title: 'Proof Anthology Concept Group Photo', url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80' },
   { id: 'gal4', category: 'Festa', title: 'Army Fireworks Display over Han River, Seoul', url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80' },
-  { id: 'gal5', category: 'RM', title: 'RM "Indigo" Forest Visual Shoot', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80' },
-  { id: 'gal6', category: 'Jin', title: 'Jin "The Astronaut" Starlit Profile', url: 'https://images.unsplash.com/photo-1496715976403-7e36dc43f17b?auto=format&fit=crop&w=800&q=80' },
-  { id: 'gal7', category: 'SUGA', title: 'Agust D "D-DAY" Traditional Sword Vibe', url: 'https://images.unsplash.com/photo-1501196354995-1db51d65a70f?auto=format&fit=crop&w=800&q=80' },
-  { id: 'gal8', category: 'j-hope', title: 'j-hope "Jack In The Box" Retro Vinyl Cover', url: 'https://images.unsplash.com/photo-1484755560695-a4c7300c5c29?auto=format&fit=crop&w=800&q=80' },
+  { id: 'gal5', category: 'RM', title: 'RM "Indigo" Forest Visual Shoot', url: 'https://i.pinimg.com/736x/dd/25/7b/dd257bc958f020bc2dd5fd90cdfd74b3.jpg' },
+  { id: 'gal6', category: 'Jin', title: 'Jin "The Astronaut" Starlit Profile', url: 'https://i.pinimg.com/736x/32/10/17/321017f47febbd9b6a2f268f2e65caee.jpg' },
+  { id: 'gal7', category: 'SUGA', title: 'Agust D "D-DAY" Traditional Sword Vibe', url: 'https://i.pinimg.com/736x/8e/a1/97/8ea19755ac88dbb212fa0cd1a520b1ca.jpg' },
+  { id: 'gal8', category: 'j-hope', title: 'j-hope "Jack In The Box" Retro Vinyl Cover', url: 'https://i.pinimg.com/736x/fa/64/15/fa6415c33f4e45d96d40178b26749ece.jpg' },
   { id: 'gal9', category: 'Jimin', title: 'Jimin "FACE" Reflection Studio Portrait', url: 'https://i.pinimg.com/736x/1e/f5/b9/1ef5b9950134ba91ef13f1271f3c5532.jpg' },
-  { id: 'gal10', category: 'V', title: 'V "Layover" Cinematic Jazz Session', url: 'https://i.pinimg.com/1200x/64/54/8e/64548e595d5e3bba8a1eddfc6313cba7.jpg' },
-  { id: 'gal11', category: 'Jung Kook', title: 'Jung Kook "GOLDEN" Neon Mic Angle', url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80' },
-  { id: 'gal12', category: 'Fan Art', title: 'Borahae Whales digital painting (Purple cosmic whale, BTS concept art)', url: 'https://images.unsplash.com/photo-1557672172-298e090bd0f1?auto=format&fit=crop&w=800&q=80' }
+  { id: 'gal10', category: 'V', title: 'V "Layover" Cinematic Jazz Session', url: 'https://i.pinimg.com/736x/9b/53/17/9b5317c9c0cb29b7ffac7b079012f0ab.jpg' },
+  { id: 'gal11', category: 'Jung Kook', title: 'Jung Kook "GOLDEN" Neon Mic Angle', url: 'https://i.pinimg.com/1200x/6d/bc/fb/6dbcfb6318a367e5295818a308740a2a.jpg' },
+  { id: 'gal12', category: 'Fan Art', title: 'Borahae Whales digital painting (Purple cosmic whale, BTS concept art)', url: 'https://i.pinimg.com/1200x/26/b9/43/26b94359507ce148a2999fc5a3ce9c2e.jpg' }
 ];
 
 export const TIMELINE_EVENTS: TimelineEvent[] = [
@@ -636,14 +636,14 @@ export const DOWNLOADS: DownloadItem[] = [
     id: 'dl1',
     name: 'BTS 2026 Festa official Purple Aurora Wallpaper (Ultra HD Desktop)',
     type: 'Wallpaper',
-    url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1920&q=90',
+    url: 'https://i.pinimg.com/1200x/26/b9/43/26b94359507ce148a2999fc5a3ce9c2e.jpg',
     size: '4.2 MB'
   },
   {
     id: 'dl2',
     name: 'Bangtan Gallery Mobile Lockscreen - RM, Jin, SUGA, j-hope, Jimin, V, JK',
     type: 'Wallpaper',
-    url: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    url: 'https://i.pinimg.com/1200x/26/b9/43/26b94359507ce148a2999fc5a3ce9c2e.jpg',
     size: '2.8 MB'
   },
   {
@@ -657,32 +657,32 @@ export const DOWNLOADS: DownloadItem[] = [
     id: 'dl4',
     name: 'Official High-Res BTS "Proof" Wing Logo PNG (Original Transparent)',
     type: 'Logo',
-    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80',
+    url: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg',
     size: '800 KB'
   },
   {
     id: 'dl5',
     name: 'BTS English Lyric Compilation (Dynamite, Butter, Life Goes On, Proof demo sheets)',
     type: 'PDF',
-    url: 'https://images.unsplash.com/photo-1506803682981-6e718a9dd3ee?auto=format&fit=crop&w=800&q=80',
+    url: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg',
     size: '1.9 MB'
   },
   {
     id: 'dl6',
     name: 'FESTA 2026 Celebration Kit (HD printable postals, sticker designs, purple cutouts)',
     type: 'ZIP',
-    url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80',
+    url: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg',
     size: '48.5 MB'
   }
 ];
 
 export const FAN_ARTS: FanArt[] = [
-  { id: 'fa1', imageUrl: 'https://images.unsplash.com/photo-1533158326339-7f3cf2404354?auto=format&fit=crop&w=800&q=80', title: 'Cosmic Whale over Busan Concert Stage', artist: 'ArmyPainter97', likes: 2311 },
-  { id: 'fa2', imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=800&q=80', title: 'Gold and Purple Mic Sunset Silhouette', artist: 'TaeTaeGlows', likes: 1845 },
-  { id: 'fa3', imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80', title: 'RM Philosopher Indigo Reflection Sketch', artist: 'NamjoonieStudy', likes: 1420 },
-  { id: 'fa4', imageUrl: 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?auto=format&fit=crop&w=800&q=80', title: 'Worldwide Handsome Comic Pop Art', artist: 'JinDadJokes', likes: 2519 },
-  { id: 'fa5', imageUrl: 'https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=800&q=80', title: 'Agust D Daechwita Traditional Ink Painting', artist: 'YoongiSlices', likes: 3105 },
-  { id: 'fa6', imageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80', title: 'Sunshine J-Hope Vibrant Abstract Expression', artist: 'HobiWorld94', likes: 1980 }
+  { id: 'fa1', imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg', title: 'Cosmic Whale over Busan Concert Stage', artist: 'ArmyPainter97', likes: 2311 },
+  { id: 'fa2', imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg', title: 'Gold and Purple Mic Sunset Silhouette', artist: 'TaeTaeGlows', likes: 1845 },
+  { id: 'fa3', imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg', title: 'RM Philosopher Indigo Reflection Sketch', artist: 'NamjoonieStudy', likes: 1420 },
+  { id: 'fa4', imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg', title: 'Worldwide Handsome Comic Pop Art', artist: 'JinDadJokes', likes: 2519 },
+  { id: 'fa5', imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg', title: 'Agust D Daechwita Traditional Ink Painting', artist: 'YoongiSlices', likes: 3105 },
+  { id: 'fa6', imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg', title: 'Sunshine J-Hope Vibrant Abstract Expression', artist: 'HobiWorld94', likes: 1980 }
 ];
 
 export const EVENTS: BTSEvent[] = [

@@ -748,15 +748,14 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
             <Radio className="w-4 h-4 text-rose-500 animate-ping" /> Bangtan Live Cast Hub
           </span>
           <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">
-            ARMY GALLERY REC-STUDIO
+           BTS WORLD TOUR ARIRANG 2026  LIVE STREM...
           </h2>
           <p className="text-xs text-gray-400">
-            Secure self-hosted broadcast loop synced with OBS Studio settings & analytics data.
+             BTS WORLD TOUR ARIRANG 2026  LIVE STREM LOS ANGELES DAY -3
           </p>
         </div>
       </div>
-
-      {/* Main Core Layout: Video view and Live chat sidebar */}
+    {/* Main Core Layout: Video view and Live chat sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         {/* LEFT & CENTER SIDE: Player Stage */}
@@ -914,45 +913,6 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
                       <Radio className="w-8 h-8 text-slate-500" />
                     </div>
 
-{/* LIVE OFFLINE ALERT */}
-<div className="w-full flex justify-center">
-  <div className="w-full max-w-[750px] min-h-[400px] flex flex-col items-center justify-center text-center  px-8 py-10">
-
-    {/* Alert Icon */}
-    <div className="w-20 h-20 rounded-full border-2 border-red-500 flex items-center justify-center mb-6 shadow-[0_0_35px_rgba(239,68,68,0.3)]">
-      <span className="text-4xl">⚠️</span>
-    </div>
-
-    {/* Status */}
-    <p className="text-[11px] font-bold tracking-[0.45em] text-red-400 mb-3">
-      BTS WORLD TOUR ARIRANG 2026 - IN LOS ANGELES DAY 03
-    </p>
-
-    {/* Title */}
-    <h2 className="text-3xl md:text-4xl font-black tracking-wide text-white mb-5">
-      BTS WORLD TOUR ARIRANG 2026 
-    </h2>
-
-    {/* Divider */}
-    <div className="w-24 h-[3px] bg-red-500 mb-6 shadow-[0_0_15px_rgba(239,68,68,0.8)]" />
-
-    {/* Message */}
-    <p className="text-sm md:text-base text-gray-400 leading-relaxed">
-      The live  was restricted by bighit music .
-      <br />
-      <span className="text-red-300 font-medium">
-        We&apos;re preparing the next broadcast for ARMY. 💜
-      </span>
-    </p>
-
-    {/* Standby */}
-    <div className="mt-8 flex items-center gap-2 text-xs font-bold tracking-wider text-red-300">
-      <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.9)]" />
-      BROADCAST STANDBY
-    </div>
-
-  </div>
-</div>
 
 {/* <div className="w-[500px] h-[350px] -ml-20 mt-0 overflow-hidden rounded-2xl bg-black">
   <img
@@ -962,11 +922,12 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
   />
 </div> */}
 
-{/* <div className="space-y-9 -ml-20 -mt-25">
+{/* embaded in here */}
+<div className="space-y-9 -ml-25 -mt-15">
   <iframe
-    width="660"
-    height="550"
-    src="https://www.youtube.com/embed/H2AvUznX6Yc"
+    width="650"
+    height="450"
+    src="https://www.youtube.com/embed/nvi4z9xFTo8"
     title="BTS WORLD TOUR ARIRANG 2026"
     className="rounded-2xl border border-purple-500/30"
     frameBorder="0"
@@ -974,7 +935,9 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
     referrerPolicy="strict-origin-when-cross-origin"
     allowFullScreen
   />
-</div> */}
+</div>
+
+
 
                     {/* Show upcoming live schedule countdown timer if exists */}
                     {streamStatus.scheduledAt && (
@@ -1023,15 +986,17 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
             {/* Quick Live stats block */}
             <div className="grid grid-cols-2 gap-3 min-w-[170px] font-mono text-[10px] text-gray-400 self-center sm:self-start bg-black/25 p-3.5 rounded-2xl border border-white/5">
               <div>
-                <span className="text-gray-500 uppercase block">Total reach</span>
-                <span className="text-xs text-white font-bold block mt-0.5">👁 {streamStatus.totalViews?.toLocaleString() || '12,032'}</span>
+                <span className="text-gray-500 uppercase block"></span>
+                <span className="text-xs text-white font-bold block mt-0.5">👁 {streamStatus.totalViews?.toLocaleString() || ''}</span>
               </div>
+
               <div>
-                <span className="text-gray-500 uppercase block">Peak watchers</span>
-                <span className="text-xs text-purple-400 font-bold block mt-0.5">🔥 {streamStatus.peakViewers || '0'}</span>
+                <span className="text-gray-500 uppercase block"></span>
+                <span className="text-xs text-purple-400 font-bold block mt-0.5">🔥 {streamStatus.peakViewers || ''}</span>
               </div>
+              
               <div className="col-span-2 border-t border-white/5 pt-2 mt-1">
-                <span className="text-gray-500 uppercase block">Watch Hours</span>
+                <span className="text-gray-500 uppercase block"></span>
                 <span className="text-xs text-emerald-400 font-bold block mt-0.5">⚡ {Math.max(1, Math.ceil(streamStatus.watchTime / 60))} Hrs Total</span>
               </div>
             </div>

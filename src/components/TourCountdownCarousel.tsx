@@ -68,7 +68,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Madrid',
     country: 'Spain',
     venue: 'Riyadh Air Metropolitano',
-    imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'brussels-1',
@@ -78,7 +78,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Brussels',
     country: 'Belgium',
     venue: 'King Baudouin Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'london-1',
@@ -88,7 +88,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'London',
     country: 'United Kingdom',
     venue: 'Tottenham Hotspur Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'munich-1',
@@ -98,7 +98,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Munich',
     country: 'Germany',
     venue: 'Allianz Arena',
-    imageUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'paris-1',
@@ -108,7 +108,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Paris',
     country: 'France',
     venue: 'Stade de France',
-    imageUrl: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
 
   // NORTH AMERICA
@@ -120,7 +120,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'East Rutherford, NJ',
     country: 'USA',
     venue: 'MetLife Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'foxborough-1',
@@ -130,7 +130,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Foxborough, MA',
     country: 'USA',
     venue: 'Gillette Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'baltimore-1',
@@ -140,7 +140,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Baltimore, MD',
     country: 'USA',
     venue: 'M&T Bank Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'arlington-1',
@@ -150,7 +150,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Arlington, TX',
     country: 'USA',
     venue: 'AT&T Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'toronto-1',
@@ -160,7 +160,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Toronto',
     country: 'Canada',
     venue: 'Rogers Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'chicago-1',
@@ -170,7 +170,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Chicago, IL',
     country: 'USA',
     venue: 'Soldier Field',
-    imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
 
   // ASIA & AUSTRALIA
@@ -182,7 +182,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Kaohsiung',
     country: 'Taiwan',
     venue: 'Kaohsiung National Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'bangkok-1',
@@ -192,7 +192,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Bangkok',
     country: 'Thailand',
     venue: 'Rajamangala National Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'kl-1',
@@ -202,7 +202,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Kuala Lumpur',
     country: 'Malaysia',
     venue: 'TM Stadium Nasional',
-    imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'singapore-1',
@@ -212,7 +212,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Singapore',
     country: 'Singapore',
     venue: 'National Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'jakarta-1',
@@ -222,7 +222,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Jakarta',
     country: 'Indonesia',
     venue: 'Gelora Bung Karno Main Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'melbourne-1',
@@ -232,7 +232,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Melbourne',
     country: 'Australia',
     venue: 'Marvel Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'sydney-1',
@@ -242,7 +242,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Sydney',
     country: 'Australia',
     venue: 'Accor Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'hk-1',
@@ -252,7 +252,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Hong Kong',
     country: 'Hong Kong',
     venue: 'Kai Tak Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   },
   {
     id: 'bulacan-1',
@@ -262,7 +262,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Bulacan',
     country: 'Philippines',
     venue: 'Philippine Sports Stadium',
-    imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80'
+    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
   }
 ];
 
