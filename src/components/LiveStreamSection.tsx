@@ -941,7 +941,7 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
   <iframe
     width="650"
     height="450"
-    src="https://player.vdocipher.com/live-v2?liveId=7c54d6abea344828a1af1e0efc6ae1db"
+    src="https://player.vdocipher.com/live-v2?liveId=e723f5417691462cacc834ee213c2571"
     title="BTS WORLD TOUR ARIRANG 2026"
     className="rounded-2xl border border-purple-500/30"
     frameBorder="0"
