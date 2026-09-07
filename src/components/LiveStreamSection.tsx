@@ -751,7 +751,7 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
            BTS WORLD TOUR ARIRANG 2026  LIVE STREM...
           </h2>
           <p className="text-xs text-gray-400">
-             BTS WORLD TOUR ARIRANG 2026  LIVE STREM LOS ANGELES DAY -3
+             BTS WORLD TOUR ARIRANG 2026  LIVE STREM LOS ANGELES DAY -4
           </p>
         </div>
       </div>
@@ -913,7 +913,7 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
                       <Radio className="w-8 h-8 text-slate-500" />
                     </div>
 
-
+{/* 
 <div className="w-[650px] h-[400px] -ml-19 mt-0 overflow-hidden rounded-2xl bg-black">
   <video
     className="w-full h-full object-cover"
@@ -924,7 +924,7 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
     loop
     playsInline
   />
-</div>
+</div> */}
 
 
 {/* <div className="w-[500px] h-[350px] -ml-20 mt-0 overflow-hidden rounded-2xl bg-black">
@@ -937,7 +937,7 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
 
 {/* embaded in here */}
 
-<div className="space-y-9 -ml-25 -mt-15">
+<div className="space-y-9 -ml-25 -mt-10">
   <iframe
     width="650"
     height="450"
