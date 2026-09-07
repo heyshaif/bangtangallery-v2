@@ -937,11 +937,11 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
 
 {/* embaded in here */}
 
-{/* <div className="space-y-9 -ml-25 -mt-15">
+<div className="space-y-9 -ml-25 -mt-15">
   <iframe
     width="650"
     height="450"
-    src="https://www.youtube.com/embed/nvi4z9xFTo8"
+    src="https://player.vdocipher.com/live-v2?liveId=7c54d6abea344828a1af1e0efc6ae1db"
     title="BTS WORLD TOUR ARIRANG 2026"
     className="rounded-2xl border border-purple-500/30"
     frameBorder="0"
@@ -949,7 +949,7 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
     referrerPolicy="strict-origin-when-cross-origin"
     allowFullScreen
   />
-</div> */}
+</div>
 
 
 
