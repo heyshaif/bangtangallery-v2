@@ -185,34 +185,66 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
     }
   };
 
-  // Subscribe to real-time live chat messages via Firestore
+  // Subscribe to real-time live chat messages
   useEffect(() => {
-    const q = query(
-      collection(db, 'live_chat'),
-      orderBy('timestamp', 'asc'),
-      limit(100)
-    );
+    // ডিফল্ট ফ্রেন্ডলি মেসেজ যাতে চ্যাট বক্স কখনোই খালি না থাকে
+    const defaultSampleMessages: ChatMessage[] = [
+      {
+        id: 'sys_1',
+        username: 'ARMY Moderator',
+        text: '💜 Welcome to the BTS Live Lounge! Chat rules: Be respectful and enjoy the stream!',
+        timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+        isModerator: true,
+        isSystem: true
+      },
+      {
+        id: 'sys_2',
+        username: 'Borahae_2026',
+        text: 'Borahae everyone! So excited for the tour! 💜✨',
+        timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+        isModerator: false,
+        isSystem: false
+      }
+    ];
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const messages: ChatMessage[] = [];
-      snapshot.forEach((snapshotDoc) => {
-        const data = snapshotDoc.data();
-        messages.push({
-          id: data.id || snapshotDoc.id,
-          username: data.username || 'Anonymous',
-          text: data.text || '',
-          timestamp: data.timestamp || new Date().toISOString(),
-          isModerator: !!data.isModerator,
-          isSystem: !!data.isSystem,
-          avatarUrl: data.avatarUrl || ''
-        });
-      });
-      // Sort messages ascending by timestamp to ensure correct timeline
-      messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      setChatMessages(messages);
-    }, (error) => {
-      console.error('Firestore chat subscription failed:', error);
-    });
+    try {
+      const cached = localStorage.getItem('bts_cached_live_chat');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setChatMessages(Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultSampleMessages);
+      } else {
+        setChatMessages(defaultSampleMessages);
+      }
+    } catch {
+      setChatMessages(defaultSampleMessages);
+    }
+
+    let unsubscribe = () => {};
+    try {
+      const q = query(collection(db, 'live_chat'), limit(100));
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const messages: ChatMessage[] = [];
+          snapshot.forEach((docSnap) => {
+            const d = docSnap.data();
+            messages.push({
+              id: d.id || docSnap.id,
+              username: d.username || 'Anonymous',
+              text: d.text || '',
+              timestamp: d.timestamp || new Date().toISOString(),
+              isModerator: !!d.isModerator,
+              isSystem: !!d.isSystem,
+              avatarUrl: d.avatarUrl || ''
+            });
+          });
+          messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          if (messages.length > 0) {
+            setChatMessages(messages);
+            localStorage.setItem('bts_cached_live_chat', JSON.stringify(messages.slice(-50)));
+          }
+        }
+      }, (err) => console.warn('Firestore note:', err));
+    } catch (e) {}
 
     return () => unsubscribe();
   }, []);
@@ -751,7 +783,7 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
            BTS WORLD TOUR ARIRANG 2026  LIVE STREM...
           </h2>
           <p className="text-xs text-gray-400">
-             BTS WORLD TOUR ARIRANG 2026  LIVE STREM LOS ANGELES DAY -4
+             PAST: BTS WORLD TOUR ARIRANG 2026  LIVE STREM LOS ANGELES DAY -4
           </p>
         </div>
       </div>
@@ -925,7 +957,42 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
     playsInline
   />
 </div> */}
+{/* LIVE OFFLINE ALERT */}
+<div className="w-full flex justify-center">
+  <div className="w-full max-w-[750px] min-h-[400px] flex flex-col items-center justify-center text-center  px-8 py-10">
 
+    {/* Alert Icon */}
+    
+
+    {/* Status */}
+    <p className="text-[11px] font-bold">
+      Next BTS concert is in October 2, 3 at Bogotá, Colombia at Estadio Nemésio Camacho El Campín.
+    </p>
+
+    {/* Title */}
+    <h2 className="text-3xl md:text-4xl font-black tracking-wide text-white mb-5">
+      BTS WORLD TOUR ARIRANG 2026 
+    </h2>
+
+    {/* Divider */}
+    <div className="w-24 h-[3px] bg-red-500 mb-6 shadow-[0_0_15px_rgba(239,68,68,0.8)]" />
+
+    {/* Message */}
+    <p className="text-sm md:text-base text-gray-400 leading-relaxed">
+      See you in next concert
+      <br />
+      <span className="text-red-300 font-medium">
+        We&apos;re preparing the next broadcast for ARMY. 💜
+      </span>
+    </p>
+
+    {/* Standby */}
+    <div className="mt-8 flex items-center gap-2 text-xs font-bold tracking-wider text-red-300">
+      <spaPn className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.9)]" />
+      BROADCAST STANDBY   </div>
+
+  </div>
+</div>
 
 {/* <div className="w-[500px] h-[350px] -ml-20 mt-0 overflow-hidden rounded-2xl bg-black">
   <img
@@ -937,7 +1004,7 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
 
 {/* embaded in here */}
 
-<div className="space-y-9 -ml-25 -mt-10">
+{/* <div className="space-y-9 -ml-25 -mt-10">
   <iframe
     width="650"
     height="450"
@@ -949,7 +1016,7 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
     referrerPolicy="strict-origin-when-cross-origin"
     allowFullScreen
   />
-</div>
+</div> */}
 
 
 
