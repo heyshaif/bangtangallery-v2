@@ -1,5 +1,3 @@
-# Proxy all API requests to the Railway backend to avoid the SPA wildcard catch
-/api/*    https://api.bangtangallery.online/api/:splat    200
-
-# Support Single Page Application (SPA) Client Routing on Netlify
+# Support Single Page Application (SPA) Client Routing on Netlify / Render
+/admin    /admin.html   200
 /*    /index.html   200

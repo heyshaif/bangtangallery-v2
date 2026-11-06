@@ -13,12 +13,14 @@ export interface LiveStats {
   likes: number;
   shares: number;
   totalViews: number;
+  totalDownloads: number;
 }
 
 export interface Comment {
   id: string;
   username: string;
   displayName: string;
+  memberEmoji?: string;
   content: string;
   timestamp: string;
   replies?: Comment[];
@@ -61,7 +63,7 @@ interface BackendContextProps {
   refreshData: () => Promise<void>;
   uploadMedia: (mediaData: Omit<MediaItem, 'id' | 'uploadedAt' | 'likes' | 'comments' | 'sharesCount' | 'saves' | 'bookmarks' | 'reports'> & { fileData?: string }) => Promise<boolean>;
   interactWithMedia: (id: string, action: 'like' | 'share' | 'save' | 'bookmark' | 'report') => Promise<void>;
-  submitComment: (mediaId: string, content: string, commentId?: string) => Promise<void>;
+  submitComment: (mediaId: string, content: string, commentId?: string, memberEmoji?: string) => Promise<void>;
   searchQuery: (q: string) => Promise<{ suggestions: any[]; results: MediaItem[] }>;
   sessionId: string;
 }
@@ -90,14 +92,24 @@ const defaultStats: LiveStats = {
   comments: 0,
   likes: 0,
   shares: 0,
-  totalViews: 0
+  totalViews: 0,
+  totalDownloads: 0
 };
 
 export function BackendProvider({ children }: { children: React.ReactNode }) {
   const [sessionId] = useState(getOrGenerateSessionId);
   const [currentUser, setCurrentUser] = useState<{ username: string; displayName: string; avatarUrl: string } | null>(() => {
-    const saved = localStorage.getItem('bts_active_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bts_active_user') : null;
+      if (saved) return JSON.parse(saved);
+      const defaultUser = { username: 'army_festa_fan', displayName: 'ARMY Fan 💜', avatarUrl: '' };
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('bts_active_user', JSON.stringify(defaultUser));
+      }
+      return defaultUser;
+    } catch {
+      return { username: 'army_festa_fan', displayName: 'ARMY Fan 💜', avatarUrl: '' };
+    }
   });
 
   const [stats, setStats] = useState<LiveStats>(defaultStats);
@@ -170,7 +182,16 @@ export function BackendProvider({ children }: { children: React.ReactNode }) {
       });
       
       if (res.ok) {
-        await refreshData();
+        try {
+          const resJson = await res.json();
+          if (resJson?.item) {
+            setMedia(prev => [resJson.item, ...prev.filter(m => m.id !== resJson.item.id)]);
+          }
+        } catch {}
+        // Refresh in the background (bounded): awaiting a full refetch
+        // here kept the gallery submit button spinning on slow networks
+        // even though the upload itself had already succeeded.
+        Promise.race([refreshData(), new Promise((r) => setTimeout(r, 8000))]).catch(() => {});
         return true;
       }
     } catch (err) {
@@ -201,7 +222,7 @@ export function BackendProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Submit comments
-  const submitComment = async (mediaId: string, content: string, commentId?: string) => {
+  const submitComment = async (mediaId: string, content: string, commentId?: string, memberEmoji?: string) => {
     try {
       const res = await fetch('/api/media/comment', {
         method: 'POST',
@@ -211,6 +232,7 @@ export function BackendProvider({ children }: { children: React.ReactNode }) {
           commentId,
           username: currentUser?.username || 'guest',
           displayName: currentUser?.displayName || 'Guest ARMY 💜',
+          memberEmoji: memberEmoji || undefined,
           content
         })
       });

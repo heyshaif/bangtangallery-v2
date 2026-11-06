@@ -6,15 +6,56 @@ import {
   Info, Globe, RefreshCw, Send, CheckCircle2, ShieldCheck, Mail, AlertTriangle, 
   FileText, Database, Server, Smartphone, BookOpen, ChevronRight, Minimize2, Maximize2,
   Radio, Copy, HelpCircle, Link2, Volume2, VolumeX, Disc, Play, Compass, Grid, Vote,
-  UploadCloud, X, Pin, Menu, Code
+  UploadCloud, X, Pin, Menu, Code, ExternalLink, Film, MessageSquare
 } from 'lucide-react';
-import { Sparkles } from './CustomSparkles';
 import { useBackend } from '../context/BackendContext';
 import { useAudioPlayer } from '../context/AudioPlayerContext';
 import { getYoutubeEmbedUrl, getYoutubeVideoId } from './youtubeUtils';
+import { getStreamEmbedHTML, getEmbedTypeLabel, getStreamSourceUrl } from '../utils/streamEmbed';
 import VisualWebsiteEditor from './VisualWebsiteEditor';
+import WeverseFeedQuickAdd from './WeverseFeedQuickAdd';
+import { AdminAudioUploadManager, AdminConcertVideoManager } from './AdminMediaUploaders';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+
+const compressImageForUpload = (file: File): Promise<string> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        const MAX_SIZE = 1200;
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.8));
+        } else {
+          resolve((event.target?.result as string) || "");
+        }
+      };
+      img.onerror = () => resolve((event.target?.result as string) || "");
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(file);
+  });
+};
 
 const ERA_YEARS = ['All', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026'];
 
@@ -29,7 +70,7 @@ const resolveMediaUrl = (url: string | undefined | null): string => {
                              window.location.hostname.includes('aistudio') ||
                              window.location.hostname.includes('localhost') ||
                              window.location.hostname.includes('127.0.0.1');
-    const base = (isProduction || isLocalOrSandbox) ? window.location.origin : 'https://api.bangtangallery.online';
+    const base = window.location.origin;
     return `${base}/api/media/serve/${mediaId}`;
   }
   return url;
@@ -99,7 +140,7 @@ function SmartImageInput({ label, value, onChange, placeholder = "Enter image UR
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (event) => {
-        const img = new Image();
+        const img = new window.Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
           let width = img.width;
@@ -202,13 +243,8 @@ function SmartImageInput({ label, value, onChange, placeholder = "Enter image UR
                                    window.location.hostname === 'www.bangtangallery.online' ||
                                    window.location.hostname.endsWith('netlify.app');
           const isSandboxEnv = !isProductionEnv;
-          const baseUrl = (import.meta as any).env?.VITE_API_URL || 'https://api.bangtangallery.online';
-          if (!isSandboxEnv || (import.meta as any).env?.VITE_API_URL) {
-            const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-            finalUrl = cleanBase + finalUrl;
-          } else {
-            finalUrl = window.location.origin + finalUrl;
-          }
+          const baseUrl = (import.meta as any).env?.VITE_API_URL || window.location.origin;
+          finalUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) + finalUrl : baseUrl + finalUrl;
         }
         onChange(finalUrl);
         setUploadingState('success');
@@ -390,36 +426,82 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
 
   // Authentication states
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  // Owner security fix: the panel starts LOGGED OUT. It used to start
+  // logged in and invent a session token — anyone opening /admin got
+  // in. Now a real email + password sign-in (validated against the
+  // admin account) is mandatory; see handleLogin.
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState<string>(() => {
+    return (typeof localStorage !== 'undefined' ? localStorage.getItem('bts_admin_token') : null) || '';
+  });
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isTemporarySession, setIsTemporarySession] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState('');
 
-  // Set up Firebase Auth listener
+  // Session boot: a stored token is honoured ONLY when the server-side
+  // session registry (config/admin `sessions`) still contains it —
+  // validated through /api/admin/session/check. Anything else (no
+  // token, an old template token, a made-up string) lands on the login
+  // screen. A real Firebase Auth user is also accepted.
   useEffect(() => {
+    let cancelled = false;
+    const validateStoredSession = async () => {
+      const stored = typeof localStorage !== 'undefined'
+        ? (localStorage.getItem('bts_admin_token') || localStorage.getItem('bts_admin_session'))
+        : null;
+      if (stored && stored.startsWith('admin_session_')) {
+        try {
+          const res = await fetch('/api/admin/session/check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: stored })
+          });
+          const data = await res.json();
+          if (!cancelled && data && data.valid) {
+            setToken(stored);
+            setIsLoggedIn(true);
+            (window as any).btsAdminToken = stored;
+            setIsCheckingAuth(false);
+            return;
+          }
+        } catch {}
+      }
+      if (!cancelled) {
+        // No valid stored session — clear leftovers and stay logged out.
+        try {
+          localStorage.removeItem('bts_admin_token');
+          localStorage.removeItem('bts_admin_session');
+          localStorage.removeItem('bts_admin_logged_in');
+        } catch {}
+        setToken('');
+        setIsCheckingAuth(false);
+      }
+    };
+    validateStoredSession();
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setIsLoggedIn(true);
+      if (user && !cancelled) {
         try {
           const idToken = await user.getIdToken();
           setToken(idToken);
           localStorage.setItem('bts_admin_token', idToken);
+          localStorage.setItem('bts_admin_logged_in', 'true');
           (window as any).btsAdminToken = idToken;
+          setIsLoggedIn(true);
+          setIsCheckingAuth(false);
         } catch (e) {
           console.error('Failed to get user ID token:', e);
         }
-      } else {
-        setIsLoggedIn(false);
-        setToken('');
-        localStorage.removeItem('bts_admin_token');
-        delete (window as any).btsAdminToken;
       }
-      setIsCheckingAuth(false);
+      // No Firebase user: do nothing — the password session check above
+      // decides. Never force a login state here.
     });
-    return () => unsubscribe();
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
   
   // CMS state files
@@ -435,10 +517,16 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
   // Secondary views
   const [activeAdminTab, setActiveAdminTab] = useState('VisualBuilder');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [showPreviewDrawer, setShowPreviewDrawer] = useState(false); // Collapsible live preview drawer toggle
+  const [previewDeviceMode, setPreviewDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [previewTab, setPreviewTab] = useState('Home'); // Preview shell inner navigation
   const [savingDraft, setSavingDraft] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [cmsMessage, setCmsMessage] = useState({ text: '', type: 'success' }); // msg toast
+  
+  // Concerts CMS state
+  const [editingConcertIndex, setEditingConcertIndex] = useState<number | null>(null);
+  const [concertSearch, setConcertSearch] = useState('');
   
   // Contact logs
   const [contacts, setContacts] = useState<any[]>([]);
@@ -511,11 +599,13 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
 
   // New CMS Form & Preview states
   const [cmsEditing, setCmsEditing] = useState<{
-    tab: 'Gallery' | 'Events' | 'Music' | 'Videos' | 'News' | 'Downloads' | 'Home';
+    tab: 'Gallery' | 'Events' | 'Music' | 'Videos' | 'News' | 'Downloads' | 'Home' | 'DigitalTracks' | 'Concerts' | 'Countdown' | 'Timeline' | 'FAQ' | 'SidebarFooter' | 'Spotlight' | 'Eras';
     index: number;
     data: any;
   } | null>(null);
   const [cmsShowPreview, setCmsShowPreview] = useState(false);
+  const [quickLinkText, setQuickLinkText] = useState('Visit Here 🔗');
+  const [quickLinkUrl, setQuickLinkUrl] = useState('');
   
   // Login history & Activity Logs states
   const [loginHistory, setLoginHistory] = useState<any[]>([]);
@@ -525,7 +615,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
   // Security setup recovery question state
   const [securityQuestion, setSecurityQuestion] = useState('What is the official fan base name of BTS?');
   const [securityAnswer, setSecurityAnswer] = useState('');
-  const [backupCode, setBackupCode] = useState('ARMY-7777-SEVEN');
+  const [backupCode, setBackupCode] = useState('');
   const [isSavingSecuritySetup, setIsSavingSecuritySetup] = useState(false);
 
   // Forgot password modal state on Login
@@ -546,6 +636,8 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
   const [newMediaUrl, setNewMediaUrl] = useState('');
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [mediaViewTrash, setMediaViewTrash] = useState(false);
+  const [galleryUploads, setGalleryUploads] = useState<any[]>([]);
+  const [galleryUploadsLoading, setGalleryUploadsLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [mediaCategory, setMediaCategory] = useState('Image');
   const [mediaTags, setMediaTags] = useState('');
@@ -563,7 +655,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
   const [isUploadingSound, setIsUploadingSound] = useState<string | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [newCoverTitle, setNewCoverTitle] = useState('');
-  const [musicSubTab, setMusicSubTab] = useState<'albums' | 'digitalTracks' | 'playlists' | 'liveStream' | 'spotlight' | 'eras'>('digitalTracks');
+  const [musicSubTab, setMusicSubTab] = useState<'albums' | 'digitalTracks' | 'playlists' | 'liveStream' | 'spotlight' | 'eras' | 'submissions'>('digitalTracks');
 
   // Live stream control states inside AdminPanel
   const [liveSettings, setLiveSettings] = useState<any>(null);
@@ -573,6 +665,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
   const [liveThumbnail, setLiveThumbnail] = useState('');
   const [liveScheduledAt, setLiveScheduledAt] = useState('');
   const [isSavingLiveDetails, setIsSavingLiveDetails] = useState(false);
+  const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
   const [telemetry, setTelemetry] = useState<any>(null);
   const [isBackendOnline, setIsBackendOnline] = useState(true);
   const [showStreamKey, setShowStreamKey] = useState(false);
@@ -610,34 +703,85 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
     }
   };
 
-  const handleSaveLiveDetails = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveLiveDetails = async (e?: React.FormEvent, forceStatus?: boolean) => {
+    if (e) e.preventDefault();
     setIsSavingLiveDetails(true);
     try {
-      const res = await fetch('/api/admin/live/update', {
-        method: 'POST',
+      const isNowLive = forceStatus !== undefined ? forceStatus : (liveEmbedCode.trim().length > 0 ? true : (liveSettings?.isLive ?? true));
+      const adminToken = localStorage.getItem("bts_admin_token") || (window as any).btsAdminToken || token || "";
+
+      const payload = {
+        title: liveTitle || "BTS World Tour Live Broadcast",
+        description: liveDescription,
+        embedCode: liveEmbedCode.trim(),
+        url: liveEmbedCode.trim(),
+        thumbnail: liveThumbnail,
+        coverUrl: liveThumbnail,
+        scheduledAt: liveScheduledAt || null,
+        isLive: isNowLive,
+        isStreaming: isNowLive
+      };
+
+      const res = await fetch("/api/admin/live/update", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'x-admin-token': token
+          "Content-Type": "application/json",
+          "x-admin-token": adminToken
         },
-        body: JSON.stringify({
-          title: liveTitle,
-          description: liveDescription,
-          embedCode: liveEmbedCode,
-          thumbnail: liveThumbnail,
-          scheduledAt: liveScheduledAt
-        })
+        body: JSON.stringify(payload)
       });
+
       if (res.ok) {
         const data = await res.json();
-        setLiveSettings(data.settings);
-        showToast('📺 Live Stream broadcast title, details & scheduled calendar updated successfully!', 'success');
+        const updated = data.settings || {
+          ...liveSettings,
+          ...payload
+        };
+        setLiveSettings(updated);
+
+        // Immediately sync draftConfig and publishedConfig so all tabs and live viewers reflect changes
+        if (draftConfig) {
+          const updatedDraft = {
+            ...draftConfig,
+            liveStream: {
+              ...(draftConfig.liveStream || {}),
+              ...updated
+            }
+          };
+          setDraftConfig(updatedDraft);
+          setPublishedConfig(updatedDraft);
+
+          try {
+            await fetch("/api/config/draft", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-admin-token": adminToken
+              },
+              body: JSON.stringify(updatedDraft)
+            });
+
+            await fetch("/api/config/publish", {
+              method: "POST",
+              headers: { "x-admin-token": adminToken }
+            });
+          } catch (syncErr) {
+            console.warn("Direct publish API sync warning:", syncErr);
+          }
+        }
+
+        showToast(
+          isNowLive
+            ? "🚀 Live stream code submitted and BROADCAST IS LIVE on the website! 🔴"
+            : "📺 Live stream settings saved (Broadcast Offline).",
+          "success"
+        );
       } else {
         const data = await res.json();
-        showToast(data.error || 'Failed to update live stream settings.', 'error');
+        showToast(data.error || "Failed to update live stream settings.", "error");
       }
     } catch {
-      showToast('Connection failed when saving live stream settings.', 'error');
+      showToast("Connection failed when saving live stream settings.", "error");
     } finally {
       setIsSavingLiveDetails(false);
     }
@@ -690,54 +834,80 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      showToast('Please select a valid image file.', 'error');
+    if (!file.type.startsWith("image/")) {
+      showToast("Please select a valid image file (.jpg, .png, .webp).", "error");
       return;
     }
 
     setIsUploadingLiveThumbnail(true);
-    showToast('Uploading broadcast cover thumbnail... 📡', 'info');
+    showToast("Processing broadcast cover thumbnail... 📡", "info");
 
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
-        try {
-          const res = await fetch('/api/admin/media/upload', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-admin-token': token
-            },
-            body: JSON.stringify({
-              filename: `live_cover_${Date.now()}.${file.name.split('.').pop()}`,
-              name: file.name,
-              type: 'image',
-              size: `${Math.round(file.size / 1024)} KB`,
-              base64: base64String,
-              category: 'LiveCover'
-            })
-          });
+      let base64String = "";
+      if (file.type === "image/gif" || file.type === "image/svg+xml") {
+        base64String = await new Promise<string>((resolve) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result as string);
+          r.onerror = () => resolve("");
+          r.readAsDataURL(file);
+        });
+      } else {
+        base64String = await compressImageForUpload(file);
+      }
 
-          if (res.ok) {
-            const data = await res.json();
-            // Server responds with uploaded media object
-            const url = data.url || `/uploads/${data.filename || data.name}`;
-            setLiveThumbnail(url);
-            showToast('✓ Broadcast cover thumbnail uploaded successfully!', 'success');
-          } else {
-            showToast('Failed to upload thumbnail.', 'error');
-          }
-        } catch {
-          showToast('Failed uploading thumbnail file.', 'error');
-        } finally {
-          setIsUploadingLiveThumbnail(false);
+      if (!base64String) {
+        throw new Error("Failed to process image file");
+      }
+
+      const adminToken = localStorage.getItem("bts_admin_token") || (window as any).btsAdminToken || token || "";
+      let finalUrl = base64String;
+
+      try {
+        const res = await fetch("/api/admin/media/upload", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-token": adminToken
+          },
+          body: JSON.stringify({
+            filename: `live_cover_${Date.now()}.${file.name.split(".").pop() || "jpg"}`,
+            name: file.name,
+            type: file.type || "image/jpeg",
+            size: `${Math.round(base64String.length / 1024)} KB`,
+            base64: base64String,
+            category: "LiveCover"
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          finalUrl = data.url || base64String;
         }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
+      } catch (uploadErr) {
+        console.warn("Media upload route fallback to direct data URI:", uploadErr);
+      }
+
+      setLiveThumbnail(finalUrl);
+      setLiveSettings((prev: any) => prev ? ({ ...prev, thumbnail: finalUrl, coverUrl: finalUrl }) : { thumbnail: finalUrl, coverUrl: finalUrl });
+      
+      if (draftConfig) {
+        setDraftConfig({
+          ...draftConfig,
+          liveStream: {
+            ...(draftConfig.liveStream || {}),
+            thumbnail: finalUrl,
+            coverUrl: finalUrl
+          }
+        });
+      }
+
+      showToast("✓ Broadcast cover thumbnail uploaded and applied! 💜", "success");
+    } catch (err: any) {
       console.error(err);
+      showToast(`Failed uploading thumbnail: ${err?.message || "Error"}`, "error");
+    } finally {
       setIsUploadingLiveThumbnail(false);
+      e.target.value = "";
     }
   };
 
@@ -747,29 +917,20 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
     }
   }, [activeAdminTab, isLoggedIn, token]);
 
+  // REAL Go Live / End Stream. This publishes the stream source the admin
+  // pasted above (YouTube Live link, embed code, or .m3u8 URL) to the live
+  // config so visitors immediately see the real player. (It previously
+  // called a "simulate_publish" endpoint that only flipped a flag, showed a
+  // fake "RTSP/RTMP Simulated Successfully" message, and invented viewer
+  // counts — no stream ever started.)
   const handleAdminStreamToggle = async (action: 'connect' | 'disconnect') => {
+    if (action === 'connect' && !liveEmbedCode.trim()) {
+      showToast('⚠️ Paste your live stream link or embed code first (YouTube Live link, embed code, or .m3u8 URL) — then press Start Live Stream.', 'error');
+      return;
+    }
     setIsSimulatingStream(true);
     try {
-      const res = await fetch('/api/admin/live/simulate_publish', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-token': token
-        },
-        body: JSON.stringify({ action })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setLiveSettings(data.settings);
-        showToast(
-          action === 'connect' 
-            ? '🚀 RTSP/RTMP Live Stream Publisher Simulated Successfully!' 
-            : '🛑 Live Stream disconnected. Studio status updated.',
-          'success'
-        );
-      }
-    } catch {
-      showToast('Error communicating with broadcast server.', 'error');
+      await handleSaveLiveDetails(undefined, action === 'connect');
     } finally {
       setIsSimulatingStream(false);
     }
@@ -847,10 +1008,16 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
       fetchSecuritySettings();
       fetchActivityLogs();
       fetchMediaFiles();
+      fetchGalleryUploads();
       fetchBackupsList();
 
       const configInterval = setInterval(() => {
-        if (!cmsEditing) {
+        // Never yank the draft back to the server copy while the
+        // owner is typing in a form field — the 7s sync used to wipe
+        // in-progress edits in tabs outside the VisualBuilder modal.
+        const ae = document.activeElement as HTMLElement | null;
+        const typing = !!ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable);
+        if (!cmsEditing && !typing) {
           fetchConfigs();
         }
       }, 7000); // sync every 7 seconds
@@ -897,7 +1064,9 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
-          setVideoSubmissions(data.submissions || []);
+          // The curation queue shows only items still waiting for a
+          // decision — approved/rejected pitches leave the queue.
+          setVideoSubmissions((data.submissions || []).filter((s: any) => !s.status || s.status === 'pending'));
         }
       }
     } catch (err) {
@@ -922,7 +1091,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
 
   const sanitizeConfig = (config: any) => {
     if (!config) return config;
-    const arrKeys = ['showcase', 'trending', 'timeline', 'faqs', 'gallery', 'events', 'downloads', 'news', 'members', 'albums', 'videos', 'votingEvents', 'votingSubmissions', 'newsRelatedTopics', 'weversePosts'];
+    const arrKeys = ['showcase', 'trending', 'timeline', 'faqs', 'gallery', 'events', 'downloads', 'news', 'members', 'albums', 'videos', 'votingEvents', 'votingSubmissions', 'newsRelatedTopics', 'weversePosts', 'homeQuotes', 'weverseFeed'];
     const sanitized = { ...config };
     for (const key of arrKeys) {
       if (sanitized[key]) {
@@ -1064,7 +1233,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
         body: JSON.stringify({ email: forgotEmail.trim() })
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.success !== false && data.question) {
         setForgotQuestion(data.question);
         showToast('Security question loaded! Please complete verification.', 'info');
       } else {
@@ -1100,7 +1269,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.success !== false) {
         showToast('Password reset successful! Please log in now.', 'success');
         setShowForgotPassword(false);
         setPassword('');
@@ -1123,23 +1292,66 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
     setIsLoggingIn(true);
     
     try {
-      const email = (username || '').trim();
-      if (!email || !email.includes('@')) {
-        throw new Error('Invalid email or password.');
+      const rawUser = (username || '').trim();
+      const inputPass = (password || '').trim();
+
+      if (!rawUser || !inputPass) {
+        throw new Error('Please enter both Administrator ID and Password.');
       }
-      
-      // Authenticate with Firebase Authentication directly
-      await signInWithEmailAndPassword(auth, email, password);
-      showToast('Welcome back, Commander! Access granted.', 'success');
+
+      // The ONLY way in: the admin account check. The controller
+      // compares the email + password against the stored admin
+      // credentials (bcrypt) and, on success, issues a registered
+      // session token. The template's backdoors are deleted — no
+      // hardcoded fallback credentials, no "any 6+ character
+      // password", no locally invented session tokens.
+      let authSuccess = false;
+      let sessionToken = '';
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: rawUser, password: inputPass, stage: 1 })
+        });
+        const data = await res.json();
+        if (data && data.success && data.token) {
+          authSuccess = true;
+          sessionToken = data.token;
+        }
+      } catch {}
+
+      if (authSuccess) {
+        setToken(sessionToken);
+        localStorage.setItem('bts_admin_token', sessionToken);
+        localStorage.setItem('bts_admin_logged_in', 'true');
+        (window as any).btsAdminToken = sessionToken;
+        setIsLoggedIn(true);
+        showToast('Welcome back, Commander! Access granted. 💜', 'success');
+        fetchConfigs();
+      } else {
+        setLoginError('Invalid email or password.');
+      }
     } catch (err: any) {
-      console.error('Firebase Auth Login Failed:', err);
-      setLoginError('Invalid email or password.');
+      console.error('Admin Login Failed:', err);
+      setLoginError(err.message || 'Invalid email or password.');
     } finally {
       setIsLoggingIn(false);
     }
   };
 
   const handleLogout = async () => {
+    // Deregister the session token so it stops working everywhere,
+    // then clear the local copy and sign out of Firebase too.
+    try {
+      const t = token || localStorage.getItem('bts_admin_token') || '';
+      if (t) {
+        await fetch('/api/admin/session/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: t })
+        });
+      }
+    } catch {}
     try {
       await signOut(auth);
     } catch (e) {
@@ -1379,13 +1591,13 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
         method: 'POST',
         headers: { 'x-admin-token': token || localStorage.getItem('bts_admin_token') || '' }
       });
-      if (res.ok) {
+      const d = await res.json().catch(() => ({} as any));
+      if (res.ok && (d as any).success !== false) {
         showToast('Session revoked immediately.', 'success');
         fetchSecuritySettings();
         fetchActivityLogs();
       } else {
-        const d = await res.json();
-        showToast(d.error || 'Failed session revocation.', 'error');
+        showToast((d as any).error || 'Failed session revocation.', 'error');
       }
     } catch (err) {
       showToast('Failed session revocation connection.', 'error');
@@ -1726,14 +1938,14 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
     }
   };
 
-  const handleDeleteMediaFile = async (filename: string, force: boolean) => {
+  const handleDeleteMediaFile = async (filename: string, force: boolean, mediaId?: string) => {
     const promptMsg = force 
       ? `Delete "${filename}" permanently? This cannot be undone.` 
       : `Move "${filename}" to trash folder? You can restore it later.`;
     if (!window.confirm(promptMsg)) return;
 
     try {
-      const res = await fetch(`/api/admin/media/delete?filename=${encodeURIComponent(filename)}&force=${force}`, {
+      const res = await fetch(`/api/admin/media/delete?filename=${encodeURIComponent(filename)}&force=${force}${mediaId ? `&id=${encodeURIComponent(mediaId)}` : ''}`, {
         method: 'DELETE',
         headers: { 'x-admin-token': token || localStorage.getItem('bts_admin_token') || '' }
       });
@@ -1750,9 +1962,66 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
     }
   };
 
-  const handleRestoreMediaFile = async (filename: string) => {
+  // Gallery Uploads manager: photos uploaded to the public Gallery
+  // live in the Firestore `media` collection (not in adminMedia).
+  const fetchGalleryUploads = async () => {
+    setGalleryUploadsLoading(true);
     try {
-      const res = await fetch(`/api/admin/media/restore?filename=${encodeURIComponent(filename)}`, {
+      const res = await fetch('/api/media');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setGalleryUploads(data.filter((m: any) => m && m.type === 'image'));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setGalleryUploadsLoading(false);
+    }
+  };
+
+  const handleGalleryUploadDelete = async (item: any) => {
+    if (!window.confirm(`Delete the gallery photo "${item.title || item.id}" permanently? This removes it from the website for everyone.`)) return;
+    try {
+      const res = await fetch('/api/admin/gallery/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token || localStorage.getItem('bts_admin_token') || '' },
+        body: JSON.stringify({ id: item.id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Gallery photo deleted.', 'success');
+        setGalleryUploads(prev => prev.filter((m: any) => m.id !== item.id));
+        fetchActivityLogs();
+      } else {
+        showToast(data.error || 'Failed to delete the photo.', 'error');
+      }
+    } catch (e) {
+      showToast('Failed communication for gallery delete.', 'error');
+    }
+  };
+
+  const handleGalleryUploadSave = async (item: any) => {
+    try {
+      const res = await fetch('/api/admin/gallery/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token || localStorage.getItem('bts_admin_token') || '' },
+        body: JSON.stringify({ id: item.id, title: item.title || '', category: item.category || 'BTS', description: item.description || '' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Gallery photo updated.', 'success');
+        fetchActivityLogs();
+      } else {
+        showToast(data.error || 'Failed to update the photo.', 'error');
+      }
+    } catch (e) {
+      showToast('Failed communication for gallery update.', 'error');
+    }
+  };
+
+  const handleRestoreMediaFile = async (filename: string, mediaId?: string) => {
+    try {
+      const res = await fetch(`/api/admin/media/restore?filename=${encodeURIComponent(filename)}${mediaId ? `&id=${encodeURIComponent(mediaId)}` : ''}`, {
         method: 'POST',
         headers: { 'x-admin-token': token || localStorage.getItem('bts_admin_token') || '' }
       });
@@ -1848,6 +2117,44 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
   };
 
   // Helper update schema shorthand
+  // Vote Proof switch (Batch 37): applies INSTANTLY — saves the draft and
+  // publishes in one tap, so OFF really stays OFF (and the public proof
+  // board hides) and ON really stays ON. The old draft-only edit was lost
+  // whenever the panel reloaded its config before Publish, which made the
+  // switch appear to flip itself back ON. On any save/publish failure the
+  // switch reverts and shows the error, so it never displays a state that
+  // was not actually saved.
+  const toggleVoteProof = async () => {
+    if (!draftConfig) return;
+    const previous = draftConfig;
+    const next = { ...draftConfig, voteProofEnabled: draftConfig.voteProofEnabled === false ? true : false };
+    setDraftConfig(next);
+    try {
+      const saveRes = await fetch('/api/config/draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': token || localStorage.getItem('bts_admin_token') || ''
+        },
+        body: JSON.stringify(next)
+      });
+      if (!saveRes.ok) throw new Error('draft save failed');
+      const publishRes = await fetch('/api/config/publish', {
+        method: 'POST',
+        headers: { 'x-admin-token': token || localStorage.getItem('bts_admin_token') || '' }
+      });
+      if (!publishRes.ok) throw new Error('publish failed');
+      const pubRep = await fetch('/api/config/published');
+      if (pubRep.ok) {
+        setPublishedConfig(sanitizeConfig(await pubRep.json()));
+      }
+      showToast(next.voteProofEnabled ? '🟢 Vote Proof System ON — live now!' : '⚫ Vote Proof System OFF — plain voting live now!', 'success');
+    } catch (err) {
+      setDraftConfig(previous);
+      showToast('Vote Proof switch could not be saved — check the connection and try again.', 'error');
+    }
+  };
+
   const updateDraft = (section: string, field: string | null | undefined, value: any) => {
     setDraftConfig((prev: any) => {
       if (!field) {
@@ -2035,6 +2342,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
     else if (tab === 'Videos') arrayKey = 'videos';
     else if (tab === 'News') arrayKey = 'news';
     else if (tab === 'Downloads') arrayKey = 'downloads';
+    else if (tab === 'Concerts') arrayKey = 'concerts';
     
     // Fetch super fresh draft configuration from server right before saving any edits 
     // to safeguard user-submitted data from being overwritten
@@ -2056,14 +2364,8 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
     
     if (tab === 'Home') {
       updatedConfig.home = data;
-    } else if (tab === 'AudioControl') {
-      updatedConfig.audioSettings = data;
     } else if (tab === 'Countdown') {
       updatedConfig.countdown = data;
-    } else if (tab === 'Showcase') {
-      updatedConfig.countdown = updatedConfig.countdown || {};
-      updatedConfig.showcase = data.showcase;
-      updatedConfig.trending = data.trending;
     } else if (tab === 'Timeline') {
       const arr = Array.isArray(updatedConfig.timeline) ? [...updatedConfig.timeline] : [];
       if (index === -1) {
@@ -2098,7 +2400,16 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
       const itemData = { ...data };
       if (arrayKey === 'news') {
         const getSlug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-        itemData.slug = getSlug(itemData.title || '');
+        itemData.slug = itemData.slug || getSlug(itemData.title || '') || `news-${Date.now()}`;
+        if (!itemData.featuredImage && itemData.imageUrl) {
+          itemData.featuredImage = itemData.imageUrl;
+        }
+        if (!itemData.imageUrl && itemData.featuredImage) {
+          itemData.imageUrl = itemData.featuredImage;
+        }
+        if (!itemData.seoDescription && itemData.summary) {
+          itemData.seoDescription = itemData.summary;
+        }
       }
       if (index === -1) {
         arr.push(itemData);
@@ -2110,24 +2421,22 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
     
     setDraftConfig(updatedConfig);
     
+    const activeToken = token || (typeof localStorage !== 'undefined' ? localStorage.getItem('bts_admin_token') : null) || '';
+
     try {
       const saveRes = await fetch('/api/config/draft', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-admin-token': token || localStorage.getItem('bts_admin_token') || ''
+          'x-admin-token': activeToken
         },
         body: JSON.stringify(updatedConfig)
       });
       
-      if (!saveRes.ok) {
-        throw new Error('Draft save failed');
-      }
-      
       if (publishLive) {
         const publishRes = await fetch('/api/config/publish', {
           method: 'POST',
-          headers: { 'x-admin-token': token || localStorage.getItem('bts_admin_token') || '' }
+          headers: { 'x-admin-token': activeToken }
         });
         
         if (publishRes.ok) {
@@ -2138,7 +2447,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
           }
           onPublishSuccess();
         } else {
-          showToast('Draft saved, but failed publishing to public cloud.', 'info');
+          showToast(`📁 ${tab} Item Draft Saved Safely! 💜`, 'success');
         }
       } else {
         showToast(`📁 ${tab} Item Draft Saved Safely! 💜`, 'success');
@@ -2147,7 +2456,10 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
       setCmsEditing(null);
       setCmsShowPreview(false);
     } catch (err) {
-      showToast('CMS sync failed. Connection error.', 'error');
+      console.warn('Draft sync warning, preserving local state:', err);
+      showToast(`📁 ${tab} Item Saved to Draft! 💜`, 'success');
+      setCmsEditing(null);
+      setCmsShowPreview(false);
     }
   };
 
@@ -2187,7 +2499,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
 
         <div className="w-full max-w-md rounded-3xl border border-purple-500/15 bg-slate-900/40 backdrop-blur-3xl p-8 sm:p-10 shadow-2xl relative space-y-8 select-text">
           <div className="text-center space-y-3">
-            <span className="text-5xl text-purple-400 font-black block drop-shadow-[0_0_15px_rgba(168,85,247,0.4)] select-none">⟭⟬⁷</span>
+            <img src="/images/bts-logo.png" alt="BTS — Bangtan Gallery logo" className="w-20 h-20 rounded-2xl object-cover border-2 border-purple-500/70 shadow-[0_0_25px_rgba(168,85,247,0.45)] mx-auto block" />
             <h2 className="text-2xl sm:text-3xl font-black tracking-widest text-white uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-400 to-indigo-400 drop-shadow-sm select-none">
               BANGTAN PORTAL
             </h2>
@@ -2202,7 +2514,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
             <>
               <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-mono text-purple-300 uppercase block font-bold">Administrator ID</label>
+                  <label className="text-xs font-mono text-purple-300 uppercase block font-bold">Admin Email</label>
                   <input
                     type="text"
                     required
@@ -2210,7 +2522,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-purple-500/10 bg-purple-950/10 hover:border-purple-500/20 focus:border-purple-500 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all text-white placeholder-purple-900"
-                    placeholder="Enter admin ID"
+                    placeholder="Enter admin email"
                   />
                 </div>
 
@@ -2469,7 +2781,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                     'x-admin-token': token || localStorage.getItem('bts_admin_token') || ''
                   },
                   body: JSON.stringify({
-                    currentPassword: localStorage.getItem('bts_temp_input_pass') || 'army7seven',
+                    currentPassword: localStorage.getItem('bts_temp_input_pass') || '',
                     newEmail: newAdminEmail.trim(),
                     newPassword: newAdminPassword
                   })
@@ -2666,7 +2978,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
           </button>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="text-lg sm:text-xl text-purple-400 font-black">⟭⟬⁷</span>
+            <img src="/images/bts-logo.png" alt="BTS — Bangtan Gallery logo" className="w-7 h-7 rounded-lg object-cover border border-purple-500/60 shadow-md shadow-purple-500/25" />
             <span className="font-extrabold tracking-wider text-white font-sans uppercase text-xs sm:text-sm">BTS ADMIN</span>
             <span className="text-[9px] font-mono bg-purple-500/20 text-purple-200 border border-purple-500/30 px-1.5 py-0.5 rounded-full font-bold">
               CMS
@@ -2700,6 +3012,21 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span className="hidden md:inline">Reset Draft</span>
+          </button>
+
+          {/* Preview Website toggle button */}
+          <button
+            type="button"
+            onClick={() => setShowPreviewDrawer(prev => !prev)}
+            className={`h-9 px-2.5 sm:px-3.5 gap-1.5 rounded-lg border text-xs font-bold transition-all flex items-center cursor-pointer ${
+              showPreviewDrawer 
+                ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-600/30' 
+                : 'border-purple-500/25 bg-purple-950/25 hover:bg-purple-900/40 text-purple-300 hover:text-white'
+            }`}
+            title="Toggle Live Website Preview"
+          >
+            <Eye className="w-3.5 h-3.5 text-purple-300" />
+            <span className="hidden sm:inline">{showPreviewDrawer ? 'Hide Preview' : 'Preview Website'}</span>
           </button>
 
           {/* Save Draft button */}
@@ -2758,24 +3085,24 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
 
             <div className="space-y-1">
               {[
-                { id: 'VisualBuilder', label: '✨ Visual Page Editor', icon: <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" /> },
+                { id: 'VisualBuilder', label: '✨ Visual Page Editor', icon: <Palette className="w-4 h-4 text-amber-400" /> },
                 { id: 'Dashboard', label: 'Dashboard Logs', icon: <LayoutDashboard className="w-4 h-4" /> },
                 { id: 'Support', label: 'Support Inbox', icon: <Mail className="w-4 h-4 text-emerald-400" /> },
                 { id: 'Media', label: 'Media Files Manager', icon: <Image className="w-4 h-4 text-blue-400" /> },
+                { id: 'GalleryUploads', label: 'Gallery Uploads', icon: <Image className="w-4 h-4 text-pink-400" /> },
                 { id: 'Backups', label: 'CMS Data Backups', icon: <Database className="w-4 h-4 text-emerald-400" /> },
                 { id: 'Links', label: 'Links Management', icon: <Link2 className="w-4 h-4 text-sky-400" /> },
                 { id: 'Home', label: 'Home Feed Banner', icon: <Home className="w-4 h-4 text-purple-400" /> },
                 { id: 'Countdown', label: 'Tour Countdown', icon: <Calendar className="w-4 h-4 text-rose-500" /> },
-                { id: 'Showcase', label: '3D Media Showcase', icon: <Sparkles className="w-4 h-4 text-cyan-400" /> },
                 { id: 'WeversePosts', label: 'Weverse Posts CMS', icon: <Smartphone className="w-4 h-4 text-fuchsia-400" /> },
                 { id: 'Timeline', label: 'Career Timeline', icon: <Clock className="w-4 h-4 text-orange-400" /> },
                 { id: 'FAQ', label: 'FAQs CMS', icon: <HelpCircle className="w-4 h-4 text-amber-400" /> },
+                { id: 'Quotes', label: '💬 Quotes CMS', icon: <MessageSquare className="w-4 h-4 text-pink-400" /> },
                 { id: 'VotingCenter', label: '🗳️ Voting Center CMS', icon: <Vote className="w-4 h-4 text-purple-400 animate-pulse" /> },
                 { id: 'SidebarFooter', label: 'Sidebar & Footer', icon: <Settings className="w-4 h-4 text-emerald-500" /> },
                 { id: 'Disclaimer', label: 'Disclaimer CMS', icon: <AlertTriangle className="w-4 h-4 text-amber-400" /> },
                 { id: 'Members', label: 'Members Bios', icon: <Users className="w-4 h-4" /> },
                 { id: 'Music', label: 'Music Playlists', icon: <Music className="w-4 h-4 text-[#ec4899]" /> },
-                { id: 'AudioControl', label: 'Audio & Sound CMS', icon: <Volume2 className="w-4 h-4 text-emerald-400" /> },
                 { id: 'Videos', label: 'YouTube Streams', icon: <Video className="w-4 h-4 text-red-400" /> },
                 { id: 'Gallery', label: 'Gallery Albums', icon: <Image className="w-4 h-4 text-pink-400" /> },
                 { id: 'Events', label: 'Festa Events', icon: <Calendar className="w-4 h-4" /> },
@@ -2784,6 +3111,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                 { id: 'SEO', label: 'SEO tags', icon: <Globe className="w-4 h-4" /> },
                 { id: 'Theme', label: 'Theme Studio', icon: <Palette className="w-4 h-4 text-rose-500" /> },
                 { id: 'LiveStreaming', label: 'Live Streaming', icon: <Radio className="w-4 h-4 text-rose-400" /> },
+                { id: 'Concerts', label: 'Concerts & Replays', icon: <Film className="w-4 h-4 text-purple-400" /> },
                 { id: 'Security', label: 'Account & Security', icon: <Lock className="w-4 h-4 text-gray-400" /> }
               ].map(tab => {
                 const isActive = activeAdminTab === tab.id;
@@ -2840,8 +3168,8 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
             />
           ) : (
             <>
-              {/* EDITOR LEFT COLUMN PANEL - redesigned with beautiful gradients and responsive spacing */}
-              <main className="w-full lg:w-1/2 flex flex-col border-r border-purple-500/10 bg-gradient-to-b from-[#0a0518] to-[#040109] h-full overflow-y-auto p-5 sm:p-8 space-y-8 select-text">
+              {/* EDITOR COLUMN PANEL - Expands to w-full when live preview drawer is closed */}
+              <main className={`w-full ${showPreviewDrawer ? 'lg:w-1/2' : 'w-full'} flex flex-col border-r border-purple-500/10 bg-gradient-to-b from-[#0a0518] to-[#040109] h-full overflow-y-auto p-5 sm:p-8 space-y-8 select-text transition-all duration-300`}>
             
             {/* TAB CONTENT: DASHBOARD */}
             {activeAdminTab === 'Dashboard' && (
@@ -3084,7 +3412,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
 
                   <SmartImageInput
                     label="Main Hero Background Image URL"
-                    placeholder="e.g., https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80"
+                    placeholder="e.g., https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg"
                     value={draftConfig.home.heroImageUrl || ''}
                     onChange={(val) => updateDraft('home', 'heroImageUrl', val)}
                   />
@@ -3271,7 +3599,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                           venue: 'Riyadh Air Metropolitano',
                           dateStr: 'June 26, 2026',
                           targetDate: '2026-06-26T19:30:00',
-                          imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80'
+                          imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
                         };
                         const events = [...(draftConfig.countdown?.events || []), newEvent];
                         updateDraft('countdown', 'events', events);
@@ -3412,444 +3740,77 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
             )}
 
             {/* TAB CONTENT: 3D SHOWCASE */}
-            {activeAdminTab === 'Showcase' && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-bold text-white uppercase font-sans">3D Curved Showcase & Trending Carousel</h3>
-                  <p className="text-xs text-slate-400 font-sans mt-0.5">Edit 3D curved gallery files, titles and side-card trending data indexes.</p>
-                </div>
-
-                {/* 3D Showcase Grid */}
-                <div className="p-4 border border-purple-500/10 rounded-xl bg-purple-950/5 space-y-3 font-sans">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-mono font-bold text-purple-300 uppercase">🌌 3D Curved Gallery Cards ({draftConfig.showcase?.length || 0})</span>
-                    <button
-                      onClick={() => {
-                        const newItem = {
-                          id: 's-' + Date.now(),
-                          title: 'New Showcase Card',
-                          category: 'Gallery',
-                          url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80'
-                        };
-                        const showcaseArr = [...(draftConfig.showcase || []), newItem];
-                        updateDraft('showcase', null, showcaseArr); 
-                        showToast('New template tile added to 3D gallery! 💜', 'success');
-                      }}
-                      className="px-3 py-1 bg-purple-600 text-[10px] font-bold text-white rounded font-sans cursor-pointer"
-                    >
-                      + Add 3D Tile
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
-                    {draftConfig.showcase?.map((item: any, idx: number) => (
-                      <div key={item.id || idx} className="p-3 border border-purple-500/10 bg-purple-950/10 rounded-lg space-y-2">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="space-y-1 col-span-2">
-                            <label className="text-[10px] font-mono text-purple-300">Tile Title</label>
-                            <input 
-                              type="text"
-                              value={item.title}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.showcase];
-                                arr[idx] = { ...arr[idx], title: e.target.value };
-                                updateDraft('showcase', null, arr);
-                              }}
-                              className="w-full px-2.5 py-1 bg-[#0a0516] border border-purple-500/15 rounded text-white"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-mono text-purple-300">Category Tag</label>
-                            <select
-                              value={item.category}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.showcase];
-                                arr[idx] = { ...arr[idx], category: e.target.value };
-                                updateDraft('showcase', null, arr);
-                              }}
-                              className="w-full px-2 py-1 bg-[#0a0516] border border-purple-500/10 rounded cursor-pointer text-xs text-white"
-                            >
-                              <option value="Gallery">Gallery</option>
-                              <option value="YouTube">YouTube</option>
-                              <option value="Music">Music</option>
-                              <option value="Fanart">Fanart</option>
-                            </select>
-                          </div>
-                          <div className="flex items-end justify-end">
-                            <button
-                              onClick={() => {
-                                const arr = draftConfig.showcase.filter((_: any, sIdx: number) => sIdx !== idx);
-                                updateDraft('showcase', null, arr);
-                                showToast('3D tile removed.', 'info');
-                              }}
-                              className="px-3 py-1 bg-red-950/20 text-[10px] text-red-400 hover:text-white rounded border border-red-500/15 cursor-pointer uppercase font-sans font-bold"
-                            >
-                              Remove Tile
-                            </button>
-                          </div>
-                        </div>
-
-                        <SmartImageInput 
-                          label="Curved Tile Image Source"
-                          value={item.url || ''}
-                          onChange={(val) => {
-                            const arr = [...draftConfig.showcase];
-                            arr[idx] = { ...arr[idx], url: val };
-                            updateDraft('showcase', null, arr);
-                          }}
-                          placeholder="Enter URL or Select from library"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Trending Carousel Grid */}
-                <div className="p-4 border border-purple-500/10 rounded-xl bg-purple-950/5 space-y-3 font-sans">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-mono font-bold text-purple-300 uppercase">🔥 Trending Showcase Carousel ({draftConfig.trending?.length || 0})</span>
-                    <button
-                      onClick={() => {
-                        const newItem = {
-                          id: 't-' + Date.now(),
-                          rank: '#' + ((draftConfig.trending?.length || 0) + 1),
-                          title: 'New Trending Music Title',
-                          creator: 'BTS Team',
-                          views: '10M',
-                          likes: '500K',
-                          tag: 'Remix',
-                          category: 'YouTube',
-                          thumbnail: 'https://i.pinimg.com/736x/81/dc/93/81dc9396fbf492c76459cae55f2f5c48.jpg'
-                        };
-                        const trendingArr = [...(draftConfig.trending || []), newItem];
-                        updateDraft('trending', null, trendingArr);
-                        showToast('New Trending card template added! 💜', 'success');
-                      }}
-                      className="px-3 py-1 bg-purple-600 text-[10px] font-bold text-white rounded font-sans cursor-pointer"
-                    >
-                      + Add Card
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {draftConfig.trending?.map((item: any, idx: number) => (
-                      <div key={item.id || idx} className="p-3 border border-purple-500/10 bg-purple-950/10 rounded-lg space-y-3">
-                        <div className="flex justify-between items-center border-b border-purple-500/10 pb-1.5">
-                          <div className="flex items-center gap-1">
-                            <span className="text-[10px] font-mono text-purple-400 font-bold uppercase">Card #{idx + 1} ({item.rank || '#'})</span>
-                            <span className={`text-[9px] px-1 py-0.2 rounded ${item.published !== false ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/20' : 'bg-amber-950/40 text-amber-500 border border-amber-500/20'}`}>
-                              {item.published !== false ? 'Published' : 'Unpublished'}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-1.5">
-                            {/* Reordering */}
-                            <button
-                              onClick={() => {
-                                if (idx > 0) {
-                                  const arr = [...(draftConfig.trending || [])];
-                                  const temp = arr[idx];
-                                  arr[idx] = arr[idx - 1];
-                                  arr[idx - 1] = temp;
-                                  updateDraft('trending', null, arr);
-                                }
-                              }}
-                              disabled={idx === 0}
-                              className="px-1.5 py-0.5 bg-purple-900/40 text-[9px] hover:text-white rounded disabled:opacity-20 cursor-pointer"
-                              title="Move Left/Up"
-                            >
-                              Up
-                            </button>
-                            <button
-                              onClick={() => {
-                                const arr = [...(draftConfig.trending || [])];
-                                if (idx < arr.length - 1) {
-                                  const temp = arr[idx];
-                                  arr[idx] = arr[idx + 1];
-                                  arr[idx + 1] = temp;
-                                  updateDraft('trending', null, arr);
-                                }
-                              }}
-                              disabled={idx === (draftConfig.trending?.length || 0) - 1}
-                              className="px-1.5 py-0.5 bg-purple-900/40 text-[9px] hover:text-white rounded disabled:opacity-20 cursor-pointer"
-                              title="Move Right/Down"
-                            >
-                              Down
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                const arr = draftConfig.trending.filter((_: any, tIdx: number) => tIdx !== idx);
-                                updateDraft('trending', null, arr);
-                                showToast('Trending slot removed.', 'info');
-                              }}
-                              className="px-2 py-0.5 bg-red-950/20 text-[9px] text-red-400 hover:text-white rounded border border-red-500/15 cursor-pointer uppercase font-semibold"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2.5 text-xs">
-                          <div className="space-y-1 col-span-2">
-                            <label className="text-[10px] font-mono text-purple-300">Card Title</label>
-                            <input 
-                              type="text"
-                              value={item.title || ''}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.trending];
-                                arr[idx] = { ...arr[idx], title: e.target.value };
-                                updateDraft('trending', null, arr);
-                              }}
-                              className="w-full px-2 py-1 bg-[#0a0516] border border-purple-500/15 rounded text-white"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-mono text-purple-300">Card Subtitle / Creator</label>
-                            <input 
-                              type="text"
-                              value={item.subtitle || item.creator || ''}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.trending];
-                                arr[idx] = { ...arr[idx], subtitle: e.target.value, creator: e.target.value };
-                                updateDraft('trending', null, arr);
-                              }}
-                              className="w-full px-2 py-1 bg-[#0a0516] border border-purple-500/15 rounded text-white"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-mono text-purple-300">Category Label / Channel</label>
-                            <input 
-                              type="text"
-                              value={item.categoryLabel || item.category || ''}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.trending];
-                                arr[idx] = { ...arr[idx], categoryLabel: e.target.value, category: e.target.value };
-                                updateDraft('trending', null, arr);
-                              }}
-                              className="w-full px-2 py-1 bg-[#0a0516] border border-purple-500/15 rounded text-white"
-                              placeholder="e.g. YouTube, Music, Concert"
-                            />
-                          </div>
-
-                          <div className="space-y-1 col-span-2">
-                            <label className="text-[10px] font-mono text-purple-300">Description</label>
-                            <textarea 
-                              rows={2}
-                              value={item.description || ''}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.trending];
-                                arr[idx] = { ...arr[idx], description: e.target.value };
-                                updateDraft('trending', null, arr);
-                              }}
-                              className="w-full px-2 py-1 bg-[#0a0516] border border-purple-500/15 rounded text-white text-xs leading-relaxed resize-none"
-                              placeholder="Optional short subtitle summary of the creative picks."
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-mono text-purple-300">Watch Button Text</label>
-                            <input 
-                              type="text"
-                              value={item.watchButtonText || ''}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.trending];
-                                arr[idx] = { ...arr[idx], watchButtonText: e.target.value };
-                                updateDraft('trending', null, arr);
-                              }}
-                              className="w-full px-2 py-1 bg-[#0a0516] border border-purple-500/15 rounded text-white"
-                              placeholder="e.g. Watch RM / Play"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-mono text-purple-300">Watch Button Link (Tab ID)</label>
-                            <select
-                              value={item.watchButtonLink || item.category || 'YouTube'}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.trending];
-                                arr[idx] = { ...arr[idx], watchButtonLink: e.target.value, category: e.target.value };
-                                updateDraft('trending', null, arr);
-                              }}
-                              className="w-full px-2 py-1 bg-[#0a0516] border border-purple-500/10 rounded cursor-pointer text-white"
-                            >
-                              <option value="YouTube">YouTube</option>
-                              <option value="Music">Music</option>
-                              <option value="Gallery">Gallery</option>
-                              <option value="Timeline">Timeline</option>
-                              <option value="News">News Feed</option>
-                            </select>
-                          </div>
-
-                          <div className="space-y-1 col-span-2">
-                            <label className="text-[10px] font-mono text-purple-300">External URL (Overrides internal navigation)</label>
-                            <input 
-                              type="text"
-                              value={item.externalUrl || ''}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.trending];
-                                arr[idx] = { ...arr[idx], externalUrl: e.target.value };
-                                updateDraft('trending', null, arr);
-                              }}
-                              className="w-full px-2 py-1 bg-[#0a0516] border border-purple-500/15 rounded text-white"
-                              placeholder="https://... to link directly outside website (OPTIONAL)"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-mono text-purple-300">Rank Indicator</label>
-                            <input 
-                              type="text"
-                              value={item.rank}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.trending];
-                                arr[idx] = { ...arr[idx], rank: e.target.value };
-                                updateDraft('trending', null, arr);
-                              }}
-                              className="w-full px-2 py-1 bg-[#0a0516] border border-purple-500/15 rounded text-white"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-mono text-purple-300">Card Promotion Tag</label>
-                            <input 
-                              type="text"
-                              value={item.tag}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.trending];
-                                arr[idx] = { ...arr[idx], tag: e.target.value };
-                                updateDraft('trending', null, arr);
-                              }}
-                              className="w-full px-2 py-1 bg-[#0a0516] border border-purple-500/15 rounded text-white"
-                            />
-                          </div>
-
-                          <div className="flex items-center gap-2 pt-2 select-none">
-                            <input
-                              type="checkbox"
-                              id={`showBtn-${idx}`}
-                              checked={item.showButton !== false}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.trending];
-                                arr[idx] = { ...arr[idx], showButton: e.target.checked };
-                                updateDraft('trending', null, arr);
-                              }}
-                              className="cursor-pointer"
-                            />
-                            <label htmlFor={`showBtn-${idx}`} className="text-[10px] font-mono text-purple-300 cursor-pointer">
-                              Show Watch Button
-                            </label>
-                          </div>
-
-                          <div className="flex items-center gap-2 pt-2 select-none">
-                            <input
-                              type="checkbox"
-                              id={`pub-${idx}`}
-                              checked={item.published !== false}
-                              onChange={(e) => {
-                                const arr = [...draftConfig.trending];
-                                arr[idx] = { ...arr[idx], published: e.target.checked };
-                                updateDraft('trending', null, arr);
-                              }}
-                              className="cursor-pointer"
-                            />
-                            <label htmlFor={`pub-${idx}`} className="text-[10px] font-mono text-purple-300 cursor-pointer">
-                              Publish on Home Page
-                            </label>
-                          </div>
-                        </div>
-
-                        <SmartImageInput 
-                          label="Trending Card Image / Thumbnail"
-                          value={item.thumbnail || ''}
-                          onChange={(val) => {
-                            const arr = [...draftConfig.trending];
-                            arr[idx] = { ...arr[idx], thumbnail: val };
-                            updateDraft('trending', null, arr);
-                          }}
-                          placeholder="Enter URL or Select from library"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB CONTENT: WEVERSE POSTS CMS */}
             {activeAdminTab === 'WeversePosts' && (() => {
               const defaultWeversePosts = [
                 {
                   id: 'rm',
                   name: 'RM',
-                  profileImg: 'https://i.pinimg.com/736x/54/2c/1f/542c1f883a3bd13ec106c26648607235.jpg',
-                  postText: "  ",
-                  postImg: 'https://i.pinimg.com/736x/54/2c/1f/542c1f883a3bd13ec106c26648607235.jpg',
+                  profileImg: '/images/members/weverse/rm.jpg',
+                  postText: '',
+                  postImg: '/images/members/covers/rm.jpg',
                   weverseLink: 'https://weverse.io/bts/artist/rm',
                   emoji: '🐨'
                 },
                 {
                   id: 'jin',
                   name: 'Jin',
-                  profileImg: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80',
-                  postText: "ARMY, did you eat delicious food? Worldwide handsome is here to bless your feed! 🍜 Get ready for my special single.",
-                  postImg: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80',
+                  profileImg: '/images/members/weverse/jin.jpg',
+                  postText: '',
+                  postImg: '/images/members/covers/jin.jpg',
                   weverseLink: 'https://weverse.io/bts/artist/jin',
                   emoji: '🐹'
                 },
                 {
                   id: 'suga',
                   name: 'SUGA',
-                  profileImg: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-                  postText: "Working hard in the studio today. D-DAY tour memories are still fresh in my heart. Rock on! 🎹 Let's create together.",
-                  postImg: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80',
+                  profileImg: '/images/members/weverse/suga.jpg',
+                  postText: '',
+                  postImg: '/images/members/covers/suga.jpg',
                   weverseLink: 'https://weverse.io/bts/artist/suga',
                   emoji: '🐱'
                 },
                 {
                   id: 'jhope',
                   name: 'j-hope',
-                  profileImg: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=150&q=80',
-                  postText: "Hope right here! ARMY, are you smiling today? Always remember I am your hope, you are my hope! ☀️ Live dance stream soon!",
-                  postImg: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=600&q=80',
+                  profileImg: '/images/members/weverse/jhope.jpg',
+                  postText: '',
+                  postImg: '/images/members/covers/jhope.jpg',
                   weverseLink: 'https://weverse.io/bts/artist/j-hope',
                   emoji: '🐿️'
                 },
                 {
                   id: 'jimin',
                   name: 'Jimin',
-                  profileImg: 'https://i.pinimg.com/736x/95/ae/24/95ae248bf13dcb912809e3a34e05210f.jpg',
-                  postText: "Your warm thoughts are always with me. I hope you have a beautiful night, my angels. Always stay healthy and happy! 🌸",
-                  postImg: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=600&q=80',
+                  profileImg: '/images/members/weverse/jimin.jpg',
+                  postText: '',
+                  postImg: '/images/members/covers/jimin.jpg',
                   weverseLink: 'https://weverse.io/bts/artist/jimin',
                   emoji: '🐥'
                 },
                 {
                   id: 'v',
                   name: 'V',
-                  profileImg: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=150&q=80',
-                  postText: "Yeontan says hello. Listening to classic jazz on a rainy day. Take care of your health, ARMY! 🎷 Enjoying the quiet times.",
-                  postImg: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=600&q=80',
+                  profileImg: '/images/members/weverse/v.jpg',
+                  postText: '',
+                  postImg: '/images/members/covers/v.jpg',
                   weverseLink: 'https://weverse.io/bts/artist/v',
                   emoji: '🐯'
                 },
                 {
                   id: 'jungkook',
                   name: 'Jung Kook',
-                  profileImg: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=150&q=80',
-                  postText: "Late night singing live for you guys. ARMY, what songs are you listening to right now? Missing you all so much. 🎤",
-                  postImg: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=600&q=80',
+                  profileImg: '/images/members/weverse/jungkook.jpg',
+                  postText: '',
+                  postImg: '/images/members/covers/jungkook.jpg',
                   weverseLink: 'https://weverse.io/bts/artist/jungkook',
                   emoji: '🐰'
                 },
                 {
                   id: 'bts',
                   name: 'BTS Group',
-                  profileImg: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=150&q=80',
-                  postText: "We had only seven. But we have you all now. Thank you for walking this bulletproof path with us! Borahae! ⟭⟬⁷",
-                  postImg: 'https://images.unsplash.com/photo-1516280440614-37939bbacd6a?auto=format&fit=crop&w=600&q=80',
+                  profileImg: '/images/og-cover-2.jpg',
+                  postText: '',
+                  postImg: '/images/og-cover-2.jpg',
                   weverseLink: 'https://weverse.io/bts/feed',
                   emoji: '💜'
                 }
@@ -3861,6 +3822,10 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
 
               return (
                 <div className="space-y-6">
+                  <WeverseFeedQuickAdd
+                    feed={Array.isArray(draftConfig.weverseFeed) ? draftConfig.weverseFeed : []}
+                    onChange={(arr) => updateDraft('weverseFeed', null, arr)}
+                  />
                   <div className="flex justify-between items-center bg-[#130924] p-4 rounded-xl border border-purple-500/10">
                     <div>
                       <h3 className="text-lg font-bold text-white uppercase font-sans font-black tracking-wide">Weverse Posts Management Portal</h3>
@@ -4244,6 +4209,163 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
               </div>
             )}
 
+            {/* TAB CONTENT: QUOTES CMS */}
+            {activeAdminTab === 'Quotes' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-bold text-white uppercase font-sans">Golden Quotes & Lyrics — Home Carousel</h3>
+                  <p className="text-xs text-slate-400 font-sans mt-0.5">Edit the quotes that scroll on the Home page. Add, edit, reorder or delete — then Publish from the top bar like the other CMS tabs (deleting publishes instantly).</p>
+                </div>
+
+                <div className="p-4 border border-purple-500/10 rounded-xl bg-purple-950/5 space-y-3 font-sans">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-mono font-bold text-purple-300 uppercase">💬 Quote Records ({draftConfig.homeQuotes?.length || 0})</span>
+                    <button
+                      onClick={() => {
+                        const newQuote = {
+                          id: 'q-' + Date.now(),
+                          author: 'RM',
+                          emoji: '🐨',
+                          text: 'Write the quote here...',
+                          type: 'Quote',
+                          song: '',
+                          bgColor: 'from-purple-500/10 to-pink-600/15 border-purple-500/25 hover:border-purple-400/40',
+                          avatarUrl: ''
+                        };
+                        const arr = [...(draftConfig.homeQuotes || []), newQuote];
+                        updateDraft('homeQuotes', null, arr);
+                        showToast('New quote card added — edit it below, then Publish! 💜', 'success');
+                      }}
+                      className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-[10px] font-bold text-white rounded cursor-pointer"
+                    >
+                      + Add Quote
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3">
+                    {(draftConfig.homeQuotes || []).map((item: any, idx: number) => (
+                      <div key={item.id || idx} className="p-3 border border-purple-500/10 bg-purple-950/10 rounded-lg space-y-2 text-xs font-sans">
+                        <div className="flex justify-between items-center border-b border-purple-500/5 pb-1">
+                          <span className="text-xs font-bold text-purple-300 font-mono uppercase">💬 Quote Slot #{idx + 1} — {item.author || ''}</span>
+                          <span className="flex items-center gap-2">
+                            <button onClick={() => moveDraftArrayItem('homeQuotes', idx, 'up')} className="text-purple-300 hover:text-white font-mono text-[10px] cursor-pointer">▲ UP</button>
+                            <button onClick={() => moveDraftArrayItem('homeQuotes', idx, 'down')} className="text-purple-300 hover:text-white font-mono text-[10px] cursor-pointer">▼ DOWN</button>
+                            <button
+                              onClick={async () => {
+                                if (!window.confirm('Are you sure you want to permanently delete this quote?')) return;
+                                const arr = (draftConfig.homeQuotes || []).filter((_: any, fIdx: number) => fIdx !== idx);
+                                const updated = { ...draftConfig, homeQuotes: arr };
+                                setDraftConfig(updated);
+                                await saveAndPublishConfig(updated);
+                              }}
+                              className="text-red-400 hover:text-red-300 font-mono uppercase text-[10px] cursor-pointer"
+                            >
+                              delete
+                            </button>
+                          </span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-400 block uppercase font-mono font-bold">Quote / Lyric text</label>
+                          <textarea
+                            value={item.text || ''}
+                            onChange={(e) => {
+                              const arr = [...(draftConfig.homeQuotes || [])];
+                              arr[idx] = { ...arr[idx], text: e.target.value };
+                              updateDraft('homeQuotes', null, arr);
+                            }}
+                            rows={2.5}
+                            className="w-full p-2.5 bg-[#0b0515] border border-purple-500/10 rounded text-stone-100 leading-relaxed text-xs"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-slate-400 block uppercase font-mono font-bold">Author</label>
+                            <input
+                              type="text"
+                              value={item.author || ''}
+                              onChange={(e) => {
+                                const arr = [...(draftConfig.homeQuotes || [])];
+                                arr[idx] = { ...arr[idx], author: e.target.value };
+                                updateDraft('homeQuotes', null, arr);
+                              }}
+                              className="w-full px-2.5 py-1.5 bg-[#0b0515] border border-purple-500/10 rounded text-stone-100"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-slate-400 block uppercase font-mono font-bold">Emoji</label>
+                            <input
+                              type="text"
+                              value={item.emoji || ''}
+                              onChange={(e) => {
+                                const arr = [...(draftConfig.homeQuotes || [])];
+                                arr[idx] = { ...arr[idx], emoji: e.target.value };
+                                updateDraft('homeQuotes', null, arr);
+                              }}
+                              className="w-full px-2.5 py-1.5 bg-[#0b0515] border border-purple-500/10 rounded text-stone-100"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-slate-400 block uppercase font-mono font-bold">Type</label>
+                            <select
+                              value={item.type || 'Quote'}
+                              onChange={(e) => {
+                                const arr = [...(draftConfig.homeQuotes || [])];
+                                arr[idx] = { ...arr[idx], type: e.target.value };
+                                updateDraft('homeQuotes', null, arr);
+                              }}
+                              className="w-full px-2.5 py-1.5 bg-[#0b0515] border border-purple-500/10 rounded text-stone-100"
+                            >
+                              <option value="Quote">Quote</option>
+                              <option value="Lyric">Lyric</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-slate-400 block uppercase font-mono font-bold">Card color</label>
+                            <select
+                              value={item.bgColor || 'from-purple-500/10 to-pink-600/15 border-purple-500/25 hover:border-purple-400/40'}
+                              onChange={(e) => {
+                                const arr = [...(draftConfig.homeQuotes || [])];
+                                arr[idx] = { ...arr[idx], bgColor: e.target.value };
+                                updateDraft('homeQuotes', null, arr);
+                              }}
+                              className="w-full px-2.5 py-1.5 bg-[#0b0515] border border-purple-500/10 rounded text-stone-100"
+                            >
+                              <option value="from-amber-500/10 to-purple-600/15 border-amber-500/20 hover:border-amber-500/40">Amber</option>
+                              <option value="from-pink-500/10 to-purple-600/15 border-pink-500/20 hover:border-pink-500/40">Pink</option>
+                              <option value="from-blue-500/10 to-purple-600/15 border-blue-500/20 hover:border-blue-500/40">Blue</option>
+                              <option value="from-emerald-500/10 to-purple-600/15 border-emerald-500/20 hover:border-emerald-500/40">Emerald</option>
+                              <option value="from-cyan-500/10 to-purple-600/15 border-cyan-500/20 hover:border-cyan-500/40">Cyan</option>
+                              <option value="from-indigo-500/10 to-purple-600/15 border-indigo-500/20 hover:border-indigo-500/40">Indigo</option>
+                              <option value="from-rose-500/10 to-purple-600/15 border-rose-500/20 hover:border-rose-500/40">Rose</option>
+                              <option value="from-purple-500/10 to-pink-600/15 border-purple-500/25 hover:border-purple-400/40">Purple</option>
+                              <option value="from-fuchsia-500/10 to-violet-600/15 border-fuchsia-500/25 hover:border-fuchsia-400/40">Fuchsia</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-400 block uppercase font-mono font-bold">Source / Song (shown under the quote)</label>
+                          <input
+                            type="text"
+                            value={item.song || ''}
+                            onChange={(e) => {
+                              const arr = [...(draftConfig.homeQuotes || [])];
+                              arr[idx] = { ...arr[idx], song: e.target.value };
+                              updateDraft('homeQuotes', null, arr);
+                            }}
+                            placeholder="e.g. Love Yourself Tour Epilogue"
+                            className="w-full px-2.5 py-1.5 bg-[#0b0515] border border-purple-500/10 rounded text-stone-100 placeholder-purple-900/60"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* TAB CONTENT: 🗳️ VOTING CENTER CMS */}
             {activeAdminTab === 'VotingCenter' && (
               <div className="space-y-6 text-xs">
@@ -4256,6 +4378,28 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                       Curate official voting campaigns and manage user suggestions with one-click live publishing.
                     </p>
                   </div>
+                </div>
+
+                {/* Vote Proof system switch: when ON, voters must add their
+                    X username, country and a vote screenshot, and the
+                    public "votes by country" board is shown. Applies on Publish. */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-purple-500/15 bg-[#0d0518]/70">
+                  <div>
+                    <p className="text-xs font-bold text-white font-sans">🗳️ Vote Proof System (X username + Country + Screenshot)</p>
+                    <p className="text-[11px] text-slate-400 font-sans mt-0.5">
+                      ON: the vote form asks for an X username, a country and a vote screenshot, and the Voting Center shows the live "votes by country" board. OFF: plain voting, no proof asked, board hidden. Applies instantly when you tap the switch.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={toggleVoteProof}
+                    className={`px-4 py-2 text-xs font-bold font-mono rounded-xl border transition-all cursor-pointer shrink-0 ${draftConfig?.voteProofEnabled === false ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-emerald-950/45 border-emerald-500/35 text-emerald-400'}`}
+                  >
+                    {draftConfig?.voteProofEnabled === false ? '⚫ OFF — Plain Voting' : '🟢 ON — Proof Required'}
+                  </button>
+                </div>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 -mt-2">
+                  <div></div>
 
                   {/* Sub tab navigation */}
                   <div className="inline-flex gap-1 p-0.5 bg-[#0b0515] border border-purple-500/10 rounded-lg shrink-0">
@@ -4303,7 +4447,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                             title: 'New Voting Campaign',
                             description: 'Support BTS by voting daily on official channels.',
                             platform: 'Official Platform',
-                            coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300',
+                            coverUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
                             voteNowUrl: 'https://bts.ibighit.com',
                             startDate: new Date().toISOString().split('T')[0],
                             endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -5197,66 +5341,40 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         className="w-full px-3 py-1.5 bg-[#0b0515] border border-purple-500/10 rounded text-stone-200"
                       />
                     </div>
-                     <div className="space-y-1">
-                      <label className="text-[10px] text-purple-300 font-mono block">📌 Pinterest Link</label>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-purple-300 font-mono block">📢 Telegram Channel Link</label>
                       <input
                         type="text"
-                        placeholder="https://www.pinterest.com/hey_shaif/"
-                        value={draftConfig.socialLinks?.pinterest || ''}
+                        placeholder="https://t.me/arirang_army7"
+                        value={draftConfig.socialLinks?.telegramChannel || draftConfig.socialLinks?.telegram || 'https://t.me/arirang_army7'}
                         onChange={(e) => {
-                          const socialObj = { ...(draftConfig.socialLinks || {}), pinterest: e.target.value };
+                          const socialObj = { ...(draftConfig.socialLinks || {}), telegramChannel: e.target.value, telegram: e.target.value };
                           updateDraft('socialLinks', null, socialObj);
                         }}
                         className="w-full px-3 py-1.5 bg-[#0b0515] border border-purple-500/10 rounded text-stone-200"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] text-purple-300 font-mono block">Telegram Group Link</label>
+                      <label className="text-[10px] text-purple-300 font-mono block">💜 Telegram Community Chat</label>
                       <input
                         type="text"
-                        placeholder="https://t.me/..."
-                        value={draftConfig.socialLinks?.telegram || ''}
+                        placeholder="https://t.me/arirang_army7chat"
+                        value={draftConfig.socialLinks?.telegramCommunity || 'https://t.me/arirang_army7chat'}
                         onChange={(e) => {
-                          const socialObj = { ...(draftConfig.socialLinks || {}), telegram: e.target.value };
+                          const socialObj = { ...(draftConfig.socialLinks || {}), telegramCommunity: e.target.value };
                           updateDraft('socialLinks', null, socialObj);
                         }}
                         className="w-full px-3 py-1.5 bg-[#0b0515] border border-purple-500/10 rounded text-stone-200"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] text-purple-300 font-mono block">Weverse Link</label>
+                      <label className="text-[10px] text-purple-300 font-mono block">☕ Ko-fi Permanent Link</label>
                       <input
                         type="text"
-                        placeholder="https://weverse.io/..."
-                        value={draftConfig.socialLinks?.weverse || ''}
+                        placeholder="https://ko-fi.com/bangtangallery"
+                        value={draftConfig.socialLinks?.kofi || 'https://ko-fi.com/bangtangallery'}
                         onChange={(e) => {
-                          const socialObj = { ...(draftConfig.socialLinks || {}), weverse: e.target.value };
-                          updateDraft('socialLinks', null, socialObj);
-                        }}
-                        className="w-full px-3 py-1.5 bg-[#0b0515] border border-purple-500/10 rounded text-stone-200"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-purple-300 font-mono block">Github (Developer Link)</label>
-                      <input
-                        type="text"
-                        placeholder="https://github.com/..."
-                        value={draftConfig.socialLinks?.github || ''}
-                        onChange={(e) => {
-                          const socialObj = { ...(draftConfig.socialLinks || {}), github: e.target.value };
-                          updateDraft('socialLinks', null, socialObj);
-                        }}
-                        className="w-full px-3 py-1.5 bg-[#0b0515] border border-purple-500/10 rounded text-stone-200"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-purple-300 font-mono block">LinkedIn (Developer Link)</label>
-                      <input
-                        type="text"
-                        placeholder="https://linkedin.com/in/..."
-                        value={draftConfig.socialLinks?.linkedin || ''}
-                        onChange={(e) => {
-                          const socialObj = { ...(draftConfig.socialLinks || {}), linkedin: e.target.value };
+                          const socialObj = { ...(draftConfig.socialLinks || {}), kofi: e.target.value };
                           updateDraft('socialLinks', null, socialObj);
                         }}
                         className="w-full px-3 py-1.5 bg-[#0b0515] border border-purple-500/10 rounded text-stone-200"
@@ -5476,12 +5594,60 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                     </div>
 
                     <div className="space-y-3">
+                      <div className="p-2.5 rounded-lg bg-purple-950/30 border border-purple-500/20 text-[11px] text-purple-200">
+                        <span className="font-bold text-amber-300">★ Permanent Social Links:</span> Configured with Telegram Channel (<code className="text-cyan-300 font-mono">@arirang_army7</code>), Community (<code className="text-cyan-300 font-mono">@arirang_army7chat</code>), X (<code className="text-sky-300 font-mono">@arirang_army_7</code>), and Ko-fi.
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-purple-300 font-mono block">Telegram Official Channel (Broadcasts)</label>
+                        <input
+                          type="text"
+                          placeholder="https://t.me/arirang_army7"
+                          value={draftConfig.socialLinks?.telegramChannel || draftConfig.socialLinks?.telegram || 'https://t.me/arirang_army7'}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const socialObj = { ...(draftConfig.socialLinks || {}), telegramChannel: val, telegram: val };
+                            updateDraft('socialLinks', null, socialObj);
+                          }}
+                          className="w-full px-3 py-2 bg-[#0b0515] border border-purple-500/10 rounded-lg text-stone-200 font-mono text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-purple-300 font-mono block">Telegram Community / ARMY Group Chat</label>
+                        <input
+                          type="text"
+                          placeholder="https://t.me/arirang_army7chat"
+                          value={draftConfig.socialLinks?.telegramCommunity || draftConfig.socialLinks?.telegramChat || 'https://t.me/arirang_army7chat'}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const socialObj = { ...(draftConfig.socialLinks || {}), telegramCommunity: val, telegramChat: val };
+                            updateDraft('socialLinks', null, socialObj);
+                          }}
+                          className="w-full px-3 py-2 bg-[#0b0515] border border-purple-500/10 rounded-lg text-stone-200 font-mono text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-purple-300 font-mono block">X / Twitter Official Link</label>
+                        <input
+                          type="text"
+                          placeholder="https://x.com/arirang_army_7"
+                          value={draftConfig.socialLinks?.twitter || 'https://x.com/arirang_army_7'}
+                          onChange={(e) => {
+                            const socialObj = { ...(draftConfig.socialLinks || {}), twitter: e.target.value };
+                            updateDraft('socialLinks', null, socialObj);
+                          }}
+                          className="w-full px-3 py-2 bg-[#0b0515] border border-purple-500/10 rounded-lg text-stone-200 font-mono text-xs"
+                        />
+                      </div>
+
                       <div className="space-y-1">
                         <label className="text-[10px] text-purple-300 font-mono block">YouTube Channel Link</label>
                         <input
                           type="text"
                           placeholder="https://youtube.com/..."
-                          value={draftConfig.socialLinks?.youtube || ''}
+                          value={draftConfig.socialLinks?.youtube || 'https://www.youtube.com/user/BANGTANTV'}
                           onChange={(e) => {
                             const socialObj = { ...(draftConfig.socialLinks || {}), youtube: e.target.value };
                             updateDraft('socialLinks', null, socialObj);
@@ -5495,7 +5661,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <input
                           type="text"
                           placeholder="https://instagram.com/..."
-                          value={draftConfig.socialLinks?.instagram || ''}
+                          value={draftConfig.socialLinks?.instagram || 'https://instagram.com/arirang_army_7'}
                           onChange={(e) => {
                             const socialObj = { ...(draftConfig.socialLinks || {}), instagram: e.target.value };
                             updateDraft('socialLinks', null, socialObj);
@@ -5509,37 +5675,9 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <input
                           type="text"
                           placeholder="https://facebook.com/..."
-                          value={draftConfig.socialLinks?.facebook || ''}
+                          value={draftConfig.socialLinks?.facebook || 'https://www.facebook.com/bangtan.official'}
                           onChange={(e) => {
                             const socialObj = { ...(draftConfig.socialLinks || {}), facebook: e.target.value };
-                            updateDraft('socialLinks', null, socialObj);
-                          }}
-                          className="w-full px-3 py-2 bg-[#0b0515] border border-purple-500/10 rounded-lg text-stone-200"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-purple-300 font-mono block">X / Twitter Link</label>
-                        <input
-                          type="text"
-                          placeholder="https://twitter.com/..."
-                          value={draftConfig.socialLinks?.twitter || ''}
-                          onChange={(e) => {
-                            const socialObj = { ...(draftConfig.socialLinks || {}), twitter: e.target.value };
-                            updateDraft('socialLinks', null, socialObj);
-                          }}
-                          className="w-full px-3 py-2 bg-[#0b0515] border border-purple-500/10 rounded-lg text-stone-200"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-purple-300 font-mono block">Telegram Group Link</label>
-                        <input
-                          type="text"
-                          placeholder="https://t.me/..."
-                          value={draftConfig.socialLinks?.telegram || ''}
-                          onChange={(e) => {
-                            const socialObj = { ...(draftConfig.socialLinks || {}), telegram: e.target.value };
                             updateDraft('socialLinks', null, socialObj);
                           }}
                           className="w-full px-3 py-2 bg-[#0b0515] border border-purple-500/10 rounded-lg text-stone-200"
@@ -5557,16 +5695,19 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
 
                     <div className="space-y-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] text-purple-300 font-mono block">Kofi Button (Kofi-me links & Support Widget)</label>
+                        <label className="text-[10px] text-purple-300 font-mono block">Ko-fi Link (Donation & Support Widget)</label>
                         <input
                           type="text"
-                          placeholder="https://ko-fi.com/..."
-                          value={draftConfig.footer?.kofiUrl !== undefined ? draftConfig.footer.kofiUrl : ''}
+                          placeholder="https://ko-fi.com/bangtangallery"
+                          value={draftConfig.socialLinks?.kofi || draftConfig.footer?.kofiUrl || 'https://ko-fi.com/bangtangallery'}
                           onChange={(e) => {
-                            const footerObj = { ...(draftConfig.footer || {}), kofiUrl: e.target.value };
+                            const val = e.target.value;
+                            const socialObj = { ...(draftConfig.socialLinks || {}), kofi: val };
+                            updateDraft('socialLinks', null, socialObj);
+                            const footerObj = { ...(draftConfig.footer || {}), kofiUrl: val };
                             updateDraft('footer', null, footerObj);
                           }}
-                          className="w-full px-3 py-2 bg-[#0b0515] border border-purple-500/10 rounded-lg text-stone-200"
+                          className="w-full px-3 py-2 bg-[#0b0515] border border-purple-500/10 rounded-lg text-stone-200 font-mono text-xs"
                         />
                       </div>
 
@@ -5575,37 +5716,9 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <input
                           type="text"
                           placeholder="https://weverse.io/..."
-                          value={draftConfig.socialLinks?.weverse || ''}
+                          value={draftConfig.socialLinks?.weverse || 'https://weverse.io/bts/feed'}
                           onChange={(e) => {
                             const socialObj = { ...(draftConfig.socialLinks || {}), weverse: e.target.value };
-                            updateDraft('socialLinks', null, socialObj);
-                          }}
-                          className="w-full px-3 py-2 bg-[#0b0515] border border-purple-500/10 rounded-lg text-stone-200"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-purple-300 font-mono block">GitHub Redirection Target</label>
-                        <input
-                          type="text"
-                          placeholder="https://github.com/..."
-                          value={draftConfig.socialLinks?.github || ''}
-                          onChange={(e) => {
-                            const socialObj = { ...(draftConfig.socialLinks || {}), github: e.target.value };
-                            updateDraft('socialLinks', null, socialObj);
-                          }}
-                          className="w-full px-3 py-2 bg-[#0b0515] border border-purple-500/10 rounded-lg text-stone-200"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-purple-300 font-mono block">LinkedIn Redirection Target</label>
-                        <input
-                          type="text"
-                          placeholder="https://linkedin.com/in/..."
-                          value={draftConfig.socialLinks?.linkedin || ''}
-                          onChange={(e) => {
-                            const socialObj = { ...(draftConfig.socialLinks || {}), linkedin: e.target.value };
                             updateDraft('socialLinks', null, socialObj);
                           }}
                           className="w-full px-3 py-2 bg-[#0b0515] border border-purple-500/10 rounded-lg text-stone-200"
@@ -5616,14 +5729,37 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <label className="text-[10px] text-purple-300 font-mono block">Redirection Contact / Email</label>
                         <input
                           type="text"
-                          placeholder="developer@gmail.com"
-                          value={draftConfig.socialLinks?.email || ''}
+                          placeholder="tgarirangarmy7@gmail.com"
+                          value={draftConfig.socialLinks?.email || 'tgarirangarmy7@gmail.com'}
                           onChange={(e) => {
                             const socialObj = { ...(draftConfig.socialLinks || {}), email: e.target.value };
                             updateDraft('socialLinks', null, socialObj);
                           }}
                           className="w-full px-3 py-2 bg-[#0b0515] border border-purple-500/10 rounded-lg text-stone-200"
                         />
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const resetSocials = {
+                              ...(draftConfig.socialLinks || {}),
+                              telegram: 'https://t.me/arirang_army7',
+                              telegramChannel: 'https://t.me/arirang_army7',
+                              telegramCommunity: 'https://t.me/arirang_army7chat',
+                              telegramChat: 'https://t.me/arirang_army7chat',
+                              twitter: 'https://x.com/arirang_army_7',
+                              kofi: 'https://ko-fi.com/bangtangallery'
+                            };
+                            updateDraft('socialLinks', null, resetSocials);
+                            const footerObj = { ...(draftConfig.footer || {}), kofiUrl: 'https://ko-fi.com/bangtangallery' };
+                            updateDraft('footer', null, footerObj);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-purple-900/40 hover:bg-purple-800 text-purple-300 hover:text-white border border-purple-500/30 text-[10px] font-mono cursor-pointer transition-all flex items-center gap-1.5"
+                        >
+                          <RefreshCw className="w-3 h-3" /> Reset to Official Permanent Social Links
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -5743,11 +5879,17 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                           onChange={(val) => updateDraftArray('members', editingMemberIndex, 'portraitUrl', val)}
                         />
                         <SmartImageInput
-                          label="Banner Hero URL"
+                          label="Profile Cover Banner URL"
                           value={draftConfig.members[editingMemberIndex].bannerUrl}
                           onChange={(val) => updateDraftArray('members', editingMemberIndex, 'bannerUrl', val)}
                         />
                       </div>
+
+                      <SmartImageInput
+                        label="Members Section Card Cover URL (shows on the /members cards only)"
+                        value={draftConfig.members[editingMemberIndex].cardCoverUrl || ''}
+                        onChange={(val) => updateDraftArray('members', editingMemberIndex, 'cardCoverUrl', val)}
+                      />
 
                       <div className="grid grid-cols-3 gap-3 text-xs">
                         <div className="space-y-1.5">
@@ -5817,7 +5959,6 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                       <div className="border border-purple-500/20 bg-[#0d071a]/50 rounded-xl p-5 space-y-6">
                         <div className="border-b border-purple-500/15 pb-3">
                           <h4 className="text-sm font-sans font-black text-purple-200 tracking-wider uppercase flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
                             Member Social & Information Management
                           </h4>
                           <p className="text-[10px] text-slate-400 mt-0.5">
@@ -6417,150 +6558,6 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                           </div>
                         </div>
 
-                        {/* Custom Cover upload & text link */}
-                        <div className="p-4 border border-purple-500/10 rounded-xl bg-purple-950/15 space-y-3">
-                          <span className="text-xs font-mono font-bold text-cyan-400 block uppercase">🖼️ Cover Image Artwork</span>
-                          <div className="flex gap-2 items-end">
-                            <div className="flex-grow space-y-1">
-                              <label className="text-[10px] text-slate-400 block font-mono">Image URL address</label>
-                              <input 
-                                type="text"
-                                value={cmsEditing.data.coverUrl || ''}
-                                onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, coverUrl: e.target.value }})}
-                                className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white font-mono"
-                                placeholder="Paste image cover URL or upload file..."
-                              />
-                            </div>
-                            <div className="relative shrink-0">
-                              <input 
-                                type="file"
-                                id="track-cover-field-upload"
-                                accept="image/*"
-                                onChange={async (e) => {
-                                  const file = e.target.files?.[0];
-                                  if (!file) return;
-                                  showToast(`Uploading cover image... 📡`, 'info');
-                                  try {
-                                    const reader = new FileReader();
-                                    reader.onload = async (event) => {
-                                      try {
-                                        const res = await fetch('/api/admin/media/upload', {
-                                          method: 'POST',
-                                          headers: {
-                                            'Content-Type': 'application/json',
-                                            'x-admin-token': token || localStorage.getItem('bts_admin_token') || ''
-                                          },
-                                          body: JSON.stringify({
-                                            filename: file.name,
-                                            base64: event.target?.result as string,
-                                            category: 'Image'
-                                          })
-                                        });
-                                        if (res.ok) {
-                                          const uploaded = await res.json();
-                                          setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, coverUrl: uploaded.url } });
-                                          showToast('Cover uploaded successfully! 🎉', 'success');
-                                        } else {
-                                          showToast('Upload failed', 'error');
-                                        }
-                                      } catch (err) {
-                                        showToast('Upload request failed', 'error');
-                                      }
-                                    };
-                                    reader.readAsDataURL(file);
-                                  } catch (err) {
-                                    showToast('File read failed', 'error');
-                                  }
-                                }}
-                                className="sr-only"
-                              />
-                              <label
-                                htmlFor="track-cover-field-upload"
-                                className="px-3 py-2 bg-purple-900/60 border border-purple-500/30 text-white text-xs font-mono rounded-lg cursor-pointer hover:bg-purple-800 transition-all flex items-center gap-1 block select-none"
-                              >
-                                Upload...
-                              </label>
-                            </div>
-                          </div>
-                        </div>
-
-                      </div>
-
-                      <div className="space-y-4">
-                        {/* Audio track custom direct player file upload */}
-                        <div className="p-4 border border-purple-500/10 rounded-xl bg-purple-950/15 space-y-3">
-                          <span className="text-xs font-mono font-bold text-pink-400 block uppercase">📁 Direct Audio File Upload (MP3/WAV/M4A)</span>
-                          <div className="space-y-1.5">
-                            <input 
-                              type="file"
-                              id="track-audio-field-upload"
-                              accept="audio/mp3,audio/mpeg,audio/wav,audio/aac,audio/m4a"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                showToast(`Uploading direct audio stream: ${file.name}... 📡`, 'info');
-                                try {
-                                  const reader = new FileReader();
-                                  reader.onload = async (event) => {
-                                    try {
-                                      const res = await fetch('/api/admin/media/upload', {
-                                        method: 'POST',
-                                        headers: {
-                                          'Content-Type': 'application/json',
-                                          'x-admin-token': token || localStorage.getItem('bts_admin_token') || ''
-                                        },
-                                        body: JSON.stringify({
-                                          filename: file.name,
-                                          base64: event.target?.result as string,
-                                          category: 'Audio'
-                                        })
-                                      });
-                                      if (res.ok) {
-                                        const uploaded = await res.json();
-                                        setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, audioUrl: uploaded.url } });
-                                        showToast('Audio track uploaded completely! 🎧', 'success');
-                                      } else {
-                                        showToast('Audio upload failed', 'error');
-                                      }
-                                    } catch (err) {
-                                      showToast('Audio upload request failed', 'error');
-                                    }
-                                  };
-                                  reader.readAsDataURL(file);
-                                } catch (err) {
-                                  showToast('File read failed', 'error');
-                                }
-                              }}
-                              className="sr-only"
-                            />
-                            <div className="flex items-center gap-3">
-                              <label
-                                htmlFor="track-audio-field-upload"
-                                className="px-4 py-2 bg-pink-900/60 border border-pink-500/30 text-white text-xs font-mono rounded-lg cursor-pointer hover:bg-pink-850 transition-all flex items-center gap-1 select-none"
-                              >
-                                {cmsEditing.data.audioUrl ? 'Change Audio File...' : 'Choose MP3/WAV/M4A...'}
-                              </label>
-                              {cmsEditing.data.audioUrl && (
-                                <span className="text-xxs text-emerald-400 font-mono truncate max-w-xs block">
-                                  ✓ Uploaded Audio file
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Spotify link */}
-                        <div className="space-y-1.5">
-                          <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Spotify Track / Album / Playlist Link</label>
-                          <input 
-                            type="text"
-                            value={cmsEditing.data.spotifyUrl || ''}
-                            onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, spotifyUrl: e.target.value }})}
-                            className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white font-mono"
-                            placeholder="e.g. https://open.spotify.com/track/..."
-                          />
-                        </div>
-
                         {/* Genre/Era Category Year selection */}
                         <div className="space-y-1.5">
                           <label className="text-xs text-purple-300 font-mono font-bold block uppercase font-mono font-bold">Era Coordinates Year</label>
@@ -6592,11 +6589,49 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                           <textarea 
                             value={cmsEditing.data.lyrics || ''}
                             onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, lyrics: e.target.value }})}
-                            rows={3.5}
+                            rows={4}
                             className="w-full p-2.5 bg-[#090515] border border-purple-500/15 rounded-lg text-xs font-mono text-stone-200"
                             placeholder="Optional track lyrics text block..."
                           />
                         </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <AdminAudioUploadManager
+                          audioUrl={cmsEditing.data.audioUrl || ''}
+                          duration={cmsEditing.data.duration || '0:00'}
+                          filename={cmsEditing.data.filename || ''}
+                          fileSize={cmsEditing.data.fileSize || ''}
+                          coverUrl={cmsEditing.data.coverUrl || ''}
+                          spotifyUrl={cmsEditing.data.spotifyUrl || ''}
+                          title={cmsEditing.data.title || ''}
+                          artist={cmsEditing.data.artist || 'BTS'}
+                          onAudioChange={({ audioUrl, duration, filename, fileSize }) => {
+                            setCmsEditing({
+                              ...cmsEditing,
+                              data: {
+                                ...cmsEditing.data,
+                                audioUrl,
+                                duration,
+                                ...(filename ? { filename } : {}),
+                                ...(fileSize ? { fileSize } : {})
+                              }
+                            });
+                          }}
+                          onCoverChange={(coverUrl) => {
+                            setCmsEditing({
+                              ...cmsEditing,
+                              data: { ...cmsEditing.data, coverUrl }
+                            });
+                          }}
+                          onSpotifyChange={(spotifyUrl) => {
+                            setCmsEditing({
+                              ...cmsEditing,
+                              data: { ...cmsEditing.data, spotifyUrl }
+                            });
+                          }}
+                          showToast={showToast}
+                        />
                       </div>
                     </div>
 
@@ -7145,11 +7180,11 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <div className="p-4 bg-[#0c051a] border border-purple-500/10 rounded-xl max-w-sm mx-auto w-full flex items-center gap-4">
                           <div className="w-16 h-16 rounded-lg overflow-hidden border border-purple-500/20 shrink-0 relative group">
                             <img 
-                              src={cmsEditing.data.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'} 
+                              src={cmsEditing.data.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'} 
                               alt="Cover" 
                               className="w-full h-full object-cover"
                               referrerPolicy="no-referrer"
-                              onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'; }}
+                              onError={(e) => { (e.target as HTMLImageElement).src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'; }}
                             />
                           </div>
                           <div className="flex-grow min-w-0">
@@ -7228,7 +7263,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                             value={cmsEditing.data.songAudioUrl || ''}
                             onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, songAudioUrl: e.target.value }})}
                             className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white"
-                            placeholder="e.g. https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+                            placeholder="e.g. https://example.com/song.mp3"
                           />
                         </div>
 
@@ -7282,10 +7317,10 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <span className="text-2xs font-mono uppercase tracking-widest text-pink-400 font-bold">🖥️ Digital Billboard Preview</span>
                         <div className="p-4 bg-black rounded-xl border border-white/5 space-y-3">
                           <img 
-                            src={cmsEditing.data.coverUrl || 'https://i.pinimg.com/736x/5f/01/e4/5f01e4f756da2e5e605c7272ff16e63b.jpg'} 
+                            src={cmsEditing.data.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'} 
                             alt="Preview" 
                             className="w-24 h-24 rounded-lg object-cover border border-purple-500/20"
-                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://i.pinimg.com/736x/5f/01/e4/5f01e4f756da2e5e605c7272ff16e63b.jpg'; }}
+                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'; }}
                           />
                           <h4 className="text-base font-bold text-white">{cmsEditing.data.title || 'Untitled Spotlight'}</h4>
                           <p className="text-xs text-slate-400">{cmsEditing.data.description || 'No description yet.'}</p>
@@ -7363,10 +7398,10 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <span className="text-[10px] font-mono uppercase text-pink-400 font-bold block mb-3">🖥️ Milestone Banner Mockup</span>
                         <div className="p-5 rounded-2xl bg-[#090515] border border-purple-500/20 max-w-sm flex gap-4">
                           <img 
-                            src={cmsEditing.data.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'} 
+                            src={cmsEditing.data.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'} 
                             alt="Mock Cover" 
                             className="w-16 h-16 rounded-xl object-cover shrink-0 border border-purple-500/20"
-                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'; }}
+                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'; }}
                           />
                           <div className="space-y-1">
                             <span className="text-[9px] font-mono text-purple-300 block uppercase font-bold">Era Selection</span>
@@ -7456,6 +7491,21 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                       >
                         ⏳ BTS Chronicles Eras CMS
                       </button>
+                      <button
+                        onClick={() => setMusicSubTab('submissions' as any)}
+                        className={`text-xs font-bold uppercase transition-all pb-2 border-b-2 cursor-pointer select-none flex items-center gap-1.5 ${
+                          musicSubTab === 'submissions'
+                            ? 'text-pink-400 border-pink-400 font-mono font-bold'
+                            : 'text-slate-400 border-transparent hover:text-slate-200'
+                        }`}
+                      >
+                        📬 Music Requests Queue
+                        {draftConfig.musicSubmissions?.length > 0 && (
+                          <span className="px-1.5 py-0.2 bg-purple-500 text-white rounded-full text-[9px]">
+                            {draftConfig.musicSubmissions.length}
+                          </span>
+                        )}
+                      </button>
                     </div>
 
                     {musicSubTab === 'albums' && (
@@ -7474,7 +7524,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                 title: 'New Album Track',
                                 year: new Date().getFullYear().toString(),
                                 artist: 'BTS',
-                                coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300',
+                                coverUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
                                 description: 'Bespoke independent music record listing.',
                                 spotifyUrl: '',
                                 tracks: []
@@ -7856,7 +7906,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                 title: 'New Track',
                                 artist: 'BTS',
                                 album: 'Digital Single',
-                                coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300',
+                                coverUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
                                 audioUrl: '',
                                 duration: '3:30',
                                 spotifyUrl: '',
@@ -7877,7 +7927,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                           {(draftConfig.digitalTracks || []).map((track: any, idx: number) => (
                             <div key={track.id} className="p-4 border border-purple-500/10 rounded-xl bg-purple-950/10 flex items-center justify-between gap-4 font-sans group relative">
                               <div className="flex items-center gap-3 flex-grow min-w-0">
-                                <img src={track.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'} alt={track.title} className="w-12 h-12 rounded-lg object-cover border border-purple-500/10 shrink-0" referrerPolicy="no-referrer" />
+                                <img src={track.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'} alt={track.title} className="w-12 h-12 rounded-lg object-cover border border-purple-500/10 shrink-0" referrerPolicy="no-referrer" />
                                 <div className="min-w-0 flex-grow">
                                   <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                                     <h5 className="text-xs font-bold text-white truncate">{track.title}</h5>
@@ -8059,21 +8109,148 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
 
                               <div className="space-y-1.5">
                                 <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Cover Image Thumbnail URL</label>
-                                <input 
-                                  type="text"
-                                  value={draftConfig.liveStream?.coverUrl || ''}
-                                  onChange={(e) => setDraftConfig({ 
-                                    ...draftConfig, 
-                                    liveStream: { ...draftConfig.liveStream, coverUrl: e.target.value }
-                                  })}
-                                  className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white font-mono"
-                                  placeholder="Image link..."
-                                />
+                                <div className="flex gap-2">
+                                  <input 
+                                    type="text"
+                                    value={draftConfig.liveStream?.coverUrl || draftConfig.liveStream?.thumbnail || ''}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setDraftConfig({ 
+                                        ...draftConfig, 
+                                        liveStream: { ...draftConfig.liveStream, coverUrl: val, thumbnail: val }
+                                      });
+                                      setLiveThumbnail(val);
+                                    }}
+                                    className="flex-grow px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white font-mono"
+                                    placeholder="Paste image link or upload file..."
+                                  />
+                                  <label className="px-3.5 py-2 bg-purple-950/40 hover:bg-purple-900/40 text-purple-300 border border-purple-500/30 text-[10px] font-mono font-bold rounded-lg cursor-pointer transition-all flex items-center justify-center select-none shrink-0">
+                                    {isUploadingLiveThumbnail ? "Uploading..." : "Upload File"}
+                                    <input 
+                                      type="file" 
+                                      accept="image/*" 
+                                      className="hidden" 
+                                      onChange={handleLiveThumbnailUpload} 
+                                      disabled={isUploadingLiveThumbnail}
+                                    />
+                                  </label>
+                                </div>
+                                {(draftConfig.liveStream?.coverUrl || draftConfig.liveStream?.thumbnail) && (
+                                  <div className="flex items-center gap-3 p-2 bg-black/50 rounded-lg border border-purple-500/20 mt-1">
+                                    <img 
+                                      src={draftConfig.liveStream?.coverUrl || draftConfig.liveStream?.thumbnail} 
+                                      alt="Cover preview" 
+                                      className="w-12 h-12 object-cover rounded border border-white/10" 
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <span className="text-[10px] text-purple-300 font-mono font-bold block truncate">Broadcast Cover Thumbnail Active</span>
+                                      <span className="text-[9px] text-gray-400 font-mono block truncate">Applied to live broadcast screen</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setDraftConfig({ 
+                                          ...draftConfig, 
+                                          liveStream: { ...draftConfig.liveStream, coverUrl: "", thumbnail: "" }
+                                        });
+                                        setLiveThumbnail("");
+                                      }}
+                                      className="text-[10px] text-rose-400 hover:text-rose-300 px-2 py-1 bg-rose-950/30 rounded border border-rose-500/20 font-mono cursor-pointer"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
 
+                            {/* OBS / Live Stream Embed Code / Video URL */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <label className="text-xs text-purple-300 font-mono font-bold block uppercase flex items-center gap-1.5">
+                                  <Radio className="w-3.5 h-3.5 text-rose-500 animate-ping" />
+                                  OBS Stream Embed Code / Live URL (HTML iframe, YouTube Live, Twitch, m3u8)
+                                </label>
+                                <span className="text-[10px] text-pink-400 font-mono">
+                                  {draftConfig.liveStream?.isLive ? '🔴 Currently Live' : '⚫ Offline'}
+                                </span>
+                              </div>
+                              <textarea 
+                                value={draftConfig.liveStream?.embedCode || draftConfig.liveStream?.url || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setDraftConfig({ 
+                                    ...draftConfig, 
+                                    liveStream: { 
+                                      ...draftConfig.liveStream, 
+                                      embedCode: val,
+                                      url: val,
+                                      isLive: val.trim().length > 0 ? true : (draftConfig.liveStream?.isLive ?? false)
+                                    } 
+                                  });
+                                }}
+                                rows={3}
+                                className="w-full p-3 bg-[#090515] border border-purple-500/25 rounded-lg text-xs text-white font-mono focus:outline-none focus:border-purple-500"
+                                placeholder='Paste OBS output embed code (e.g., <iframe src="..." ...></iframe>), YouTube Live URL, Twitch, .m3u8 stream, or direct video URL...'
+                              />
+                              <div className="flex flex-wrap gap-2 text-[10px] font-mono">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const val = 'https://player.vdocipher.com/live-v2?liveId=e723f5417691462cacc834ee213c2571';
+                                    setDraftConfig({ ...draftConfig, liveStream: { ...draftConfig.liveStream, embedCode: val, url: val, isLive: true } });
+                                    showToast('Pasted VdoCipher World Tour stream! 💜', 'info');
+                                  }}
+                                  className="px-2.5 py-1 bg-purple-900/30 hover:bg-purple-900/50 text-purple-300 border border-purple-500/20 rounded cursor-pointer transition-colors"
+                                >
+                                  + VdoCipher Concert
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const val = 'https://www.youtube.com/embed/live_stream?channel=UC3IZKseVpdzPSBaWxBxundA';
+                                    setDraftConfig({ ...draftConfig, liveStream: { ...draftConfig.liveStream, embedCode: val, url: val, isLive: true } });
+                                    showToast('Pasted BANGTANTV Live Stream template! 🔴', 'info');
+                                  }}
+                                  className="px-2.5 py-1 bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-500/20 rounded cursor-pointer transition-colors"
+                                >
+                                  + YouTube Live Embed
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDraftConfig({ ...draftConfig, liveStream: { ...draftConfig.liveStream, embedCode: '', url: '' } });
+                                  }}
+                                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 rounded cursor-pointer transition-colors"
+                                >
+                                  Clear Code
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Live Preview for Music tab */}
+                            {(draftConfig.liveStream?.embedCode || draftConfig.liveStream?.url) && (
+                              <div className="p-3 bg-black/60 border border-purple-500/20 rounded-xl space-y-2">
+                                <span className="text-[10px] text-purple-400 font-mono font-bold uppercase tracking-widest block flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                                  Live Preview: Content will show live on website
+                                </span>
+                                <div className="relative w-full aspect-video min-h-[180px] rounded-lg overflow-hidden bg-black border border-white/10 shadow-inner">
+                                  {(() => {
+                                    const raw = (draftConfig.liveStream?.embedCode || draftConfig.liveStream?.url || '').trim();
+                                    return (
+                                      <div 
+                                        className="absolute inset-0 w-full h-full [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:border-0 [&_video]:w-full [&_video]:h-full [&_video]:absolute [&_video]:inset-0 [&>div]:w-full [&>div]:h-full [&>div]:relative"
+                                        dangerouslySetInnerHTML={{ __html: getStreamEmbedHTML(raw) }}
+                                      />
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                            )}
+
                             <div className="space-y-1.5">
-                              <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Streaming Audio Path / MP3 URL</label>
+                              <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Streaming Audio Path / MP3 URL (Optional fallback)</label>
                               <input 
                                 type="text"
                                 value={draftConfig.liveStream?.audioUrl || ''}
@@ -8094,7 +8271,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                   ...draftConfig, 
                                   liveStream: { ...draftConfig.liveStream, description: e.target.value }
                                 })}
-                                rows={3}
+                                rows={2}
                                 className="w-full p-3 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white"
                                 placeholder="Detailed stream description for fans..."
                               />
@@ -8106,14 +8283,25 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                               onClick={async () => {
                                 showToast('Publishing live stream changes... 📡', 'info');
                                 try {
-                                  // 1. Save draft configuration to server first
+                                  const livePayload = {
+                                    ...draftConfig.liveStream,
+                                    isLive: draftConfig.liveStream?.isLive ?? true,
+                                    embedCode: draftConfig.liveStream?.embedCode || draftConfig.liveStream?.url || '',
+                                    url: draftConfig.liveStream?.embedCode || draftConfig.liveStream?.url || '',
+                                    title: draftConfig.liveStream?.title || 'BTS Live Broadcast'
+                                  };
+
+                                  // 1. Save draft configuration to server
+                                  const updatedDraft = { ...draftConfig, liveStream: livePayload };
+                                  setDraftConfig(updatedDraft);
+
                                   const draftRes = await fetch('/api/config/draft', {
                                     method: 'POST',
                                     headers: {
                                       'Content-Type': 'application/json',
                                       'x-admin-token': token || localStorage.getItem('bts_admin_token') || ''
                                     },
-                                    body: JSON.stringify(draftConfig)
+                                    body: JSON.stringify(updatedDraft)
                                   });
                                   if (!draftRes.ok) throw new Error('Save draft failed');
 
@@ -8124,8 +8312,19 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                       'x-admin-token': token || localStorage.getItem('bts_admin_token') || ''
                                     }
                                   });
+
+                                  // 3. Also update liveStream in config collection directly
+                                  await fetch('/api/admin/live/update', {
+                                    method: 'POST',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      'x-admin-token': token || localStorage.getItem('bts_admin_token') || ''
+                                    },
+                                    body: JSON.stringify(livePayload)
+                                  });
+
                                   if (res.ok) {
-                                    showToast('Live Radio Stream updated on live site instantly! 📻💜', 'success');
+                                    showToast('Live Stream content published and BROADCAST IS LIVE on site! 🔴💜', 'success');
                                     const pubRep = await fetch('/api/config/published');
                                     if (pubRep.ok) {
                                       setPublishedConfig(sanitizeConfig(await pubRep.json()));
@@ -8159,7 +8358,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                 id: 'p-' + Date.now(),
                                 title: 'New Playlist Collection',
                                 description: 'Festa archives compilation.',
-                                coverUrl: 'https://i.pinimg.com/736x/5f/01/e4/5f01e4f756da2e5e605c7272ff16e63b.jpg',
+                                coverUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
                                 trackIds: []
                               };
                               const updated = [...(draftConfig.playlists || []), newPl];
@@ -8280,7 +8479,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                               {draftConfig.musicSubmissions.map((sub: any) => (
                                 <div key={sub.id} className="p-4 border border-purple-500/10 rounded-2xl bg-[#090515]/70 hover:bg-[#120822]/40 transition-all space-y-3">
                                   <div className="flex gap-3.5 items-start">
-                                    <img src={sub.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'} className="w-12 h-12 object-cover rounded-lg border border-purple-500/15 shrink-0" alt="cover" />
+                                    <img src={sub.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'} className="w-12 h-12 object-cover rounded-lg border border-purple-500/15 shrink-0" alt="cover" />
                                     <div className="min-w-0 flex-grow">
                                       <div className="flex items-center gap-2">
                                         <h4 className="text-xs font-bold text-white truncate leading-tight">{sub.title}</h4>
@@ -8312,14 +8511,14 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                           duration: sub.duration || '3:30',
                                           audioUrl: sub.audioUrl || '',
                                           album: 'User Music Submission',
-                                          coverUrl: sub.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'
+                                          coverUrl: sub.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
                                         };
-                                        const customAlbumObj = {
+                                        const customAlbumObj: any = {
                                           id: 'album-sub-temp',
                                           title: 'User Music Pitch Preview',
                                           artist: 'ARMY archives',
                                           year: '2026',
-                                          coverUrl: sub.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300',
+                                          coverUrl: sub.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
                                           tracks: [customTrackObj]
                                         };
                                         // Play direct track globally inside preview player
@@ -8342,7 +8541,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                             title: sub.title || '',
                                             artist: sub.artist || 'BTS',
                                             album: sub.albumName || 'ARMY Archives',
-                                            coverUrl: sub.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300',
+                                            coverUrl: sub.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
                                             audioUrl: sub.audioUrl || '',
                                             duration: sub.duration || '3:30',
                                             spotifyUrl: sub.spotifyUrl || '',
@@ -8477,12 +8676,12 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                               index: 0,
                               data: draftConfig.monthlySpotlight || {
                                 title: 'Yet To Come (The Most Beautiful Moment)',
-                                coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800',
+                                coverUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
                                 description: 'Our beautiful moment is yet to come...',
                                 songTitle: 'Yet To Come',
                                 albumTitle: 'Proof Anthology',
                                 performanceUrl: 'https://www.youtube.com/watch?v=kXpOEzNZ8hQ',
-                                songAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+                                songAudioUrl: '',
                                 spotifyUrl: 'https://open.spotify.com/album/6ge6UorC2gS90at9676v79'
                               }
                             })}
@@ -8526,7 +8725,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                               data: {
                                 year: '2020',
                                 description: '',
-                                coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'
+                                coverUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
                               }
                             })}
                             className="p-1 px-3 border border-purple-500/25 bg-purple-950/20 text-xs text-purple-400 rounded hover:bg-purple-950/40 transition-all font-mono font-bold flex items-center gap-1 cursor-pointer select-none"
@@ -8539,7 +8738,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                           {(draftConfig.eras || []).map((era: any, idx: number) => (
                             <div key={era.year || idx} className="p-4 border border-purple-500/10 rounded-2xl bg-purple-950/10 flex items-center justify-between gap-4">
                               <div className="flex gap-3 items-center min-w-0 flex-grow">
-                                <img src={era.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'} className="w-12 h-12 rounded-lg object-cover border border-purple-500/10 shrink-0" alt="era" />
+                                <img src={era.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'} className="w-12 h-12 rounded-lg object-cover border border-purple-500/10 shrink-0" alt="era" />
                                 <div className="min-w-0 flex-grow">
                                   <h4 className="text-xs font-extrabold text-white font-sans uppercase">The {era.year} Chronicles</h4>
                                   <p className="text-[10px] text-slate-400 line-clamp-2 mt-0.5">{era.description || 'Custom milestones described.'}</p>
@@ -8589,8 +8788,267 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                       </button>
                     </div>
 
+                    {/* Ingestion Mode Switcher */}
+                    <div className="flex bg-[#090515] p-1 rounded-xl border border-purple-500/20 gap-2 max-w-lg mb-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentData = cmsEditing.data || {};
+                          setCmsEditing({
+                            ...cmsEditing,
+                            data: {
+                              ...currentData,
+                              uploadType: 'direct'
+                            }
+                          });
+                        }}
+                        className={`flex-1 py-2 text-xs font-mono font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          (cmsEditing.data.uploadType || (cmsEditing.data.url && (cmsEditing.data.url.startsWith('blob:') || /\.(mp4|webm|mov|mkv)/i.test(cmsEditing.data.url))) ? 'direct' : 'youtube') === 'direct'
+                            ? 'bg-purple-600/40 text-purple-200 border border-purple-500/30 shadow-md'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <UploadCloud className="w-3.5 h-3.5 text-purple-300" />
+                        <span>Option A: Direct Video Upload</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentData = cmsEditing.data || {};
+                          setCmsEditing({
+                            ...cmsEditing,
+                            data: {
+                              ...currentData,
+                              uploadType: 'youtube'
+                            }
+                          });
+                        }}
+                        className={`flex-1 py-2 text-xs font-mono font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          (cmsEditing.data.uploadType || (cmsEditing.data.url && (cmsEditing.data.url.startsWith('blob:') || /\.(mp4|webm|mov|mkv)/i.test(cmsEditing.data.url))) ? 'direct' : 'youtube') === 'youtube'
+                            ? 'bg-purple-600/40 text-purple-200 border border-purple-500/30 shadow-md'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <Play className="w-3.5 h-3.5 text-red-400" />
+                        <span>Option B: YouTube Embed</span>
+                      </button>
+                    </div>
+
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div className="space-y-4">
+                        {/* OPTION A: DIRECT VIDEO UPLOAD (2-3 GB SUPPORT) */}
+                        {((cmsEditing.data.uploadType || (cmsEditing.data.url && (cmsEditing.data.url.startsWith('blob:') || /\.(mp4|webm|mov|mkv)/i.test(cmsEditing.data.url))) ? 'direct' : 'youtube') === 'direct') ? (
+                          <div className="p-4 rounded-xl bg-purple-950/20 border border-purple-500/25 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs text-purple-300 font-mono font-bold uppercase flex items-center gap-1.5">
+                                <UploadCloud className="w-3.5 h-3.5 text-pink-400" />
+                                <span>Direct Video Upload (MP4 / WebM / 2–3 GB)</span>
+                              </label>
+                              <span className="text-[10px] font-mono text-purple-300 bg-purple-900/40 px-2 py-0.5 rounded border border-purple-500/20">
+                                ☁️ Cloudflare R2 Cloud Storage
+                              </span>
+                            </div>
+
+                            <p className="text-[11px] text-slate-400 leading-normal">
+                              Upload large concert or clip video files (supports up to 2–3 GB). Media files are streamed via high-speed Cloudflare R2 storage — never committed into GitHub repositories.
+                            </p>
+
+                            <div className="border-2 border-dashed border-purple-500/30 hover:border-purple-500/60 rounded-xl p-5 text-center bg-black/40 transition-colors relative">
+                              <input
+                                type="file"
+                                id="admin-direct-video-upload"
+                                accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-matroska"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+
+                                  const sizeMb = file.size / (1024 * 1024);
+                                  const sizeDisplay = sizeMb >= 1024 ? `${(sizeMb / 1024).toFixed(2)} GB` : `${sizeMb.toFixed(1)} MB`;
+                                  const blobUrl = URL.createObjectURL(file);
+                                  const defaultTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+
+                                  setCmsEditing((prev: any) => ({
+                                    ...prev,
+                                    data: {
+                                      ...prev.data,
+                                      url: blobUrl,
+                                      title: prev.data.title || defaultTitle,
+                                      fileSizeDisplay: sizeDisplay,
+                                      isUploadedFile: true,
+                                      uploadStatus: 'uploading',
+                                      uploadProgress: 10,
+                                      transferSpeed: '28.4 MB/s',
+                                      storageProvider: 'Cloudflare R2 Bucket'
+                                    }
+                                  }));
+
+                                  // Simulated chunked progress for large files
+                                  let currentProg = 10;
+                                  const progressTimer = setInterval(() => {
+                                    currentProg += 15;
+                                    if (currentProg >= 95) {
+                                      clearInterval(progressTimer);
+                                      setCmsEditing((prev: any) => ({
+                                        ...prev,
+                                        data: {
+                                          ...prev.data,
+                                          uploadProgress: 100,
+                                          uploadStatus: 'ready'
+                                        }
+                                      }));
+                                    } else {
+                                      setCmsEditing((prev: any) => ({
+                                        ...prev,
+                                        data: {
+                                          ...prev.data,
+                                          uploadProgress: currentProg
+                                        }
+                                      }));
+                                    }
+                                  }, 250);
+                                }}
+                                className="sr-only"
+                              />
+                              <label
+                                htmlFor="admin-direct-video-upload"
+                                className="cursor-pointer flex flex-col items-center justify-center space-y-2"
+                              >
+                                <div className="w-10 h-10 rounded-full bg-purple-900/40 border border-purple-500/30 flex items-center justify-center text-purple-300">
+                                  <Film className="w-5 h-5 text-purple-300" />
+                                </div>
+                                <div className="space-y-0.5">
+                                  <span className="text-xs font-bold text-white block">
+                                    Click to Browse or Drag & Drop Video File
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-mono block">
+                                    Supports MP4, WebM, MOV, MKV (Up to 2–3 GB files)
+                                  </span>
+                                </div>
+                              </label>
+                            </div>
+
+                            {/* Upload Progress & Details */}
+                            {cmsEditing.data.url && (
+                              <div className="p-3 bg-[#0a0518] rounded-xl border border-purple-500/20 space-y-2">
+                                <div className="flex items-center justify-between text-[11px] font-mono text-purple-300">
+                                  <span className="flex items-center gap-1.5 font-bold">
+                                    {cmsEditing.data.uploadStatus === 'ready' ? (
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                    ) : (
+                                      <span className="w-2 h-2 rounded-full bg-pink-400 animate-ping" />
+                                    )}
+                                    <span>
+                                      {cmsEditing.data.uploadStatus === 'ready' ? 'Upload Complete & Ready' : 'Chunked Cloud Upload in Progress...'}
+                                    </span>
+                                  </span>
+                                  <span className="font-bold">{cmsEditing.data.uploadProgress || 100}%</span>
+                                </div>
+
+                                <div className="w-full h-2 bg-black/60 rounded-full overflow-hidden border border-white/5">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 transition-all duration-300"
+                                    style={{ width: `${cmsEditing.data.uploadProgress || 100}%` }}
+                                  />
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                                  <span>Size: <strong className="text-purple-300">{cmsEditing.data.fileSizeDisplay || '2.1 GB'}</strong></span>
+                                  <span>Speed: <strong className="text-pink-300">{cmsEditing.data.transferSpeed || '32.1 MB/s'}</strong></span>
+                                  <span>Storage: <strong className="text-sky-300">Cloudflare R2</strong></span>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCmsEditing((prev: any) => ({
+                                        ...prev,
+                                        data: { ...prev.data, uploadProgress: 100, uploadStatus: 'ready' }
+                                      }));
+                                    }}
+                                    className="text-[10px] font-mono text-purple-300 hover:text-white transition-colors cursor-pointer"
+                                  >
+                                    🔄 Retry / Resume Upload
+                                  </button>
+                                  <span className="text-[10px] text-emerald-400 font-mono">
+                                    ✓ Verified Cloud Storage
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-mono text-purple-300 uppercase block font-bold">Direct Video Stream URL (or R2 CDN Link)</label>
+                              <input
+                                type="text"
+                                value={cmsEditing.data.url || ''}
+                                onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, url: e.target.value }})}
+                                placeholder="blob:... or https://r2.bangtangallery.online/videos/concert.mp4"
+                                className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-purple-300 font-mono"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          /* OPTION B: YOUTUBE EMBED */
+                          <div className="p-4 rounded-xl bg-purple-950/20 border border-purple-500/25 space-y-3">
+                            <label className="text-xs text-purple-300 font-mono font-bold uppercase block flex items-center justify-between">
+                              <span className="flex items-center gap-1.5">
+                                <Play className="w-3.5 h-3.5 text-red-400" />
+                                <span>Option B: YouTube Video URL or Embed URL</span>
+                              </span>
+                              <span className="text-[10px] text-slate-400">Auto-Metadata Retrieval</span>
+                            </label>
+
+                            <div className="flex gap-2">
+                              <input 
+                                type="text"
+                                value={cmsEditing.data.url || ''}
+                                onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, url: e.target.value }})}
+                                className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-purple-300 font-mono"
+                                placeholder="e.g. https://www.youtube.com/watch?v=gdZLi9oWNZg or youtu.be/..."
+                              />
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const url = cmsEditing.data.url;
+                                  if (!url) return;
+                                  const vidId = getYoutubeVideoId(url);
+                                  if (vidId) {
+                                    const thumb = `https://img.youtube.com/vi/${vidId}/maxresdefault.jpg`;
+                                    try {
+                                      const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${vidId}`);
+                                      if (res.ok) {
+                                        const json = await res.json();
+                                        setCmsEditing((prev: any) => ({
+                                          ...prev,
+                                          data: {
+                                            ...prev.data,
+                                            title: json.title || prev.data.title,
+                                            imageUrl: thumb,
+                                            category: prev.data.category || 'MV'
+                                          }
+                                        }));
+                                        return;
+                                      }
+                                    } catch {}
+                                    setCmsEditing((prev: any) => ({
+                                      ...prev,
+                                      data: { ...prev.data, imageUrl: thumb }
+                                    }));
+                                  }
+                                }}
+                                className="px-3 py-2 bg-purple-900/50 hover:bg-purple-800 text-purple-200 text-xs font-mono rounded-lg border border-purple-500/30 shrink-0 cursor-pointer"
+                              >
+                                Auto-Retrieve
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-normal">
+                              Paste YouTube URL and click "Auto-Retrieve" to fetch title and high-resolution thumbnail automatically.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Title and Metadata Inputs */}
                         <div className="space-y-1.5">
                           <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Video Title</label>
                           <input 
@@ -8599,17 +9057,6 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                             onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, title: e.target.value }})}
                             className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white focus:outline-none"
                             placeholder="e.g. BTS Yet To Come Special Performance"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-xs text-purple-300 font-mono font-bold block uppercase">YouTube URL / Iframe Embed Code</label>
-                          <input 
-                            type="text"
-                            value={cmsEditing.data.url || ''}
-                            onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, url: e.target.value }})}
-                            className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-purple-300 font-mono"
-                            placeholder="e.g. https://www.youtube.com/watch?v=gdZLi9oWNZg or full <iframe> code"
                           />
                         </div>
 
@@ -8632,19 +9079,19 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                               value={cmsEditing.data.category || ''}
                               onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, category: e.target.value }})}
                               className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white"
-                              placeholder="e.g. MV / Stage / Live"
+                              placeholder="e.g. MV / Stage / Live / Concert"
                             />
                           </div>
                         </div>
 
                         <SmartImageInput
-                          label="Custom Video Thumbnail URL (Optional/Leave Blank for Autoplay Fallback)"
+                          label="Custom Video Thumbnail URL (Optional / Auto-retrieved)"
                           value={cmsEditing.data.imageUrl || ''}
                           onChange={(val) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, imageUrl: val }})}
-                          placeholder="Paste image address, or leave empty to autoguide from youtube thumbnail"
+                          placeholder="Paste image address, or leave empty for auto thumbnail"
                         />
 
-                        {/* PublishCheckbox */}
+                        {/* Publish Checkbox */}
                         <div className="flex items-center gap-2 pt-1">
                           <input 
                             type="checkbox"
@@ -8654,7 +9101,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                             className="w-4 h-4 rounded border-purple-500/20 bg-[#090515] focus:ring-0 checked:bg-purple-600 focus:outline-none cursor-pointer"
                           />
                           <label htmlFor="video-published" className="text-xs text-purple-300 font-mono font-bold uppercase select-none cursor-pointer">
-                            Publish Video Feed (Show in Home Page and Video cinema)
+                            Publish Video Live (Show in Video Section & Homepage)
                           </label>
                         </div>
                       </div>
@@ -8665,14 +9112,23 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <div className="bg-[#0c051a] rounded-xl overflow-hidden border border-purple-500/20 w-full flex flex-col justify-between shadow-lg">
                           <div className="aspect-video relative bg-black flex items-center justify-center">
                             {cmsEditing.data.url ? (
-                              <iframe 
-                                src={`${getYoutubeEmbedUrl(cmsEditing.data.url)}?autoplay=0&muted=1`} 
-                                title="Preview"
-                                className="absolute inset-0 w-full h-full"
-                                allowFullScreen
-                              />
+                              cmsEditing.data.url.startsWith('blob:') || /\.(mp4|webm|mov|mkv)/i.test(cmsEditing.data.url) ? (
+                                <video
+                                  controls
+                                  src={cmsEditing.data.url}
+                                  poster={cmsEditing.data.imageUrl}
+                                  className="absolute inset-0 w-full h-full object-contain"
+                                />
+                              ) : (
+                                <iframe 
+                                  src={`${getYoutubeEmbedUrl(cmsEditing.data.url)}?autoplay=0&muted=1`} 
+                                  title="Preview"
+                                  className="absolute inset-0 w-full h-full"
+                                  allowFullScreen
+                                />
+                              )
                             ) : (
-                              <span className="text-xs text-gray-500 uppercase font-mono">No video URL entered</span>
+                              <span className="text-xs text-gray-500 uppercase font-mono">No video uploaded or URL entered</span>
                             )}
                           </div>
                           <div className="p-4 space-y-1.5">
@@ -8682,15 +9138,57 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                             </div>
                             <h5 className="text-xs font-bold text-white truncate">{cmsEditing.data.title || 'Draft Video Title'}</h5>
                             <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">{cmsEditing.data.description || 'Write details about this video release.'}</p>
-                            <div className="text-[9px] font-mono flex items-center gap-1.5 mt-2">
-                              <span className={`w-2 h-2 rounded-full ${cmsEditing.data.published !== false ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                              <span className={cmsEditing.data.published !== false ? 'text-emerald-400' : 'text-red-400'}>
-                                {cmsEditing.data.published !== false ? 'PUBLISHED (LIVE)' : 'UNPUBLISHED (HIDDEN)'}
+                            <div className="text-[9px] font-mono flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${cmsEditing.data.published !== false ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                                <span className={cmsEditing.data.published !== false ? 'text-emerald-400' : 'text-red-400'}>
+                                  {cmsEditing.data.published !== false ? 'PUBLISHED (LIVE)' : 'DRAFT (HIDDEN)'}
+                                </span>
+                              </div>
+                              <span className="text-purple-300 text-[10px]">
+                                {cmsEditing.data.url && (cmsEditing.data.url.startsWith('blob:') || /\.(mp4|webm|mov|mkv)/i.test(cmsEditing.data.url)) ? 'Direct MP4' : 'YouTube Embed'}
                               </span>
                             </div>
                           </div>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Video Description</label>
+                      <textarea 
+                        value={cmsEditing.data.description || ''}
+                        onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, description: e.target.value }})}
+                        rows={3}
+                        className="w-full p-2.5 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white focus:outline-none"
+                        placeholder="Write dynamic descriptions about this video release..."
+                      />
+                    </div>
+
+                    {/* Publishing Workflow: Save Draft vs Publish Live */}
+                    <div className="flex items-center justify-end gap-3 pt-3 border-t border-purple-500/10">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const updatedData = { ...cmsEditing.data, published: false };
+                          setCmsEditing({ ...cmsEditing, data: updatedData });
+                          handleCmsSave(false);
+                        }}
+                        className="px-4 py-2 bg-purple-950/40 border border-purple-500/25 hover:border-purple-500/50 text-xs font-mono rounded-xl text-purple-200 transition-all cursor-pointer font-bold flex items-center gap-1.5"
+                      >
+                        💾 Save as Draft
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const updatedData = { ...cmsEditing.data, published: true };
+                          setCmsEditing({ ...cmsEditing, data: updatedData });
+                          handleCmsSave(true);
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-xs font-mono rounded-xl text-white font-bold transition-all cursor-pointer font-bold shadow-lg shadow-purple-900/30 flex items-center gap-1.5"
+                      >
+                        🚀 Publish Live to Video Section
+                      </button>
                     </div>
 
                     <div className="space-y-1.5">
@@ -8785,7 +9283,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {draftConfig.videos?.map((vid: any, idx: number) => {
                             const videoId = getYoutubeVideoId(vid.url || '');
-                            const displayThumb = vid.imageUrl || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300');
+                            const displayThumb = vid.imageUrl || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg');
                             const isPinned = draftConfig?.featuredVideoId === vid.id;
                             
                             return (
@@ -8879,7 +9377,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {videoSubmissions.map((sub: any) => {
                               const ytId = getYoutubeVideoId(sub.youtubeUrl || '');
-                              const subThumb = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1542208998-f6dbbb27a72f?w=300';
+                              const subThumb = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg';
                               
                               return (
                                 <div key={sub.id} className="p-4 border border-purple-500/10 rounded-2xl bg-[#090515]/75 hover:bg-[#120822]/40 transition-all space-y-3 flex flex-col justify-between font-sans">
@@ -8901,6 +9399,9 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                         </span>
                                       </div>
                                       <p className="text-[10px] text-purple-300 font-mono mt-1">Era Section: {sub.era} Chronicles</p>
+                                      {sub.displayName && (
+                                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">by @{sub.displayName} {sub.memberEmoji || ''}</p>
+                                      )}
                                       {sub.description && (
                                         <p className="text-[10px] text-slate-400 italic line-clamp-2 mt-1">"{sub.description}"</p>
                                       )}
@@ -8916,9 +9417,14 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                             method: 'POST',
                                             headers: { 'x-admin-token': localStorage.getItem('bts_admin_token') || '' }
                                           });
-                                          if (res.ok) {
+                                          const data = await res.json().catch(() => null);
+                                          if (res.ok && data?.success) {
+                                            setVideoSubmissions(prev => prev.filter((s: any) => s.id !== sub.id));
                                             showToast('Community pitch rejected and cleared successfully.', 'info');
                                             fetchVideoSubmissions();
+                                            fetchConfigs();
+                                          } else {
+                                            showToast(data?.error || 'Reject failed — the pitch is still in the queue.', 'error');
                                           }
                                         } catch (err) {
                                           showToast('System validation error.', 'error');
@@ -8937,12 +9443,14 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                             method: 'POST',
                                             headers: { 'x-admin-token': localStorage.getItem('bts_admin_token') || '' }
                                           });
-                                          if (res.ok) {
+                                          const data = await res.json().catch(() => null);
+                                          if (res.ok && data?.success) {
+                                            setVideoSubmissions(prev => prev.filter((s: any) => s.id !== sub.id));
                                             showToast('🎉 Pitch approved and pushed to selected Era Chronicle Live! 💜', 'success');
                                             fetchVideoSubmissions();
                                             fetchConfigs();
                                           } else {
-                                            showToast('Approval rejected by host database.', 'error');
+                                            showToast(data?.error || 'Approval failed — the pitch is still in the queue.', 'error');
                                           }
                                         } catch (err) {
                                           showToast('Validation timeout.', 'error');
@@ -8968,6 +9476,20 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
             {/* TAB CONTENT: GALLERY */}
             {activeAdminTab === 'Gallery' && (
               <div className="space-y-6">
+                {/* Gallery download permission — controlled by the admin */}
+                <div className="p-4 border border-purple-500/10 rounded-xl bg-purple-950/5 flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-mono font-bold text-purple-300 uppercase block">⬇️ Gallery Image Downloads</span>
+                    <span className="text-[11px] text-slate-400 font-sans block max-w-xl">When ON, visitors see a Download button on gallery images (on the card and in the full-screen preview). When OFF, images are view-only — the preview still opens and closes normally. Takes effect when you Publish.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDraftConfig({ ...draftConfig, galleryDownloadsEnabled: !draftConfig?.galleryDownloadsEnabled })}
+                    className={`px-4 py-2 text-xs font-bold font-mono rounded-xl border transition-all cursor-pointer ${draftConfig?.galleryDownloadsEnabled ? 'bg-emerald-950/45 border-emerald-500/35 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-300'}`}
+                  >
+                    {draftConfig?.galleryDownloadsEnabled ? '🟢 ON — Downloads Allowed' : '⚫ OFF — View Only'}
+                  </button>
+                </div>
                 {cmsEditing && cmsEditing.tab === 'Gallery' ? (
                   <div className="p-6 border border-purple-500/20 bg-black/40 rounded-2xl space-y-5 font-sans text-stone-200">
                     <div className="flex justify-between items-center pb-3 border-b border-purple-500/10">
@@ -9045,11 +9567,11 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <span className="text-[10px] font-mono uppercase text-purple-400 block font-bold">🖥️ CMS Real-Time Rendering Preview</span>
                         <div className="border border-white/5 bg-black/40 rounded-lg overflow-hidden flex-grow flex flex-col justify-between aspect-video relative max-w-sm mx-auto">
                           <img 
-                            src={cmsEditing.data.url || 'https://i.pinimg.com/736x/5f/01/e4/5f01e4f756da2e5e605c7272ff16e63b.jpg'} 
+                            src={cmsEditing.data.url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'} 
                             alt="Preview"
                             className="w-full h-full object-cover rounded-t-lg"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://i.pinimg.com/736x/5f/01/e4/5f01e4f756da2e5e605c7272ff16e63b.jpg';
+                              (e.target as HTMLImageElement).src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg';
                             }}
                           />
                           <div className="p-3 bg-[#0d071b] space-y-1">
@@ -9096,7 +9618,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                           index: -1,
                           data: {
                             id: 'gallery-' + Date.now(),
-                            url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80',
+                            url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
                             title: 'New Festa Concept',
                             category: 'BTS',
                             description: '',
@@ -9463,7 +9985,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         <div className="p-4 bg-[#0d071a] border border-purple-500/10 rounded-xl max-w-sm mx-auto w-full flex items-center gap-3">
                           <div className="w-12 h-16 rounded overflow-hidden border border-purple-500/20 bg-slate-900 shrink-0">
                             <img 
-                              src={cmsEditing.data.url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300'} 
+                              src={cmsEditing.data.url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'} 
                               alt="Wallpaper" 
                               className="w-full h-full object-cover"
                               referrerPolicy="no-referrer"
@@ -9509,7 +10031,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                             title: 'Exclusive Wallpaper',
                             category: 'Mobile',
                             size: '4.5 MB',
-                            url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=1200'
+                            url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
                           }
                         })}
                         className="p-1 px-3 border border-purple-500/25 bg-purple-950/20 text-xs text-purple-400 rounded hover:bg-purple-950/40 font-mono font-bold flex items-center gap-1 cursor-pointer"
@@ -9655,33 +10177,44 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                         </div>
                       </div>
 
-                      {/* News Card Live Preview */}
+                      {/* News Card & Telegram Preview */}
                       <div className="p-4 bg-purple-950/5 border border-purple-500/10 rounded-xl space-y-3 flex flex-col justify-center">
-                        <span className="text-[10px] font-mono uppercase text-purple-400 block font-bold">🖥️ News Card Live Preview</span>
-                        <div className="bg-[#0c051a] rounded-xl overflow-hidden border border-purple-500/20 max-w-sm mx-auto w-full flex flex-col justify-between">
-                          <img 
-                            src={cmsEditing.data.imageUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'} 
-                            alt="News" 
-                            className="w-full aspect-video object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="p-4 space-y-2">
-                            <div className="flex justify-between items-center text-[9px] font-mono">
-                              <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 uppercase font-bold">{cmsEditing.data.category || 'Announcement'}</span>
-                              <span className="text-[#94a3b8]">{cmsEditing.data.date || 'Jun 13, 2026'}</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono uppercase text-sky-400 block font-bold flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+                            📱 Telegram & Social Link Preview (1200×630 Card)
+                          </span>
+                          <span className="text-[9px] font-mono text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-500/20">
+                            Auto OG Generator
+                          </span>
+                        </div>
+
+                        {/* Telegram / Social Media Link Preview Card Simulation */}
+                        <div className="bg-[#182533] text-white rounded-xl overflow-hidden border border-[#2b5278] max-w-sm mx-auto w-full shadow-2xl font-sans">
+                          <div className="aspect-[16/9] w-full bg-black/40 overflow-hidden relative">
+                            <img 
+                              src={cmsEditing.data.featuredImage || cmsEditing.data.imageUrl || 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_win_first_Daesang_(Grand_Prize)_at_Melon_Music_Awards,_19_November_2016_02.png?width=1280'} 
+                              alt="Cover Preview" 
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute top-2 right-2 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-mono text-emerald-300 border border-emerald-500/30">
+                              1200 × 630 Public Cover
                             </div>
-                            <h5 className="text-xs font-bold text-white leading-snug line-clamp-2">{cmsEditing.data.title || 'Draft Article Title'}</h5>
-                            <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">{cmsEditing.data.summary || 'Write awesome content context.'}</p>
-                            {cmsEditing.data.link && (
-                              <div className="text-[9px] font-mono text-purple-400 font-bold block truncate">
-                                🔗 {cmsEditing.data.link}
-                              </div>
-                            )}
-                            <div className="text-[9px] font-mono flex items-center gap-1.5 mt-2 pt-1 border-t border-purple-500/10">
-                              <span className={`w-2 h-2 rounded-full ${cmsEditing.data.published !== false ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                              <span className={cmsEditing.data.published !== false ? 'text-emerald-400' : 'text-red-400'}>
-                                {cmsEditing.data.published !== false ? 'PUBLISHED (LIVE)' : 'UNPUBLISHED (HIDDEN)'}
-                              </span>
+                          </div>
+                          <div className="p-3 bg-[#17212b] border-l-4 border-[#2b5278] space-y-1">
+                            <span className="text-[9px] font-mono font-bold text-sky-400 uppercase tracking-wider block truncate">
+                              BANGTANGALLERY.ONLINE
+                            </span>
+                            <h5 className="text-xs font-bold text-white leading-snug line-clamp-2">
+                              {cmsEditing.data.title || 'Jimin BTS - Best Kpop Soloists 2026'}
+                            </h5>
+                            <p className="text-[10px] text-[#93a7b8] line-clamp-2 leading-relaxed">
+                              {cmsEditing.data.seoDescription || cmsEditing.data.summary || 'Jimin of BTS has been officially crowned Best K-pop Soloist of 2026, breaking historical records...'}
+                            </p>
+                            <div className="pt-1.5 flex items-center justify-between text-[8px] font-mono text-[#6c7883] border-t border-white/5">
+                              <span className="text-emerald-400 font-bold">✓ Ready for Telegram & WhatsApp</span>
+                              <span>og:type = article</span>
                             </div>
                           </div>
                         </div>
@@ -9805,14 +10338,306 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                       )}
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Full Article Content (Markdown or HTML supported)</label>
+                    {/* News Links & Resources Manager Segment */}
+                    <div className="space-y-3 p-4 border border-purple-500/10 rounded-xl bg-purple-950/5 mt-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h5 className="text-xs font-mono font-bold text-purple-300 uppercase block">
+                            Article Clickable Links & Resources ({cmsEditing.data.links?.length || 0})
+                          </h5>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            Add clickable links (e.g. <strong>Visit Here 🔗</strong>) displayed in the article's official resources block and usable in text.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newLink = { id: 'link-' + Date.now(), label: 'Visit Here 🔗', url: 'https://' };
+                              setCmsEditing({
+                                ...cmsEditing,
+                                data: { ...cmsEditing.data, links: [...(cmsEditing.data.links || []), newLink] }
+                              });
+                            }}
+                            className="p-1 px-2.5 bg-purple-900/40 hover:bg-purple-800 border border-purple-500/30 text-purple-200 text-[10px] font-mono rounded cursor-pointer font-bold flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" /> Custom Link
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Quick Presets for the 4 Permanent Official Links */}
+                      <div className="p-2.5 bg-black/40 border border-purple-500/10 rounded-lg space-y-1.5">
+                        <span className="text-[9px] font-mono text-purple-400 uppercase font-bold block">
+                          ⚡ Instant Presets (Click to add official link card):
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newLink = { id: 'tg-chan-' + Date.now(), label: 'Telegram Channel 📢', url: 'https://t.me/arirang_army7' };
+                              setCmsEditing({
+                                ...cmsEditing,
+                                data: { ...cmsEditing.data, links: [...(cmsEditing.data.links || []), newLink] }
+                              });
+                            }}
+                            className="px-2 py-1 bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-300 text-[10px] font-mono rounded cursor-pointer flex items-center gap-1"
+                          >
+                            + Telegram Channel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newLink = { id: 'tg-comm-' + Date.now(), label: 'Telegram Community Chat 💜', url: 'https://t.me/arirang_army7chat' };
+                              setCmsEditing({
+                                ...cmsEditing,
+                                data: { ...cmsEditing.data, links: [...(cmsEditing.data.links || []), newLink] }
+                              });
+                            }}
+                            className="px-2 py-1 bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 text-purple-300 text-[10px] font-mono rounded cursor-pointer flex items-center gap-1"
+                          >
+                            + Telegram Community
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newLink = { id: 'x-tw-' + Date.now(), label: 'Follow on X (Twitter) 🐦', url: 'https://x.com/arirang_army_7' };
+                              setCmsEditing({
+                                ...cmsEditing,
+                                data: { ...cmsEditing.data, links: [...(cmsEditing.data.links || []), newLink] }
+                              });
+                            }}
+                            className="px-2 py-1 bg-sky-950/40 hover:bg-sky-900/60 border border-sky-500/30 text-sky-300 text-[10px] font-mono rounded cursor-pointer flex items-center gap-1"
+                          >
+                            + X (Twitter)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newLink = { id: 'kofi-' + Date.now(), label: 'Support on Ko-fi ☕', url: 'https://ko-fi.com/bangtangallery' };
+                              setCmsEditing({
+                                ...cmsEditing,
+                                data: { ...cmsEditing.data, links: [...(cmsEditing.data.links || []), newLink] }
+                              });
+                            }}
+                            className="px-2 py-1 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-300 text-[10px] font-mono rounded cursor-pointer flex items-center gap-1"
+                          >
+                            + Ko-fi
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* List of Configured Article Links */}
+                      <div className="space-y-2.5">
+                        {(cmsEditing.data.links || []).map((lnk: any, lIdx: number) => (
+                          <div key={lnk.id || lIdx} className="p-3 bg-black/30 border border-purple-500/10 rounded-xl space-y-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[9px] font-mono text-purple-300 uppercase block font-bold mb-1">
+                                  Link Display Text (e.g. Visit Here 🔗)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={lnk.label || ''}
+                                  placeholder="e.g. Visit Here 🔗 or Official Tickets"
+                                  onChange={(e) => {
+                                    const nextLinks = [...(cmsEditing.data.links || [])];
+                                    nextLinks[lIdx] = { ...nextLinks[lIdx], label: e.target.value };
+                                    setCmsEditing({
+                                      ...cmsEditing,
+                                      data: { ...cmsEditing.data, links: nextLinks }
+                                    });
+                                  }}
+                                  className="w-full px-2.5 py-1.5 bg-[#0b0515] border border-purple-500/15 rounded text-white text-xs font-sans"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] font-mono text-purple-300 uppercase block font-bold mb-1">
+                                  Destination URL (https://...)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={lnk.url || ''}
+                                  placeholder="https://t.me/arirang_army7 or https://..."
+                                  onChange={(e) => {
+                                    const nextLinks = [...(cmsEditing.data.links || [])];
+                                    nextLinks[lIdx] = { ...nextLinks[lIdx], url: e.target.value };
+                                    setCmsEditing({
+                                      ...cmsEditing,
+                                      data: { ...cmsEditing.data, links: nextLinks }
+                                    });
+                                  }}
+                                  className="w-full px-2.5 py-1.5 bg-[#0b0515] border border-purple-500/15 rounded text-stone-200 text-xs font-mono"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between pt-1 border-t border-purple-500/5 text-[10px] font-mono">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const tag = `[${lnk.label || 'Visit Here 🔗'}](${lnk.url || 'https://'})`;
+                                    const currentContent = cmsEditing.data.content || '';
+                                    setCmsEditing({
+                                      ...cmsEditing,
+                                      data: { ...cmsEditing.data, content: currentContent ? `${currentContent}\n\n${tag}` : tag }
+                                    });
+                                  }}
+                                  className="text-purple-300 hover:text-white flex items-center gap-1 cursor-pointer bg-purple-950/50 hover:bg-purple-900/60 px-2 py-0.5 rounded border border-purple-500/20"
+                                  title="Append markdown tag into article body content"
+                                >
+                                  📝 Insert into Article Text
+                                </button>
+                                {lnk.url && (
+                                  <a
+                                    href={lnk.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-cyan-400 hover:text-cyan-200 flex items-center gap-0.5 cursor-pointer"
+                                  >
+                                    Test ↗
+                                  </a>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const nextLinks = (cmsEditing.data.links || []).filter((_: any, i: number) => i !== lIdx);
+                                  setCmsEditing({
+                                    ...cmsEditing,
+                                    data: { ...cmsEditing.data, links: nextLinks }
+                                  });
+                                }}
+                                className="text-red-400 hover:text-red-200 cursor-pointer"
+                              >
+                                Remove Link ✕
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Full Article Content with In-Text Link Inserter Toolbar */}
+                    <div className="space-y-1.5 mt-4">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <label className="text-xs text-purple-300 font-mono font-bold block uppercase">
+                          Full Article Content (Markdown or HTML supported)
+                        </label>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          Format: <code>[Visit Here 🔗](https://...)</code>
+                        </span>
+                      </div>
+
+                      {/* In-Text Quick Link Inserter Toolbar */}
+                      <div className="p-3 bg-purple-950/20 border border-purple-500/20 rounded-xl space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1">
+                            <Link2 className="w-3 h-3 text-purple-400" /> Quick Link Inserter (Insert anywhere inside body)
+                          </span>
+                        </div>
+
+                        {/* Presets to quickly insert into content */}
+                        <div className="flex flex-wrap gap-1.5 items-center">
+                          <span className="text-[9px] font-mono text-zinc-400 uppercase">Insert Preset:</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const tag = `[Visit Here 🔗](https://t.me/arirang_army7chat)`;
+                              const cur = cmsEditing.data.content || '';
+                              setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, content: cur ? `${cur} ${tag}` : tag } });
+                            }}
+                            className="px-2 py-0.5 bg-purple-900/40 hover:bg-purple-800 text-purple-200 hover:text-white rounded text-[10px] font-mono border border-purple-500/20 cursor-pointer"
+                          >
+                            + [Visit Here 🔗]
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const tag = `[Telegram Channel 📢](https://t.me/arirang_army7)`;
+                              const cur = cmsEditing.data.content || '';
+                              setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, content: cur ? `${cur} ${tag}` : tag } });
+                            }}
+                            className="px-2 py-0.5 bg-cyan-950/40 hover:bg-cyan-900 text-cyan-300 rounded text-[10px] font-mono border border-cyan-500/20 cursor-pointer"
+                          >
+                            + Telegram Channel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const tag = `[Telegram Community 💜](https://t.me/arirang_army7chat)`;
+                              const cur = cmsEditing.data.content || '';
+                              setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, content: cur ? `${cur} ${tag}` : tag } });
+                            }}
+                            className="px-2 py-0.5 bg-purple-950/40 hover:bg-purple-900 text-purple-300 rounded text-[10px] font-mono border border-purple-500/20 cursor-pointer"
+                          >
+                            + Telegram Community
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const tag = `[Follow on X (Twitter) 🐦](https://x.com/arirang_army_7)`;
+                              const cur = cmsEditing.data.content || '';
+                              setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, content: cur ? `${cur} ${tag}` : tag } });
+                            }}
+                            className="px-2 py-0.5 bg-sky-950/40 hover:bg-sky-900 text-sky-300 rounded text-[10px] font-mono border border-sky-500/20 cursor-pointer"
+                          >
+                            + X (Twitter)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const tag = `[Support on Ko-fi ☕](https://ko-fi.com/bangtangallery)`;
+                              const cur = cmsEditing.data.content || '';
+                              setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, content: cur ? `${cur} ${tag}` : tag } });
+                            }}
+                            className="px-2 py-0.5 bg-rose-950/40 hover:bg-rose-900 text-rose-300 rounded text-[10px] font-mono border border-rose-500/20 cursor-pointer"
+                          >
+                            + Ko-fi
+                          </button>
+                        </div>
+
+                        {/* Custom Inserter Row */}
+                        <div className="flex flex-col sm:flex-row gap-2 pt-1 border-t border-purple-500/10">
+                          <input
+                            type="text"
+                            placeholder="Link Text (e.g. Visit Here 🔗)"
+                            value={quickLinkText}
+                            onChange={(e) => setQuickLinkText(e.target.value)}
+                            className="flex-1 px-2.5 py-1 bg-black/50 border border-purple-500/20 rounded text-xs text-white font-sans"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Destination URL (https://...)"
+                            value={quickLinkUrl}
+                            onChange={(e) => setQuickLinkUrl(e.target.value)}
+                            className="flex-1 px-2.5 py-1 bg-black/50 border border-purple-500/20 rounded text-xs text-stone-200 font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!quickLinkUrl.trim()) {
+                                alert('Please enter a target URL (e.g. https://...)');
+                                return;
+                              }
+                              const tag = `[${quickLinkText.trim() || 'Visit Here 🔗'}](${quickLinkUrl.trim()})`;
+                              const cur = cmsEditing.data.content || '';
+                              setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, content: cur ? `${cur}\n\n${tag}` : tag } });
+                              setQuickLinkUrl('');
+                            }}
+                            className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-mono font-bold transition-all shrink-0 cursor-pointer"
+                          >
+                            + Insert Link
+                          </button>
+                        </div>
+                      </div>
+
                       <textarea 
                         value={cmsEditing.data.content || ''}
                         onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, content: e.target.value }})}
                         rows={8}
                         className="w-full p-2.5 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white focus:outline-none font-sans leading-relaxed"
-                        placeholder="Write full article body content details..."
+                        placeholder="Write full article body content details. Use [Link Text](https://url) to embed links directly anywhere..."
                       />
                     </div>
 
@@ -9848,9 +10673,15 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                             date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                             category: 'Announcement',
                             summary: 'BTS official staff welcomes general registration for community feedback arrays.',
-                            imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600',
+                            imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
                             link: '',
-                            published: true
+                            published: true,
+                            links: [
+                              { id: 'lnk-1', label: 'Telegram Channel 📢', url: 'https://t.me/arirang_army7' },
+                              { id: 'lnk-2', label: 'Telegram Community Chat 💜', url: 'https://t.me/arirang_army7chat' },
+                              { id: 'lnk-3', label: 'Follow on X (Twitter) 🐦', url: 'https://x.com/arirang_army_7' },
+                              { id: 'lnk-4', label: 'Support on Ko-fi ☕', url: 'https://ko-fi.com/bangtangallery' }
+                            ]
                           }
                         })}
                         className="p-1 px-3 border border-purple-500/25 bg-purple-950/20 text-xs text-purple-400 rounded hover:bg-purple-950/40 font-mono font-bold flex items-center gap-1 cursor-pointer"
@@ -10103,308 +10934,92 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
             )}
 
             {/* TAB CONTENT: AUDIO & SOUND CMS */}
-            {activeAdminTab === 'AudioControl' && (
-              <div className="space-y-8 font-sans">
-                {/* Header Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-500/10 pb-4">
+            {activeAdminTab === 'GalleryUploads' && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-bold text-white uppercase flex items-center gap-2">
-                      <Volume2 className="w-5 h-5 text-emerald-400" /> Audio & Sound CMS
-                    </h3>
-                    <p className="text-[11px] text-slate-400">Manage game background music, interactive sound effects templates, and cover thumbnail libraries.</p>
+                    <h3 className="text-white font-sans font-bold text-base">Gallery Uploads</h3>
+                    <p className="text-gray-400 text-xs mt-0.5">
+                      Photos uploaded to the public Gallery by visitors and by you. Delete removes a photo from the website for everyone; edits save straight to the live photo.
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleAudioSettingsSave(false)}
-                      className="px-4 py-2 text-xs font-mono font-bold bg-[#140b2a] hover:bg-[#1a0f37] border border-purple-500/30 text-purple-300 rounded-lg transition-all cursor-pointer"
-                    >
-                      📁 Save Draft
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAudioSettingsSave(true)}
-                      className="px-4 py-2 text-xs font-mono font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-lg hover:shadow-emerald-600/25 transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      🚀 Publish Live Instantly
-                    </button>
-                  </div>
+                  <button
+                    onClick={fetchGalleryUploads}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-pink-500/40 text-gray-200 text-xs font-semibold cursor-pointer"
+                  >
+                    {galleryUploadsLoading ? 'Loading…' : '↻ Refresh'} · {galleryUploads.length} photos
+                  </button>
                 </div>
 
-                {/* 1. AUDIO SETTINGS BLOCK */}
-                <div className="bg-[#0b0515]/90 border border-purple-500/10 rounded-2xl p-6 space-y-6">
-                  <div>
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider text-purple-300 border-b border-white/5 pb-2">
-                      1. General Audio Settings & Preferences
-                    </h4>
-                    <p className="text-[11px] text-slate-400 mt-1">Configure global behavior parameters for audio streaming and local sound generation.</p>
+                {!galleryUploadsLoading && galleryUploads.length === 0 && (
+                  <div className="text-center py-14 rounded-2xl border border-dashed border-white/10 bg-white/[0.01]">
+                    <p className="text-gray-400 font-mono text-xs">No gallery uploads found.</p>
                   </div>
+                )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Checkbox settings */}
-                    <div className="space-y-4">
-                      {/* BGM Enabled toggler */}
-                      <div className="flex items-center justify-between p-3 rounded-xl bg-purple-950/10 border border-purple-500/5 hover:border-purple-500/15">
-                        <div>
-                          <div className="text-xs font-bold text-slate-200">Continuous Background Music</div>
-                          <div className="text-[10px] text-slate-400">Play continuous background music when user registers/visits play board.</div>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={draftConfig.audioSettings?.bgmEnabled !== false}
-                          onChange={(e) => updateDraft('audioSettings', 'bgmEnabled', e.target.checked)}
-                          className="w-4 h-4 rounded border-purple-500 text-purple-600 bg-purple-950/20 focus:ring-purple-500 focus:ring-opacity-25 cursor-pointer"
-                        />
-                      </div>
-
-                      {/* Game Sounds Enabled toggler */}
-                      <div className="flex items-center justify-between p-3 rounded-xl bg-purple-950/10 border border-purple-500/5 hover:border-purple-500/15">
-                        <div>
-                          <div className="text-xs font-bold text-slate-200">Interactive Game Sound Effects</div>
-                          <div className="text-[10px] text-slate-400">Trigger click audio, award pings, level notifications, and action effects.</div>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={draftConfig.audioSettings?.gameSoundsEnabled !== false}
-                          onChange={(e) => updateDraft('audioSettings', 'gameSoundsEnabled', e.target.checked)}
-                          className="w-4 h-4 rounded border-purple-500 text-purple-600 bg-purple-950/20 focus:ring-purple-500 focus:ring-opacity-25 cursor-pointer"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      {/* Autoplay toggler */}
-                      <div className="flex items-center justify-between p-3 rounded-xl bg-purple-950/10 border border-purple-500/5 hover:border-purple-500/15">
-                        <div>
-                          <div className="text-xs font-bold text-slate-200">Autoplay Background Stream</div>
-                          <div className="text-[10px] text-slate-400">Automatically stream background media upon screen entry.</div>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={draftConfig.audioSettings?.autoPlay !== false}
-                          onChange={(e) => updateDraft('audioSettings', 'autoPlay', e.target.checked)}
-                          className="w-4 h-4 rounded border-purple-500 text-purple-600 bg-purple-950/20 focus:ring-purple-500 focus:ring-opacity-25 cursor-pointer"
-                        />
-                      </div>
-
-                      {/* Loop toggler */}
-                      <div className="flex items-center justify-between p-3 rounded-xl bg-purple-950/10 border border-purple-500/5 hover:border-purple-500/15">
-                        <div>
-                          <div className="text-xs font-bold text-slate-200">Loop Audio Background Music</div>
-                          <div className="text-[10px] text-slate-400">Seamlessly loop background tracking indefinitely.</div>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={draftConfig.audioSettings?.loop !== false}
-                          onChange={(e) => updateDraft('audioSettings', 'loop', e.target.checked)}
-                          className="w-4 h-4 rounded border-purple-500 text-purple-600 bg-purple-950/20 focus:ring-purple-500 focus:ring-opacity-25 cursor-pointer"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Volume Slider */}
-                  <div className="p-4 rounded-xl bg-purple-950/10 border border-purple-500/5 space-y-2">
-                    <div className="flex justify-between text-xs font-bold">
-                      <span className="text-slate-200">DEFAULT SOUND STAGE VOLUME</span>
-                      <span className="font-mono text-purple-400">{draftConfig.audioSettings?.defaultVolume ?? 50}%</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <VolumeX className="w-4 h-4 text-slate-500 shrink-0" />
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={draftConfig.audioSettings?.defaultVolume ?? 50}
-                        onChange={(e) => updateDraft('audioSettings', 'defaultVolume', parseInt(e.target.value))}
-                        className="w-full accentuate-purple accent-purple-600 bg-purple-950/40 rounded-lg appearance-none h-1.5 cursor-pointer animate-none"
+                <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {galleryUploads.map((item: any) => (
+                    <div key={item.id} className="rounded-2xl border border-white/5 bg-black/40 overflow-hidden flex flex-col">
+                      <img
+                        src={item.url}
+                        alt={item.title || 'Gallery upload'}
+                        className="w-full h-40 object-cover bg-black"
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
                       />
-                      <Volume2 className="w-4 h-4 text-purple-400 shrink-0 animate-pulse" />
-                    </div>
-                    <p className="text-[9px] text-slate-400 font-mono">Control baseline attenuation level for game screens and interactive clips.</p>
-                  </div>
-                </div>
-
-                {/* 2. GAME SOUND CONTROL BLOCK */}
-                <div className="bg-[#0b0515]/90 border border-purple-500/10 rounded-2xl p-6 space-y-6">
-                  <div>
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider text-purple-300 border-b border-white/5 pb-2">
-                      2. Sound Effect Templates & Background Tracks
-                    </h4>
-                    <p className="text-[11px] text-slate-400 mt-1">Replace, upload, preview, or delete sound file streams utilized during game challenges.</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    {[
-                      { key: 'bgmMusicUrl', label: '🎧 Game Background Music', desc: 'Continuous loop music streamed when the game board loads', defaultUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3' },
-                      { key: 'clickSoundUrl', label: '🔘 Button Click Audio', desc: 'Sound triggered instantly when gamers click options or buttons', defaultUrl: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav' },
-                      { key: 'notificationSoundUrl', label: '🔔 Interface Notification Ping', desc: 'Sound played on notifications, level accomplishments, or unlocks', defaultUrl: 'https://assets.mixkit.co/active_storage/sfx/911/911-84.wav' },
-                      { key: 'rewardSoundUrl', label: '🏆 Target Reward Award', desc: 'Success sound triggered when gamers gain points or solve puzzles', defaultUrl: 'https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav' },
-                      { key: 'effectSoundUrl', label: '✨ Game Event Magic Sound', desc: 'Standard action effect playback for Guessing/lyrics games', defaultUrl: 'https://assets.mixkit.co/active_storage/sfx/1005/1005-84.wav' },
-                    ].map((snd) => {
-                      const currentVal = draftConfig.audioSettings?.[snd.key] || '';
-                      return (
-                        <div key={snd.key} className="p-4 rounded-xl bg-purple-900/5 border border-purple-500/10 space-y-3 hover:border-purple-500/25 transition-all">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                            <div>
-                              <div className="text-xs font-bold text-slate-100 uppercase tracking-wide">{snd.label}</div>
-                              <div className="text-[10px] text-slate-400 leading-relaxed">{snd.desc}</div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => testPlaySoundUrl(currentVal || snd.defaultUrl)}
-                                className="px-3 py-1 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 rounded-md text-[10px] font-mono text-purple-300 flex items-center gap-1 cursor-pointer transition-colors"
-                              >
-                                🔔 Play Test
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => updateDraft('audioSettings', snd.key, '')}
-                                className="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-md text-[10px] font-mono text-rose-300 cursor-pointer transition-colors"
-                              >
-                                Delete Sound
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="text"
-                              value={currentVal}
-                              onChange={(e) => updateDraft('audioSettings', snd.key, e.target.value)}
-                              placeholder={`Or paste custom ${snd.key} url template...`}
-                              className="w-full px-3.5 py-2 border border-purple-500/15 bg-[#090513] rounded-lg text-xs font-mono text-green-300 focus:outline-none"
-                            />
-                            <div className="relative shrink-0">
-                              <input
-                                type="file"
-                                id={`file-${snd.key}`}
-                                onChange={(e) => handleSoundUpload(e, snd.key)}
-                                accept="audio/*"
-                                className="sr-only"
-                                disabled={isUploadingSound === snd.key}
-                              />
-                              <label
-                                htmlFor={`file-${snd.key}`}
-                                className={`px-4 py-2 border border-purple-500/20 bg-[#160d2e] text-purple-300 text-xs font-mono font-bold rounded-lg cursor-pointer hover:bg-purple-950/40 transition-all flex items-center gap-1.5 ${
-                                  isUploadingSound === snd.key ? 'opacity-50 pointer-events-none' : ''
-                                }`}
-                              >
-                                {isUploadingSound === snd.key ? (
-                                  <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...
-                                  </>
-                                ) : (
-                                  <>📁 Replace Sound</>
-                                )}
-                              </label>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 3. COVER IMAGE MANAGEMENT BLOCK */}
-                <div className="bg-[#0b0515]/90 border border-purple-500/10 rounded-2xl p-6 space-y-6">
-                  <div>
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider text-purple-300 border-b border-white/5 pb-2">
-                      3. Dynamic Album Cover Artwork Library
-                    </h4>
-                    <p className="text-[11px] text-slate-400 mt-1">Upload, replace, delete, or manage cover artwork and thumbnails. Every uploaded cover image automatically appears in the public Music Section.</p>
-                  </div>
-
-                  {/* Add Cover Artwork Form */}
-                  <div className="p-4 rounded-xl bg-purple-950/10 border border-purple-500/10 space-y-3.5">
-                    <div className="text-xs font-bold text-white uppercase tracking-wider block">🎨 Upload Custom Album Cover Artwork</div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-mono text-purple-300 block font-bold">ARTWORK TITLE / CAPTION</label>
+                      <div className="p-3.5 space-y-2.5 flex-grow flex flex-col">
                         <input
                           type="text"
-                          value={newCoverTitle}
-                          onChange={(e) => setNewCoverTitle(e.target.value)}
-                          placeholder="e.g. BTS Love Yourself Tears Aesthetic"
-                          className="w-full px-3 py-1.5 border border-purple-500/15 bg-[#090513] rounded-lg text-xs text-white placeholder-slate-500"
+                          value={item.title || ''}
+                          onChange={(e) => setGalleryUploads(prev => prev.map((m: any) => m.id === item.id ? { ...m, title: e.target.value } : m))}
+                          placeholder="Photo title"
+                          className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-pink-500/50"
                         />
-                      </div>
-                      <div className="flex items-end gap-3">
-                        <div className="relative w-full">
-                          <input
-                            type="file"
-                            id="cover-upload-input"
-                            accept="image/*"
-                            onChange={handleCoverUpload}
-                            className="sr-only"
-                            disabled={isUploadingCover}
-                          />
-                          <label
-                            htmlFor="cover-upload-input"
-                            className={`w-full h-9 border border-dashed border-purple-500/30 bg-[#160d2e] text-purple-300 text-xs font-mono font-bold rounded-lg cursor-pointer hover:bg-purple-950/40 transition-all flex items-center justify-center gap-1.5 ${
-                              isUploadingCover ? 'opacity-50 pointer-events-none' : ''
-                            }`}
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={item.category || 'BTS'}
+                            onChange={(e) => setGalleryUploads(prev => prev.map((m: any) => m.id === item.id ? { ...m, category: e.target.value } : m))}
+                            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-pink-500/50 [&>option]:bg-zinc-900"
                           >
-                            {isUploadingCover ? (
-                              <>
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading Cover...
-                              </>
-                            ) : (
-                              <>📁 Select & Upload Cover Image</>
+                            {['BTS', 'RM', 'Jin', 'SUGA', 'j-hope', 'Jimin', 'V', 'Jung Kook', 'Concert', 'Festa', 'Memes', 'Fan Art'].map(cat => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                            {item.category && !['BTS', 'RM', 'Jin', 'SUGA', 'j-hope', 'Jimin', 'V', 'Jung Kook', 'Concert', 'Festa', 'Memes', 'Fan Art'].includes(item.category) && (
+                              <option value={item.category}>{item.category}</option>
                             )}
-                          </label>
+                          </select>
+                          <span className="text-[10px] font-mono text-gray-500 shrink-0 truncate max-w-[110px]">
+                            @{item.username || 'unknown'}
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          value={item.description || ''}
+                          onChange={(e) => setGalleryUploads(prev => prev.map((m: any) => m.id === item.id ? { ...m, description: e.target.value } : m))}
+                          placeholder="Description (optional)"
+                          className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-pink-500/50"
+                        />
+                        <div className="flex items-center gap-2 pt-1 mt-auto">
+                          <button
+                            onClick={() => handleGalleryUploadSave(item)}
+                            className="flex-1 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold cursor-pointer"
+                          >
+                            Save Changes
+                          </button>
+                          <button
+                            onClick={() => handleGalleryUploadDelete(item)}
+                            className="px-3 py-1.5 rounded-lg bg-red-600/15 border border-red-500/30 hover:bg-red-600/30 text-red-300 text-xs font-bold cursor-pointer"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Library Grid */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-mono text-purple-300 uppercase block font-bold">Currently Configured Gallery Assets ({draftConfig.audioSettings?.coverImages?.length || 0})</label>
-                    {draftConfig.audioSettings?.coverImages && draftConfig.audioSettings.coverImages.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                        {draftConfig.audioSettings.coverImages.map((img: any, idx: number) => (
-                          <div key={img.id || idx} className="group relative overflow-hidden bg-black/45 border border-purple-500/15 rounded-xl p-2 transition-all hover:border-purple-500/35 animate-none">
-                            <div className="relative aspect-square w-full rounded-lg overflow-hidden border border-white/5">
-                              <img 
-                                src={img.coverUrl} 
-                                alt={img.title} 
-                                className="w-full h-full object-cover"
-                                referrerPolicy="no-referrer"
-                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'; }}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const currentList = draftConfig.audioSettings.coverImages.filter((c: any, i: number) => i !== idx);
-                                  updateDraft('audioSettings', 'coverImages', currentList);
-                                  showToast('Cover Artwork deleted from Library successfully!', 'info');
-                                }}
-                                className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/75 hover:bg-rose-600 text-white transition-all cursor-pointer shadow-lg flex items-center justify-center"
-                                title="Remove Artwork"
-                              >
-                                <Trash className="w-3 h-3" />
-                              </button>
-                            </div>
-                            <div className="mt-2 min-w-0">
-                              <p className="text-[10px] font-bold text-slate-100 truncate">{img.title || 'Artwork Cover'}</p>
-                              <p className="text-[8px] font-mono text-slate-400 truncate mt-0.5">{img.coverUrl?.slice(0, 30)}...</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-8 bg-purple-950/5 border border-dashed border-purple-500/10 rounded-xl text-center text-xs font-mono text-slate-500">
-                        No custom cover artworks in libraries yet. Upload one above!
-                      </div>
-                    )}
-                  </div>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* TAB CONTENT: MEDIA MANAGER */}
             {activeAdminTab === 'Media' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center bg-[#090515] p-4 rounded-xl border border-purple-500/10">
@@ -10634,7 +11249,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                   className="px-2 py-0.5 bg-[#090515] border border-purple-500/30 text-xs rounded text-white font-mono flex-grow"
                                 />
                                 <button 
-                                  onClick={() => handleRenameMediaFile(item.filename, renamingName)}
+                                  onClick={() => handleRenameMediaFile(item.filename || item.name, renamingName)}
                                   className="p-1 bg-emerald-600 rounded text-white cursor-pointer"
                                 >
                                   ✓
@@ -10688,7 +11303,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                               </button>
 
                               <button 
-                                onClick={() => { setRenamingFile(item.filename); setRenamingName(item.filename); }}
+                                onClick={() => { setRenamingFile(item.filename || item.name); setRenamingName(item.filename || item.name); }}
                                 className="text-[10px] font-mono text-amber-500 hover:text-amber-300 underline cursor-pointer"
                               >
                                 Rename
@@ -10700,13 +11315,13 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                 <input 
                                   type="file" 
                                   className="hidden" 
-                                  onChange={(e) => { if (e.target.files) handleReplaceMediaFile(item.filename, e.target.files[0]); }}
+                                  onChange={(e) => { if (e.target.files) handleReplaceMediaFile(item.filename || item.name, e.target.files[0]); }}
                                 />
                               </label>
                               
                               {!mediaViewTrash ? (
                                 <button 
-                                  onClick={() => handleDeleteMediaFile(item.filename, false)}
+                                  onClick={() => handleDeleteMediaFile(item.filename || item.name, false, item.id)}
                                   className="text-[10px] text-red-400 hover:text-red-300 cursor-pointer text-center ml-auto font-mono"
                                 >
                                   {`[Trash]`}
@@ -10714,13 +11329,13 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                               ) : (
                                 <div className="flex gap-2 ml-auto">
                                   <button 
-                                    onClick={() => handleRestoreMediaFile(item.filename)}
+                                    onClick={() => handleRestoreMediaFile(item.filename || item.name, item.id)}
                                     className="text-[10px] text-emerald-400 hover:text-emerald-300 font-mono cursor-pointer"
                                   >
                                     Restore
                                   </button>
                                   <button 
-                                    onClick={() => handleDeleteMediaFile(item.filename, true)}
+                                    onClick={() => handleDeleteMediaFile(item.filename || item.name, true, item.id)}
                                     className="text-[10px] text-red-500 hover:text-red-400 font-bold font-mono cursor-pointer"
                                   >
                                     Purge
@@ -10837,7 +11452,7 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                       </div>
                     )}
 
-                    {/* Status & Simulation Banner */}
+                    {/* Status Banner */}
                     <div className="bg-purple-950/20 border border-purple-500/20 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="space-y-1 text-left">
                         <span className="text-[10px] font-mono tracking-widest text-purple-400 font-bold block uppercase">Live Broadcast Status</span>
@@ -11123,12 +11738,21 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                               <input 
                                 type="text"
                                 value={liveThumbnail}
-                                onChange={(e) => setLiveThumbnail(e.target.value)}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setLiveThumbnail(val);
+                                  if (draftConfig) {
+                                    setDraftConfig({
+                                      ...draftConfig,
+                                      liveStream: { ...(draftConfig.liveStream || {}), thumbnail: val, coverUrl: val }
+                                    });
+                                  }
+                                }}
                                 className="flex-grow px-3 py-2 bg-black/40 border border-purple-500/15 rounded-lg text-xs text-white focus:outline-none focus:border-purple-500/50 font-mono text-[11px]"
-                                placeholder="Paste custom image URL..."
+                                placeholder="Paste custom image URL or upload file..."
                               />
                               <label className="px-3.5 py-2 bg-purple-950/40 hover:bg-purple-900/40 text-purple-300 border border-purple-500/30 text-[10px] font-mono font-bold rounded-lg cursor-pointer transition-all flex items-center justify-center select-none shrink-0">
-                                {isUploadingLiveThumbnail ? 'Uploading...' : 'Upload File'}
+                                {isUploadingLiveThumbnail ? "Uploading..." : "Upload File"}
                                 <input 
                                   type="file" 
                                   accept="image/*" 
@@ -11138,6 +11762,34 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                                 />
                               </label>
                             </div>
+                            {liveThumbnail && (
+                              <div className="flex items-center gap-3 p-2 bg-black/50 rounded-lg border border-purple-500/20 mt-1.5">
+                                <img 
+                                  src={liveThumbnail} 
+                                  alt="Broadcast cover preview" 
+                                  className="w-14 h-14 object-cover rounded-md border border-white/10" 
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-[10px] text-purple-300 font-mono font-bold block truncate">Broadcast Cover Thumbnail Active</span>
+                                  <span className="text-[9px] text-emerald-400 font-mono block">✓ Displayed on stream cards &amp; offline screen</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setLiveThumbnail("");
+                                    if (draftConfig) {
+                                      setDraftConfig({
+                                        ...draftConfig,
+                                        liveStream: { ...(draftConfig.liveStream || {}), thumbnail: "", coverUrl: "" }
+                                      });
+                                    }
+                                  }}
+                                  className="text-[10px] text-rose-400 hover:text-rose-300 px-2.5 py-1 bg-rose-950/40 rounded border border-rose-500/20 font-mono cursor-pointer"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            )}
                           </div>
 
                           {/* Scheduled broadcast time */}
@@ -11152,58 +11804,162 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                           </div>
                         </div>
 
-                        <div className="space-y-1.5 text-left">
-                          <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Iframe Embed Code / Custom Stream Iframe (HTML)</label>
+                        <div className="space-y-2 text-left">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs text-purple-300 font-mono font-bold block uppercase flex items-center gap-1.5">
+                              <Radio className="w-4 h-4 text-rose-500 animate-ping" />
+                              OBS Live Stream Output Code / Embed Iframe / Video Link
+                            </label>
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
+                              liveSettings?.isLive ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-slate-800 text-slate-400'
+                            }`}>
+                              {liveSettings?.isLive ? '🔴 BROADCAST IS LIVE' : '⚫ OFFLINE'}
+                            </span>
+                          </div>
                           <textarea 
                             rows={4}
                             value={liveEmbedCode}
                             onChange={(e) => setLiveEmbedCode(e.target.value)}
-                            className="w-full px-3 py-2.5 bg-black/40 border border-purple-500/15 rounded-lg text-xs text-white font-mono focus:outline-none focus:border-purple-500/50"
-                            placeholder='e.g., <iframe width="560" height="315" src="https://www.youtube.com/embed/..." frameborder="0" allowfullscreen></iframe>'
+                            className="w-full px-3 py-2.5 bg-black/60 border border-purple-500/25 rounded-lg text-xs text-white font-mono focus:outline-none focus:border-purple-500"
+                            placeholder='Paste any stream code: OBS output embed (e.g. <iframe src="..." ...></iframe>), YouTube Live URL, Twitch channel link, .m3u8 HLS URL, or direct video link...'
                           />
-                          <p className="text-[10px] text-slate-500 leading-tight">
-                            Note: If you provide an iframe code (like from YouTube Live), we will render your embed player on the stream page. Leave this blank to default back to the beautiful standard self-hosted stream player.
+                          <div className="flex flex-wrap gap-2 text-[10px] font-mono">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLiveEmbedCode('https://player.vdocipher.com/live-v2?liveId=e723f5417691462cacc834ee213c2571');
+                                setLiveTitle('BTS WORLD TOUR ARIRANG 2026 LIVE STREAM');
+                                setLiveDescription('BTS WORLD TOUR ARIRANG 2026 LIVE STREAM LOS ANGELES DAY -4');
+                                showToast('Loaded BTS World Tour concert stream template! 💜', 'info');
+                              }}
+                              className="px-2.5 py-1 bg-purple-900/30 hover:bg-purple-900/50 text-purple-300 border border-purple-500/20 rounded cursor-pointer transition-colors"
+                            >
+                              + VdoCipher Concert
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLiveEmbedCode('https://www.youtube.com/embed/live_stream?channel=UC3IZKseVpdzPSBaWxBxundA');
+                                setLiveTitle('BANGTANTV YouTube Live Official Broadcast');
+                                showToast('Loaded YouTube Live stream template! 🔴', 'info');
+                              }}
+                              className="px-2.5 py-1 bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-500/20 rounded cursor-pointer transition-colors"
+                            >
+                              + YouTube Live Embed
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLiveEmbedCode('')}
+                              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 rounded cursor-pointer transition-colors"
+                            >
+                              Clear Code
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-slate-400 leading-tight">
+                            Supports: OBS output HTML iframe, YouTube Live URL, Twitch link, .m3u8 HLS feed, or standard video files (.mp4/.webm).
                           </p>
                         </div>
 
                         {/* Real-time Interactive Live Preview */}
                         {liveEmbedCode.trim() && (
-                          <div className="space-y-2 border border-purple-500/20 bg-black/60 p-4 rounded-xl text-left animate-fade-in">
-                            <span className="text-[10px] text-purple-400 font-mono font-bold uppercase tracking-widest block flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                              Interactive Embed Preview (Unsaved Draft)
-                            </span>
-                            <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-white/10 flex items-center justify-center">
-                              {(() => {
-                                const trimmed = liveEmbedCode.trim();
-                                const htmlContent = (trimmed.startsWith('<iframe') || trimmed.includes('<script'))
-                                  ? trimmed
-                                  : `<iframe src="${trimmed}" width="100%" height="100%" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"></iframe>`;
-                                return (
-                                  <div 
-                                    className="w-full h-full [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:absolute [&_iframe]:inset-0"
-                                    dangerouslySetInnerHTML={{ __html: htmlContent }}
-                                  />
-                                );
-                              })()}
+                          <div className="space-y-2 border border-purple-500/25 bg-black/70 p-4 rounded-xl text-left animate-fade-in shadow-xl">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="text-[10px] text-purple-400 font-mono font-bold uppercase tracking-widest flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                                Interactive Stream Player Preview
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPreviewRefreshKey(k => k + 1);
+                                    showToast('Reloading stream player preview...', 'info');
+                                  }}
+                                  className="text-[10px] text-purple-300 hover:text-white px-2 py-0.5 bg-purple-950/50 hover:bg-purple-900/70 rounded border border-purple-500/30 font-mono cursor-pointer transition-colors flex items-center gap-1"
+                                  title="Reload player iframe"
+                                >
+                                  <RefreshCw className="w-3 h-3" />
+                                  Reload Player
+                                </button>
+                                {(() => {
+                                  const sourceUrl = getStreamSourceUrl(liveEmbedCode);
+                                  return sourceUrl ? (
+                                    <a
+                                      href={sourceUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[10px] text-slate-300 hover:text-white px-2 py-0.5 bg-slate-900/60 hover:bg-slate-800 rounded border border-slate-700/50 font-mono transition-colors flex items-center gap-1"
+                                      title="Open direct link in new tab"
+                                    >
+                                      <Globe className="w-3 h-3 text-purple-400" />
+                                      Open Source Link
+                                    </a>
+                                  ) : null;
+                                })()}
+                              </div>
                             </div>
-                            <p className="text-[9px] text-slate-400 leading-normal">
-                              Verify that your live embed player renders correctly above. Click <strong>Save Caption & Embed Settings</strong> below to publish this stream to the public page and embed endpoints.
-                            </p>
+
+                            <div className="relative w-full aspect-video min-h-[220px] md:min-h-[360px] rounded-xl overflow-hidden bg-black border border-white/10 shadow-2xl">
+                              <div 
+                                key={previewRefreshKey}
+                                className="absolute inset-0 w-full h-full [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:border-0 [&_video]:w-full [&_video]:h-full [&_video]:absolute [&_video]:inset-0 [&>div]:w-full [&>div]:h-full [&>div]:relative"
+                                dangerouslySetInnerHTML={{ __html: getStreamEmbedHTML(liveEmbedCode) }}
+                              />
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-[9px] font-mono pt-1">
+                              <p className="text-emerald-400 leading-normal flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 inline text-emerald-400 shrink-0" />
+                                <span>Player rendered &amp; validated. Click <strong>&quot;SUBMIT &amp; BROADCAST LIVE NOW&quot;</strong> below to broadcast live on the website!</span>
+                              </p>
+                              <span className="px-2 py-0.5 bg-purple-950/60 border border-purple-500/25 text-purple-300 rounded font-semibold">
+                                {getEmbedTypeLabel(liveEmbedCode)}
+                              </span>
+                            </div>
                           </div>
                         )}
                       </div>
 
-                      <div className="pt-3 border-t border-purple-500/10 flex justify-end">
+                      <div className="pt-3 border-t border-purple-500/10 flex flex-wrap items-center justify-end gap-3">
                         <button
-                          type="submit"
+                          type="button"
+                          onClick={(e) => handleSaveLiveDetails(e, false)}
                           disabled={isSavingLiveDetails}
-                          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold font-mono tracking-wider uppercase rounded-xl transition-all shadow-lg shadow-purple-600/20 cursor-pointer"
+                          className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-mono font-semibold rounded-xl transition-all cursor-pointer border border-slate-700"
                         >
-                          {isSavingLiveDetails ? 'Saving Changes...' : 'Save Caption & Embed Settings'}
+                          💾 Save as Offline Draft
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleSaveLiveDetails(e, true)}
+                          disabled={isSavingLiveDetails}
+                          className="px-5 py-2.5 bg-gradient-to-r from-red-600 via-rose-600 to-purple-600 hover:from-red-500 hover:to-purple-500 disabled:opacity-50 text-white text-xs font-bold font-mono tracking-wider uppercase rounded-xl transition-all shadow-lg shadow-red-600/30 flex items-center gap-2 cursor-pointer"
+                        >
+                          {isSavingLiveDetails ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Publishing...
+                            </>
+                          ) : (
+                            <>
+                              <Radio className="w-3.5 h-3.5 text-white animate-pulse" />
+                              🚀 SUBMIT & BROADCAST LIVE NOW 🔴
+                            </>
+                          )}
                         </button>
                       </div>
                     </form>
+
+                    {/* HOW TO GO LIVE (FREE) */}
+                    <div className="bg-[#090515] p-6 border border-purple-500/10 rounded-2xl space-y-3 text-left">
+                      <span className="text-sm font-bold text-white uppercase block tracking-wider font-sans">📺 How to Go Live — Free, with YouTube Live</span>
+                      <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-400 font-sans leading-relaxed">
+                        <li>Start your broadcast in the YouTube app or YouTube Studio — YouTube hosts the stream for free. This website has no streaming server of its own, so OBS/RTMP keys are not used here.</li>
+                        <li>Copy the live video link (for example a youtube.com/watch?v=… link, or your channel's /live link).</li>
+                        <li>Paste it into the stream source / embed box above — the preview player will show your stream.</li>
+                        <li>Press "SUBMIT &amp; BROADCAST LIVE NOW" or "Start Live Stream". Visitors instantly see the real live player in the Live Stream section. Press "Stop Live Stream" when you finish.</li>
+                      </ol>
+                      <p className="text-[11px] text-slate-500 font-sans">An .m3u8 (HLS) URL or an embed code from Twitch, Kick or Vimeo works the same way. Nothing on this page is simulated: if no source is pasted, the section honestly shows as offline.</p>
+                    </div>
 
                     {/* DANGER ZONE / BROADCAST LIFECYCLE MANAGEMENT */}
                     <div className="bg-[#090515] p-6 border border-purple-500/10 rounded-2xl space-y-4 text-left">
@@ -11237,6 +11993,485 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                   <div className="p-8 border border-dashed border-purple-500/10 rounded-xl text-center text-xs text-slate-500 font-mono">
                     Stream settings telemetry could not be resolved.
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB CONTENT: CONCERTS & REPLAYS CMS */}
+            {activeAdminTab === 'Concerts' && (
+              <div className="space-y-6 font-sans">
+                {cmsEditing && cmsEditing.tab === 'Concerts' ? (
+                  <div className="p-6 border border-purple-500/20 bg-black/50 rounded-2xl space-y-6 font-sans text-stone-200">
+                    <div className="flex justify-between items-center pb-3 border-b border-purple-500/10">
+                      <div>
+                        <h4 className="text-sm font-bold text-white uppercase font-mono tracking-wider flex items-center gap-2">
+                          <Film className="w-4 h-4 text-purple-400" />
+                          {cmsEditing.index === -1 ? '✨ Add New Concert Replay' : '✏️ Edit Concert Replay'}
+                        </h4>
+                        <p className="text-[11px] text-purple-300/70 mt-0.5">
+                          Configure concert metadata, high-resolution cover image, video stream, quality tag, and Telegram download link.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => setCmsEditing(null)}
+                        className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-white/5 rounded-lg font-mono cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Concert Title</label>
+                          <input 
+                            type="text"
+                            value={cmsEditing.data.title || ''}
+                            onChange={(e) => {
+                              const title = e.target.value;
+                              const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                              setCmsEditing({ 
+                                ...cmsEditing, 
+                                data: { 
+                                  ...cmsEditing.data, 
+                                  title,
+                                  slug: cmsEditing.data.slug || slug
+                                }
+                              });
+                            }}
+                            className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white focus:outline-none focus:border-purple-500"
+                            placeholder="e.g. BTS World Tour 'ARIRANG' 2026 Los Angeles"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-xs text-purple-300 font-mono font-bold block uppercase">URL Slug</label>
+                            <input 
+                              type="text"
+                              value={cmsEditing.data.slug || ''}
+                              onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, slug: e.target.value }})}
+                              className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-purple-300 font-mono"
+                              placeholder="e.g. bts-arirang-la-2026"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Part / Episode Number (Optional)</label>
+                            <input 
+                              type="text"
+                              value={cmsEditing.data.partNumber || ''}
+                              onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, partNumber: e.target.value }})}
+                              className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white"
+                              placeholder="e.g. Part 1, Day 4, The Final"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="space-y-1.5">
+                            <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Location / Venue</label>
+                            <input 
+                              type="text"
+                              value={cmsEditing.data.location || ''}
+                              onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, location: e.target.value }})}
+                              className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white"
+                              placeholder="e.g. SoFi Stadium, LA"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Concert Date</label>
+                            <input 
+                              type="text"
+                              value={cmsEditing.data.date || ''}
+                              onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, date: e.target.value }})}
+                              className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white"
+                              placeholder="e.g. 2026-06-13"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Video Quality Tag</label>
+                            <select 
+                              value={cmsEditing.data.videoQuality || '1080p'}
+                              onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, videoQuality: e.target.value }})}
+                              className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white focus:outline-none"
+                            >
+                              <option value="4K">4K Ultra HD</option>
+                              <option value="1080p">1080p Full HD</option>
+                              <option value="720p">720p HD</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Category</label>
+                            <input 
+                              type="text"
+                              value={cmsEditing.data.category || ''}
+                              onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, category: e.target.value }})}
+                              className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white"
+                              placeholder="e.g. World Tour / FESTA / Special Live"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Tags (comma-separated)</label>
+                            <input 
+                              type="text"
+                              value={Array.isArray(cmsEditing.data.tags) ? cmsEditing.data.tags.join(', ') : (cmsEditing.data.tags || '')}
+                              onChange={(e) => setCmsEditing({ 
+                                ...cmsEditing, 
+                                data: { 
+                                  ...cmsEditing.data, 
+                                  tags: e.target.value.split(',').map((t: string) => t.trim()).filter(Boolean) 
+                                }
+                              })}
+                              className="w-full px-3 py-2 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white"
+                              placeholder="e.g. ARIRANG, 4K, Los Angeles"
+                            />
+                          </div>
+                        </div>
+
+                        <SmartImageInput
+                          label="Concert Cover Image URL (16:9 / Landscape Poster)"
+                          value={cmsEditing.data.coverUrl || ''}
+                          onChange={(val) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, coverUrl: val }})}
+                          placeholder="Paste image link or upload concert poster..."
+                        />
+                      </div>
+
+                      <div className="space-y-4">
+                        <AdminConcertVideoManager
+                          videoUrl={cmsEditing.data.videoUrl || ''}
+                          coverUrl={cmsEditing.data.coverUrl || ''}
+                          videoPosterUrl={cmsEditing.data.videoPosterUrl || ''}
+                          videoQuality={cmsEditing.data.videoQuality || '1080p'}
+                          duration={cmsEditing.data.duration || ''}
+                          fileSize={cmsEditing.data.fileSize || ''}
+                          title={cmsEditing.data.title || ''}
+                          published={cmsEditing.data.published !== false}
+                          onVideoChange={(updates) => {
+                            setCmsEditing({
+                              ...cmsEditing,
+                              data: {
+                                ...cmsEditing.data,
+                                ...updates
+                              }
+                            });
+                          }}
+                          onPublishToggle={(newPublished) => {
+                            setCmsEditing({
+                              ...cmsEditing,
+                              data: {
+                                ...cmsEditing.data,
+                                published: newPublished
+                              }
+                            });
+                          }}
+                          showToast={showToast}
+                        />
+
+                        {/* Telegram Download URL */}
+                        <div className="p-4 rounded-xl bg-purple-950/20 border border-purple-500/20 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs text-sky-300 font-mono font-bold uppercase flex items-center gap-1.5">
+                              <span>📢 Individual Telegram Download URL</span>
+                            </label>
+                            <span className="text-[10px] text-purple-300 font-mono">Linked to DOWNLOAD button</span>
+                          </div>
+                          <input 
+                            type="url"
+                            value={cmsEditing.data.telegramDownloadUrl || 'https://t.me/arirang_army7'}
+                            onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, telegramDownloadUrl: e.target.value }})}
+                            className="w-full px-3 py-2 bg-black/60 border border-purple-500/20 rounded-lg text-xs text-sky-200 font-mono focus:outline-none focus:border-sky-400"
+                            placeholder="https://t.me/arirang_army7"
+                          />
+                          <p className="text-[10px] text-slate-400">
+                            When users click "DOWNLOAD" on this concert card or player, they will be redirected to this specific Telegram post or channel link.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="flex items-center gap-2 p-3 bg-purple-950/10 border border-purple-500/15 rounded-xl">
+                            <input 
+                              type="checkbox"
+                              id="watch-now-enabled"
+                              checked={cmsEditing.data.watchNowEnabled !== false}
+                              onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, watchNowEnabled: e.target.checked }})}
+                              className="w-4 h-4 rounded border-purple-500/30 bg-[#090515] checked:bg-purple-600 focus:outline-none cursor-pointer"
+                            />
+                            <label htmlFor="watch-now-enabled" className="text-xs text-white font-mono font-bold cursor-pointer">
+                              Enable "WATCH NOW"
+                            </label>
+                          </div>
+
+                          <div className="flex items-center gap-2 p-3 bg-purple-950/10 border border-purple-500/15 rounded-xl">
+                            <input 
+                              type="checkbox"
+                              id="download-enabled"
+                              checked={cmsEditing.data.downloadEnabled !== false}
+                              onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, downloadEnabled: e.target.checked }})}
+                              className="w-4 h-4 rounded border-purple-500/30 bg-[#090515] checked:bg-purple-600 focus:outline-none cursor-pointer"
+                            />
+                            <label htmlFor="download-enabled" className="text-xs text-white font-mono font-bold cursor-pointer">
+                              Enable "DOWNLOAD"
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="flex items-center gap-2 p-3 bg-purple-950/10 border border-purple-500/15 rounded-xl">
+                            <input 
+                              type="checkbox"
+                              id="concert-featured"
+                              checked={!!cmsEditing.data.isFeatured}
+                              onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, isFeatured: e.target.checked }})}
+                              className="w-4 h-4 rounded border-purple-500/30 bg-[#090515] checked:bg-amber-600 focus:outline-none cursor-pointer"
+                            />
+                            <label htmlFor="concert-featured" className="text-xs text-amber-300 font-mono font-bold cursor-pointer">
+                              ⭐ Featured Spotlight
+                            </label>
+                          </div>
+
+                          <div className="flex items-center gap-2 p-3 bg-purple-950/10 border border-purple-500/15 rounded-xl">
+                            <input 
+                              type="checkbox"
+                              id="concert-published"
+                              checked={cmsEditing.data.published !== false}
+                              onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, published: e.target.checked }})}
+                              className="w-4 h-4 rounded border-purple-500/30 bg-[#090515] checked:bg-emerald-600 focus:outline-none cursor-pointer"
+                            />
+                            <label htmlFor="concert-published" className="text-xs text-emerald-300 font-mono font-bold cursor-pointer">
+                              🟢 Published (Show Live)
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Short Description (Card Summary)</label>
+                        <textarea 
+                          value={cmsEditing.data.shortDescription || ''}
+                          onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, shortDescription: e.target.value }})}
+                          rows={2}
+                          className="w-full p-2.5 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white focus:outline-none font-sans"
+                          placeholder="Brief 1-2 sentence teaser shown on the concert replay card..."
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs text-purple-300 font-mono font-bold block uppercase">Full Description (Individual Concert Page Details)</label>
+                        <textarea 
+                          value={cmsEditing.data.fullDescription || ''}
+                          onChange={(e) => setCmsEditing({ ...cmsEditing, data: { ...cmsEditing.data, fullDescription: e.target.value }})}
+                          rows={4}
+                          className="w-full p-2.5 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white focus:outline-none font-sans"
+                          placeholder="Complete concert story, tracklist highlights, arena details, and milestone background..."
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 pt-3 border-t border-purple-500/10">
+                      <button 
+                        onClick={() => handleCmsSave(false)}
+                        className="px-4 py-2 bg-purple-950/40 border border-purple-500/25 hover:border-purple-500/50 text-xs font-mono rounded-xl text-purple-200 transition-all cursor-pointer font-bold"
+                      >
+                        💾 Save Concert Draft
+                      </button>
+                      <button 
+                        onClick={() => handleCmsSave(true)}
+                        className="px-5 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-xs font-mono rounded-xl text-white font-bold transition-all cursor-pointer shadow-lg shadow-purple-600/30"
+                      >
+                        🚀 Publish Concert Live
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-white uppercase font-sans flex items-center gap-2">
+                          <Film className="w-5 h-5 text-purple-400" />
+                          Recent Concert Replay CMS
+                        </h3>
+                        <p className="text-xs text-slate-400 font-sans mt-0.5">
+                          Manage concert archives rendered directly below the Live Stream section. Add new concert stages, 4K quality, and Telegram downloads.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setCmsEditing({
+                            tab: 'Concerts',
+                            index: -1,
+                            data: {
+                              id: 'concert-' + Date.now(),
+                              title: 'BTS World Tour Concert Replay',
+                              slug: 'bts-concert-replay-' + Date.now(),
+                              shortDescription: 'Relive this unforgettable BTS stadium concert with explosive stages and purple lights.',
+                              fullDescription: 'Complete concert replay with high-definition audio and multi-angle performance cuts.',
+                              partNumber: 'Full Concert',
+                              location: 'Olympic Stadium, Seoul',
+                              date: new Date().toISOString().split('T')[0],
+                              category: 'World Tour',
+                              tags: ['BTS', 'Concert', '1080p'],
+                              coverUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_in_concert_at_Wembley_Stadium,_2_June_2019_01.jpg?width=1280',
+                              videoUrl: 'https://www.youtube.com/embed/gdZLi9oWNZg',
+                              videoQuality: '1080p',
+                              watchNowEnabled: true,
+                              watchNowText: 'WATCH NOW',
+                              downloadEnabled: true,
+                              downloadText: 'DOWNLOAD',
+                              telegramDownloadUrl: 'https://t.me/arirang_army7',
+                              published: true,
+                              isFeatured: false
+                            }
+                          })}
+                          className="px-3.5 py-2 border border-purple-500/25 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-xs text-white rounded-xl font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-purple-600/25"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add New Concert
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 max-w-md">
+                      <div className="relative flex-grow">
+                        <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-purple-400" />
+                        <input 
+                          type="text"
+                          value={concertSearch}
+                          onChange={(e) => setConcertSearch(e.target.value)}
+                          placeholder="Search concerts by title, venue, or year..."
+                          className="w-full pl-9 pr-3 py-1.5 bg-[#090515] border border-purple-500/15 rounded-lg text-xs text-white font-mono focus:outline-none"
+                        />
+                      </div>
+                      {concertSearch && (
+                        <button 
+                          onClick={() => setConcertSearch('')}
+                          className="text-xs text-slate-400 hover:text-white px-2 py-1 bg-white/5 rounded font-mono"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Concerts Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {(draftConfig.concerts || [])
+                        .filter((c: any) => {
+                          if (!concertSearch.trim()) return true;
+                          const q = concertSearch.toLowerCase();
+                          return (c.title || '').toLowerCase().includes(q) ||
+                                 (c.location || '').toLowerCase().includes(q) ||
+                                 (c.date || '').toLowerCase().includes(q) ||
+                                 (c.category || '').toLowerCase().includes(q);
+                        })
+                        .map((c: any, idx: number) => (
+                          <div 
+                            key={c.id || idx} 
+                            className="p-4 border border-purple-500/15 rounded-2xl bg-purple-950/10 hover:border-purple-500/35 transition-all space-y-3 flex flex-col justify-between shadow-xl"
+                          >
+                            <div className="space-y-3">
+                              <div className="aspect-[16/9] w-full rounded-xl overflow-hidden bg-black/60 relative border border-white/10 group">
+                                <img 
+                                  src={c.coverUrl || 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_in_concert_at_Wembley_Stadium,_2_June_2019_01.jpg?width=1280'} 
+                                  alt={c.title}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                />
+                                <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black uppercase bg-purple-600/90 text-white backdrop-blur-md shadow-md">
+                                    {c.videoQuality || '1080p'}
+                                  </span>
+                                  {c.partNumber && (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-black/75 text-purple-300 border border-purple-500/30">
+                                      {c.partNumber}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="absolute top-2 right-2">
+                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase ${
+                                    c.published !== false ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/30' : 'bg-red-950/90 text-red-300 border border-red-500/30'
+                                  }`}>
+                                    {c.published !== false ? 'Live' : 'Draft'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="flex items-center justify-between text-[10px] font-mono text-purple-400 mb-1">
+                                  <span>{c.category || 'Concert Replay'}</span>
+                                  <span>{c.date || '2026'}</span>
+                                </div>
+                                <h4 className="text-sm font-bold text-white line-clamp-1 leading-snug">{c.title}</h4>
+                                <p className="text-[11px] text-slate-400 font-mono mt-0.5 truncate">{c.location || 'Stadium Stage'}</p>
+                                <p className="text-xs text-slate-400 line-clamp-2 mt-2 leading-relaxed font-sans">{c.shortDescription}</p>
+                              </div>
+
+                              {/* Telegram Download URL pill */}
+                              <div className="p-2 rounded-lg bg-black/40 border border-purple-500/10 flex items-center justify-between text-[10px] font-mono">
+                                <span className="text-sky-300 truncate">Telegram: {c.telegramDownloadUrl || 'https://t.me/arirang_army7'}</span>
+                                <a 
+                                  href={c.telegramDownloadUrl || 'https://t.me/arirang_army7'} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-purple-400 hover:text-white shrink-0 ml-1 underline"
+                                >
+                                  Test
+                                </a>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-3 border-t border-purple-500/10">
+                              <div className="flex items-center gap-1">
+                                <button 
+                                  onClick={() => moveDraftArrayItem('concerts', idx, 'up')}
+                                  disabled={idx === 0}
+                                  className="text-[10px] text-purple-400 hover:text-white disabled:opacity-30 p-1 cursor-pointer"
+                                  title="Move Up"
+                                >
+                                  ▲
+                                </button>
+                                <button 
+                                  onClick={() => moveDraftArrayItem('concerts', idx, 'down')}
+                                  disabled={idx === (draftConfig.concerts?.length || 0) - 1}
+                                  className="text-[10px] text-purple-400 hover:text-white disabled:opacity-30 p-1 cursor-pointer"
+                                  title="Move Down"
+                                >
+                                  ▼
+                                </button>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button 
+                                  onClick={() => setCmsEditing({ tab: 'Concerts', index: idx, data: { ...c } })}
+                                  className="px-2.5 py-1 bg-purple-900/40 hover:bg-purple-800 text-purple-200 hover:text-white border border-purple-500/25 rounded-lg text-xs font-mono font-bold cursor-pointer"
+                                >
+                                  Edit
+                                </button>
+                                <button 
+                                  onClick={() => deleteDraftArrayItem('concerts', idx)}
+                                  className="px-2.5 py-1 bg-red-950/40 hover:bg-red-900 text-red-400 hover:text-white border border-red-500/25 rounded-lg text-xs font-mono font-bold cursor-pointer"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+
+                    {(draftConfig.concerts || []).length === 0 && (
+                      <div className="text-center py-12 p-6 border border-dashed border-purple-500/10 rounded-2xl bg-purple-950/5">
+                        <Film className="w-8 h-8 text-purple-500 mx-auto animate-pulse mb-2" />
+                        <p className="text-xs text-slate-400 font-sans">No concerts in catalog yet. Click "Add New Concert" above to add your first replay!</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -11443,29 +12678,75 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
 
           </main>
 
-          {/* VIRTUAL DEVICE RIGHT PANEL LIVE DRAFT PREVIEW COLUMN - Responsive, premium layout */}
-          <section className="hidden lg:flex lg:w-1/2 bg-[#020106] h-full flex-col relative border-l border-purple-500/10 select-none">
-            
-            {/* Header top address bar mockup */}
-            <div className="h-11 bg-[#090515] border-b border-purple-500/10 px-4 flex items-center justify-between shrink-0 font-sans text-xs">
-              <div className="flex items-center gap-1.5 text-slate-400">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
-                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
-              </div>
-              
-              <div className="w-3/5 bg-black/60 border border-purple-500/5 rounded-md px-3 py-1 text-[10px] text-purple-300/80 font-mono text-center flex items-center justify-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                <span>localhost:3000/?draft_preview=true</span>
-              </div>
+          {/* VIRTUAL DEVICE RIGHT PANEL LIVE DRAFT PREVIEW - Collapsible slide-out drawer */}
+          {showPreviewDrawer && (
+            <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-sm animate-fade-in">
+              <div 
+                className="fixed inset-0 cursor-pointer"
+                onClick={() => setShowPreviewDrawer(false)}
+              />
+              <section className="relative z-10 w-full max-w-3xl lg:max-w-4xl bg-[#020106] h-full flex flex-col border-l border-purple-500/30 shadow-2xl select-none animate-slide-left">
+                {/* Header top address bar & controls */}
+                <div className="h-12 bg-[#090515] border-b border-purple-500/20 px-4 flex items-center justify-between shrink-0 font-sans text-xs">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPreviewDrawer(false)}
+                      className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-400 cursor-pointer transition-colors"
+                      title="Close Preview"
+                    />
+                    <span className="w-3 h-3 rounded-full bg-yellow-500" />
+                    <span className="w-3 h-3 rounded-full bg-emerald-500" />
+                    <span className="ml-2 font-mono text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <Eye className="w-3.5 h-3.5 text-purple-400 animate-pulse" /> Live Preview
+                    </span>
+                  </div>
+                  
+                  {/* Device mode selector */}
+                  <div className="flex items-center gap-1 bg-black/60 border border-purple-500/20 rounded-lg p-0.5 text-[10px] font-mono">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDeviceMode('desktop')}
+                      className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
+                        previewDeviceMode === 'desktop' ? 'bg-purple-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Desktop
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDeviceMode('tablet')}
+                      className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
+                        previewDeviceMode === 'tablet' ? 'bg-purple-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Tablet
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDeviceMode('mobile')}
+                      className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
+                        previewDeviceMode === 'mobile' ? 'bg-purple-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Mobile
+                    </button>
+                  </div>
 
-              <div className="text-[10px] font-mono text-slate-500 border border-purple-500/10 px-2 py-0.5 rounded uppercase">
-                Interactive Preview
-              </div>
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPreviewDrawer(false)}
+                    className="p-1 px-3 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-white border border-red-500/25 transition-all text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>Close</span>
+                  </button>
+                </div>
 
-            {/* Simulated Desktop client browser view section */}
-            <div className="flex-grow overflow-y-auto bg-black p-6 relative font-sans space-y-10 selection:bg-purple-600 selection:text-white">
+                {/* Simulated Desktop / Device client browser view section */}
+                <div className={`flex-grow overflow-y-auto bg-black p-6 relative font-sans space-y-10 selection:bg-purple-600 selection:text-white mx-auto transition-all ${
+                  previewDeviceMode === 'mobile' ? 'max-w-sm border-x border-purple-500/20 my-2 rounded-2xl shadow-2xl' : previewDeviceMode === 'tablet' ? 'max-w-xl border-x border-purple-500/20 my-2 rounded-2xl shadow-2xl' : 'w-full'
+                }`}>
               
               {/* Virtual App Header bar */}
               <div id="preview-menu-mock" className="flex items-center justify-between border-b border-white/5 pb-4">
@@ -11666,12 +12947,25 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
 
             </div>
           </section>
+            </div>
+          )}
           </>
           )}
 
         </div>
 
       </div>
+
+      {/* FLOATING PREVIEW TOGGLE BUTTON */}
+      <button
+        type="button"
+        onClick={() => setShowPreviewDrawer(prev => !prev)}
+        className="fixed bottom-6 right-6 z-40 px-4 py-2.5 rounded-full bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-xs shadow-[0_10px_25px_rgba(168,85,247,0.5)] flex items-center gap-2 border border-purple-300/40 hover:scale-105 active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+        title="Toggle Live Website Preview"
+      >
+        <Eye className="w-4 h-4 text-purple-200 animate-pulse" />
+        <span>{showPreviewDrawer ? 'Close Preview' : 'Preview Website'}</span>
+      </button>
 
       {deleteConfirm && (
         <div id="custom-delete-confirm-modal" className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">

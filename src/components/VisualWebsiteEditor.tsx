@@ -207,7 +207,7 @@ export default function VisualWebsiteEditor({
   return (
     <div className="w-full h-[calc(100vh-140px)] flex flex-col bg-[#0f071a] text-slate-100 font-sans select-none overflow-hidden rounded-xl border border-purple-500/15">
       {/* 1. TOP CONTROL BAR */}
-      <div className="h-16 border-b border-purple-500/20 bg-[#160c29]/90 px-6 flex items-center justify-between shrink-0 gap-4">
+      <div className="min-h-16 border-b border-purple-500/20 bg-[#160c29]/90 px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between shrink-0 gap-x-4 gap-y-2">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-fuchsia-600 text-white animate-pulse shadow-md shadow-purple-500/20">
             <Sparkles className="w-5 h-5" />
@@ -281,10 +281,10 @@ export default function VisualWebsiteEditor({
       </div>
 
       {/* 2. BODY CONTAINER: SPLIT PANES */}
-      <div className="flex-1 flex overflow-hidden min-h-0 bg-[#0c0516]">
+      <div className="flex-1 flex flex-col xl:flex-row overflow-y-auto xl:overflow-hidden min-h-0 bg-[#0c0516]">
         
         {/* LEFT WORKSPACE: SIMULATED CLONE PREVIEW */}
-        <div className="flex-1 flex flex-col overflow-y-auto p-6 items-center justify-start bg-slate-950/40 relative min-w-0" ref={previewContainerRef}>
+        <div className="flex-1 flex flex-col overflow-y-auto p-4 sm:p-6 items-center justify-start bg-slate-950/40 relative min-w-0 min-h-[70vh] xl:min-h-0" ref={previewContainerRef}>
           
           {/* Quick Informational Floating banner */}
           <div className="absolute top-2 left-6 z-10 bg-purple-950/80 border border-purple-500/20 py-1.5 px-3 rounded-lg text-[10px] text-purple-300 font-semibold font-mono shadow-md backdrop-blur-md flex items-center gap-1.5">
@@ -380,7 +380,7 @@ export default function VisualWebsiteEditor({
                   {/* Hero Banner Grid block */}
                   <div 
                     className="editable-slot rounded-xl p-8 bg-cover bg-center min-h-[260px] flex flex-col justify-end text-left relative overflow-hidden group"
-                    style={{ backgroundImage: `linear-gradient(to top, rgba(9,3,16,0.95), rgba(9,3,16,0.21)), url(${homeData.heroImageUrl || 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80'})` }}
+                    style={{ backgroundImage: `linear-gradient(to top, rgba(9,3,16,0.95), rgba(9,3,16,0.21)), url(${homeData.heroImageUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'})` }}
                     onClick={() => inspectElement('home', 'heroImageUrl', 'Hero Background Image & Cover Banner', 'image')}
                   >
                     <div className="absolute top-3 right-3 bg-purple-950/90 py-1 px-2.5 rounded border border-purple-500/20 text-[10px] font-semibold text-purple-300 font-mono tracking-wider">
@@ -491,7 +491,7 @@ export default function VisualWebsiteEditor({
                         className="editable-slot border border-purple-500/15 bg-purple-950/10 rounded-xl overflow-hidden shadow-md"
                         onClick={() => inspectElement('members', null, `Member Card: ${member.name}`, 'array_item', idx)}
                       >
-                        <div className="h-28 bg-cover bg-center" style={{ backgroundImage: `url(${member.profileUrl || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80'})` }} />
+                        <div className="h-28 bg-cover bg-center" style={{ backgroundImage: `url(${member.profileUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'})` }} />
                         <div className="p-3">
                           <span className="text-purple-400 font-extrabold text-xs block font-mono">{member.emoji} {member.name}</span>
                           <span className="text-[9px] text-slate-400 block line-clamp-1">{member.role}</span>
@@ -523,7 +523,7 @@ export default function VisualWebsiteEditor({
                           onClick={() => inspectElement('albums', null, `Album Profile: ${album.title}`, 'array_item', idx)}
                         >
                           <img 
-                            src={album.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'} 
+                            src={album.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'} 
                             alt={album.title} 
                             className="w-12 h-12 rounded object-cover"
                           />
@@ -575,7 +575,7 @@ export default function VisualWebsiteEditor({
                         className="editable-slot border border-purple-500/10 bg-[#160c29]/20 rounded-xl overflow-hidden shadow-sm"
                         onClick={() => inspectElement('videos', null, `Video Frame: ${vid.title}`, 'array_item', idx)}
                       >
-                        <div className="relative aspect-video bg-cover bg-center" style={{ backgroundImage: `url(${vid.thumbnail || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=400&q=80'})` }}>
+                        <div className="relative aspect-video bg-cover bg-center" style={{ backgroundImage: `url(${vid.thumbnail || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'})` }}>
                           <span className="absolute bottom-2 right-2 bg-slate-950/80 px-1.5 py-0.5 rounded text-[8px] text-slate-200 font-mono">YouTube</span>
                         </div>
                         <div className="p-3">
@@ -600,7 +600,7 @@ export default function VisualWebsiteEditor({
                       <div 
                         key={imgJson.id || idx}
                         className="editable-slot aspect-square rounded-lg overflow-hidden bg-cover bg-center border border-purple-500/10"
-                        style={{ backgroundImage: `url(${imgJson.url || 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=400&q=80'})` }}
+                        style={{ backgroundImage: `url(${imgJson.url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'})` }}
                         onClick={() => inspectElement('gallery', null, `Gallery Art: ${imgJson.title}`, 'array_item', idx)}
                         title={imgJson.title}
                       >
@@ -652,7 +652,7 @@ export default function VisualWebsiteEditor({
                         onClick={() => inspectElement('news', null, `News Article: ${article.title}`, 'array_item', idx)}
                       >
                         <img 
-                          src={article.imageUrl || 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=400&q=80'} 
+                          src={article.imageUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'} 
                           alt={article.title} 
                           className="w-16 h-16 rounded object-cover flex-shrink-0"
                         />
@@ -706,7 +706,7 @@ export default function VisualWebsiteEditor({
                         onClick={() => inspectElement('votingEvents', null, `Voting Coordinates: ${event.title}`, 'array_item', idx)}
                       >
                         <img 
-                          src={event.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'} 
+                          src={event.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'} 
                           alt={event.title} 
                           className="w-16 h-16 rounded object-cover flex-shrink-0"
                         />
@@ -782,7 +782,7 @@ export default function VisualWebsiteEditor({
         </div>
 
         {/* RIGHT WORKSPACE: CONTEXTUAL INSPECTOR PANEL */}
-        <div className="w-[380px] bg-[#11091f] border-l border-purple-500/20 flex flex-col shrink-0 overflow-y-auto overflow-x-hidden p-5 space-y-6">
+        <div className="w-full xl:w-[380px] bg-[#11091f] border-t xl:border-t-0 xl:border-l border-purple-500/20 flex flex-col shrink-0 overflow-y-visible xl:overflow-y-auto overflow-x-hidden p-5 space-y-6">
           
           <div className="border-b border-purple-500/15 pb-4 space-y-2">
             <span className="text-[10px] font-bold text-purple-300 font-mono tracking-widest uppercase flex items-center gap-1">
@@ -1107,7 +1107,7 @@ export default function VisualWebsiteEditor({
                         id: `gal-${Date.now()}`,
                         category: 'BTS',
                         title: newItemText.trim(),
-                        url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80'
+                        url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
                       });
                       updateValue('gallery', null, items);
                       setNewItemText('');

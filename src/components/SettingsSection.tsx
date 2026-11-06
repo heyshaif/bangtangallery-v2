@@ -49,7 +49,7 @@ export default function SettingsSection({ preferences, onPreferencesChange }: Se
     <div className="max-w-3xl mx-auto space-y-8 animate-fade-in font-sans">
       <div className="flex justify-between items-center border-b border-white/5 pb-6">
         <div>
-          <h2 className="text-2xl md:text-3xl font-sans font-extrabold text-white">
+          <h2 className="text-xl md:text-2xl font-sans font-extrabold text-white">
             Personalization & Audio Settings
           </h2>
           <p className="text-gray-400 text-sm">

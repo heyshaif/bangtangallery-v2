@@ -3,15 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Member, Album, Video, GalleryItem, TimelineEvent, NewsArticle, DownloadItem, FanArt, BTSEvent, FAQItem } from '../types';
+import { Member, Album, Video, GalleryItem, TimelineEvent, NewsArticle, DownloadItem, FanArt, BTSEvent, FAQItem, ConcertReplay } from '../types';
 
 export const MEMBERS: Member[] = [
   {
     id: 'rm',
     name: 'RM',
     fullName: 'Kim Nam-joon (김남준)',
-    portraitUrl: 'https://i.pinimg.com/736x/9b/b5/df/9bb5dfd9291b6db89a60560d2fe7b243.jpg ',
-    bannerUrl: 'https://i.pinimg.com/736x/00/cf/a8/00cfa8e5bac428d6d616ed9643383a02.jpg',
+    portraitUrl: '/images/members/rm.jpg',
+    bannerUrl: '/images/members/covers/rm.jpg',
+    cardCoverUrl: '/images/members/covers/rm.jpg',
     biography: 'Known as the intelligent and eloquent leader of BTS, RM (formerly Rap Monster) is a brilliant songwriter, record producer, and fluent English speaker who famously represented BTS at the United Nations. He is renowned for his philosophical lyrics and love for art.',
     birthday: 'September 12, 1994',
     age: 31,
@@ -43,10 +44,14 @@ export const MEMBERS: Member[] = [
       'Multiple Billboard Chart entries as songwriter'
     ],
     gallery: [
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
+      '/images/members/aesthetic/rm-1.jpg',
+      '/images/members/aesthetic/rm-2.jpg'
     ],
-    videoIds: ['qOOYn6o-lD0', 'unOdB0GMc8g'],
+    weversePicUrl: '/images/members/weverse/rm.jpg',
+    instagramUrl: 'https://instagram.com/rkive',
+    spotifyUrl: 'https://open.spotify.com/artist/2d0ZjVeeptb9fSI4967v3D',
+    weverseUrl: 'https://weverse.io/bts/artist/rm',
+    videoIds: ['kq6UVL3H6SI', 'NrfikKxF4Ps'],
     quotes: [
       "No matter who you are, where you're from, your skin color, your gender identity: just speak yourself.",
       "Maybe I made a mistake yesterday, but yesterday's me is still me. I am who I am today with all my faults."
@@ -64,8 +69,9 @@ export const MEMBERS: Member[] = [
     id: 'jin',
     name: 'Jin',
     fullName: 'Kim Seok-jin (김석진)',
-    portraitUrl: 'https://i.pinimg.com/736x/e0/88/47/e08847ace3ab60b9fe397699dbc6064c.jpg',
-    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    portraitUrl: '/images/members/jin.jpg',
+    bannerUrl: '/images/members/covers/jin.jpg',
+    cardCoverUrl: '/images/members/covers/jin.jpg',
     biography: 'The oldest member of BTS, Jin is the group\'s powerful sub-vocalist and visual, famously dubbing himself "Worldwide Handsome." Jin is known for his silver voice, incredible high notes, dad jokes, cooking skills, and the highly successful solo track "The Astronaut".',
     birthday: 'December 4, 1992',
     age: 33,
@@ -97,10 +103,13 @@ export const MEMBERS: Member[] = [
       'Melon Music Awards Nominee for Original Soundtrack Yours'
     ],
     gallery: [
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
+      '/images/members/aesthetic/jin-1.jpg'
     ],
-    videoIds: ['c6AS_yT9aXw', 'Yis8E8G27mE'],
+    weversePicUrl: '/images/members/weverse/jin.jpg',
+    instagramUrl: 'https://instagram.com/jin',
+    spotifyUrl: 'https://open.spotify.com/artist/5vA3Ls9vRvaZ0S76Yv969s',
+    weverseUrl: 'https://weverse.io/bts/artist/jin',
+    videoIds: ['o7BcyAd6rqg', 'uoHol5Dr_go'],
     quotes: [
       "Your presence can give happiness. I hope you remember that.",
       "If any of you feels lost in the face of uncertainty, or under the pressure of starting anew, don't rush."
@@ -118,8 +127,9 @@ export const MEMBERS: Member[] = [
     id: 'suga',
     name: 'SUGA',
     fullName: 'Min Yoon-gi (민윤기) / Agust D',
-    portraitUrl: 'https://i.pinimg.com/736x/54/79/34/547934ed3849f2f30e595be5dc1220c1.jpg',
-    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    portraitUrl: '/images/members/suga.jpg',
+    bannerUrl: '/images/members/covers/suga.jpg',
+    cardCoverUrl: '/images/members/covers/suga.jpg',
     biography: 'SUGA is BTS\'s fierce lead rapper, genius producer, and songwriter who also releases absolute masterworks under his solo moniker Agust D. He has over 100 registered KOMCA songs and is known for producing hits for international superstars (Coldplay, IU, Halsey, PSY).',
     birthday: 'March 9, 1993',
     age: 33,
@@ -150,10 +160,14 @@ export const MEMBERS: Member[] = [
       'Golden Disc Awards - Best Rap/Hip-Hop Award (2023)'
     ],
     gallery: [
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
+      '/images/members/aesthetic/suga-1.jpg',
+      '/images/members/aesthetic/suga-2.jpg'
     ],
-    videoIds: ['qGjAWJ2zWWI', 'H_atG_S_t4o'],
+    weversePicUrl: '/images/members/weverse/suga.jpg',
+    instagramUrl: 'https://instagram.com/agustd',
+    spotifyUrl: 'https://open.spotify.com/artist/773vUnv79IQ6S0S3uLY77d',
+    weverseUrl: 'https://weverse.io/bts/artist/suga',
+    videoIds: ['iy9qZR_OGa0', 'IX1dkYoLHVs'],
     quotes: [
       "Life is tough, and things don't always work out well, but we should be brave and go on with our lives.",
       "Stay strong, the dawn before the sunrise is always the darkest."
@@ -170,8 +184,9 @@ export const MEMBERS: Member[] = [
     id: 'jhope',
     name: 'j-hope',
     fullName: 'Jung Ho-seok (정호석)',
-    portraitUrl: 'https://i.pinimg.com/736x/ca/d9/e7/cad9e7082eb9cae646f340dfedbb3ac2.jpg',
-    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    portraitUrl: '/images/members/j-hope.jpg',
+    bannerUrl: '/images/members/covers/jhope.jpg',
+    cardCoverUrl: '/images/members/covers/jhope.jpg',
     biography: 'Known as the group\'s master dancer, "j-hope" acts as the sunshine and source of hope for both the team and ARMY. A former street-dancer in Gwangju, he acts as the main choreographer who guides BTS performances, while releasing highly original, boundary-pushing solo work.',
     birthday: 'February 18, 1994',
     age: 32,
@@ -203,10 +218,15 @@ export const MEMBERS: Member[] = [
       'Billboard 200 Top 10 with Hope on the Street Vol 1'
     ],
     gallery: [
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
+      '/images/members/aesthetic/jhope-1.jpg',
+      '/images/members/aesthetic/jhope-2.jpg',
+      '/images/members/aesthetic/jhope-3.jpg'
     ],
-    videoIds: ['r6WbbU_LRmU', 'i6m47S_VpMc'],
+    weversePicUrl: '/images/members/weverse/jhope.jpg',
+    instagramUrl: 'https://instagram.com/uarmyhope',
+    spotifyUrl: 'https://open.spotify.com/artist/0b186v6gZshveZ7gU7v97e',
+    weverseUrl: 'https://weverse.io/bts/artist/j_hope',
+    videoIds: ['q9leDzlNEaY', 'ECqGCH1TfLY'],
     quotes: [
       "Even if the desert becomes cracked, no matter who shakes this world, don't let go of the hand you hold.",
       "If you don't work hard, there won't be good results."
@@ -223,8 +243,9 @@ export const MEMBERS: Member[] = [
     id: 'jimin',
     name: 'Jimin',
     fullName: 'Park Ji-min (박지민)',
-    portraitUrl: 'https://i.pinimg.com/736x/6c/8f/a1/6c8fa1ef9ca6459dfe9d3b2d22d291e8.jpg',
-    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    portraitUrl: '/images/members/jimin.jpg',
+    bannerUrl: '/images/members/covers/jimin.jpg',
+    cardCoverUrl: '/images/members/covers/jimin.jpg',
     biography: 'Known for his angelic vocals and contemporary dance training, Jimin was the top student in modern dance at the Busan High School of Arts. He is respected for his graceful stage presence, extreme work ethic, and sweet personality. His solo "Like Crazy" debuted at #1 on Billboard Hot 100.',
     birthday: 'October 13, 1995',
     age: 30,
@@ -255,10 +276,14 @@ export const MEMBERS: Member[] = [
       'Melon Music Awards - Best Male Solo (2023)'
     ],
     gallery: [
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
+      '/images/members/aesthetic/jimin-1.jpg',
+      '/images/members/aesthetic/jimin-2.jpg'
     ],
-    videoIds: ['nOCO_3G4upg', 'cDQ3L9S7t3Y'],
+    weversePicUrl: '/images/members/weverse/jimin.jpg',
+    instagramUrl: 'https://instagram.com/j.m',
+    spotifyUrl: 'https://open.spotify.com/artist/163tK9879u7vXg6vTI46z0',
+    weverseUrl: 'https://weverse.io/bts/artist/jimin',
+    videoIds: ['Av9DvtlJ9_M', 'LIER2z3DBe8'],
     quotes: [
       "Go on your path, even if you live for a day. Do something. Put away your weakness.",
       "Once your heart is touched, it will develop to something better."
@@ -275,8 +300,9 @@ export const MEMBERS: Member[] = [
     id: 'v',
     name: 'V',
     fullName: 'Kim Tae-hyung (김태형)',
-    portraitUrl: 'https://i.pinimg.com/736x/ec/24/c8/ec24c89a2e7aece83e77e3b6fccbed4a.jpg',
-    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    portraitUrl: '/images/members/v.jpg',
+    bannerUrl: '/images/members/covers/v.jpg',
+    cardCoverUrl: '/images/members/covers/v.jpg',
     biography: 'V is renowned for his deep, rich soulful baritone, striking visual elegance, and artistic personality. Combining jazz, R&B, and neo-soul inflections, V charms critics with his distinct, smooth fashion and love for classical art, film photography, and saxophone playing.',
     birthday: 'December 30, 1995',
     age: 30,
@@ -308,10 +334,14 @@ export const MEMBERS: Member[] = [
       'British NME Awards Winner (2023)'
     ],
     gallery: [
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
+      '/images/members/aesthetic/v-1.jpg',
+      '/images/members/aesthetic/v-2.jpg'
     ],
-    videoIds: ['jN0Y_vTidp0', 'QK7O74Rz3lA'],
+    weversePicUrl: '/images/members/weverse/v.jpg',
+    instagramUrl: 'https://instagram.com/thv',
+    spotifyUrl: 'https://open.spotify.com/artist/3Js7i7b09vT7S593Y6CshV',
+    weverseUrl: 'https://weverse.io/bts/artist/v',
+    videoIds: ['HAWYOuMGkK0', '62peQdQv4uo'],
     quotes: [
       "I have a heart of a child, but I have a mind of an adult.",
       "Purple is the last color of the rainbow. Purple means I will trust and love you for a long time."
@@ -327,8 +357,9 @@ export const MEMBERS: Member[] = [
     id: 'jungkook',
     name: 'Jung Kook',
     fullName: 'Jeon Jung-kook (전정국)',
-    portraitUrl: 'https://i.pinimg.com/736x/0a/01/89/0a018909b008ecb5877f807c9c23336b.jpg',
-    bannerUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    portraitUrl: '/images/members/jung-kook.jpg',
+    bannerUrl: '/images/members/covers/jungkook.jpg',
+    cardCoverUrl: '/images/members/covers/jungkook.jpg',
     biography: 'Known as the "Golden Maknae" (youngest member) due to his exceptional natural talent in singing, main dancing, sports, drawing, and filmmaking. Jung Kook was scouted by 7 agencies before choosing Big Hit after watching RM rap. Hit single "Seven" reached #1 on Billboard Hot 100.',
     birthday: 'September 1, 1997',
     age: 28,
@@ -360,10 +391,17 @@ export const MEMBERS: Member[] = [
       'Billboard Music Award - Top Global K-Pop Song (Seven) (2023)'
     ],
     gallery: [
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
+      '/images/members/aesthetic/jungkook-1.jpg',
+      '/images/members/aesthetic/jungkook-2.jpg',
+      '/images/members/aesthetic/jungkook-3.jpg',
+      '/images/members/aesthetic/jungkook-4.jpg'
     ],
-    videoIds: ['QU9c0053UAU', 'UNo0QA9CjPU'],
+    weversePicUrl: '/images/members/weverse/jungkook.jpg',
+    instagramUrl: 'https://instagram.com/mnijungkook',
+    spotifyUrl: 'https://open.spotify.com/artist/6Ha97v48vCuR7Oiyvt8Ost',
+    weverseUrl: 'https://weverse.io/bts/artist/jungkook',
+    tiktokUrl: 'https://www.tiktok.com/@jungkook',
+    videoIds: ['UNo0TG9LwwI', 'J_n4Ysi5iUM'],
     quotes: [
       "Effort makes you. You will regret someday if you don't do your best now.",
       "Living without passion is like being dead."
@@ -382,7 +420,7 @@ export const ALBUMS: Album[] = [
     id: 'proof',
     title: 'Proof',
     type: 'album',
-    coverUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    coverUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
     releaseDate: 'June 10, 2022',
     description: 'Proof is an anthology album that embodies the history of BTS. As the group celebrated their 9th anniversary, this three-CD compilation contained key selected classic songs, unreleased demo tracks, and brand-new messages celebrating their journey and looking toward the future ("Yet to Come").',
     tracks: [
@@ -399,15 +437,15 @@ export const ALBUMS: Album[] = [
       { title: 'Yet To Come (Live at Busan)', videoId: 'BpcY2Ff_E6I' }
     ],
     gallery: [
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
     ]
   },
   {
     id: 'be',
     title: 'BE',
     type: 'album',
-    coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80',
+    coverUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
     releaseDate: 'November 20, 2020',
     description: 'BE is a comforting hand to fans globally during the peak of the global pandemic. Fully produced and curated by the BTS members themselves - from songwriting, packaging, photo layouts, to music video direction - BE delivered the warm reassurance that "Life Goes On" despite everything.',
     tracks: [
@@ -424,15 +462,15 @@ export const ALBUMS: Album[] = [
       { title: 'Dynamite Recording MV', videoId: 'gdZLi9oWNZg' }
     ],
     gallery: [
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
     ]
   },
   {
     id: 'mots7',
     title: 'Map of the Soul: 7',
     type: 'album',
-    coverUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    coverUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
     releaseDate: 'February 21, 2020',
     description: 'A monument of pop artistry, Map of the Soul: 7 marks seven years since debut with seven members. Exploring their deepest shadows, highest lights, and the integration of their public persona versus their inner selves, it highlights chart-topping bangers like "ON" and "Black Swan".',
     tracks: [
@@ -449,14 +487,14 @@ export const ALBUMS: Album[] = [
       { title: 'Black Swan MV', videoId: '0lapF4DQGtY' }
     ],
     gallery: [
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
     ]
   },
   {
     id: 'golden',
     title: 'GOLDEN',
     type: 'solo',
-    coverUrl: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    coverUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
     releaseDate: 'November 3, 2023',
     description: 'GOLDEN is the debut solo studio album by Jung Kook. Drawing inspiration from the golden moments of Jung Kook as the golden maknae of BTS and a solo artist, the album features international hits produced alongside world-class artists like Andrew Watt, Diplo, and Ed Sheeran.',
     tracks: [
@@ -472,81 +510,31 @@ export const ALBUMS: Album[] = [
       { title: 'Seven (feat. Latto) Official MV', videoId: 'QU9c0053UAU' }
     ],
     gallery: [
-      'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg'
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
     ]
   }
 ];
 
-export const VIDEOS: Video[] = [
-  {
-    id: 'vid1',
-    videoId: 'gdZLi9oWNZg',
-    title: 'BTS (방탄소연단) "Dynamite" Official MV',
-    description: 'The record-shattering English disco-pop single that earned BTS their first-ever Grammy Award nomination and debuted at Number 1 on the Billboard Hot 100 chart. An upbeat, colorful, and highly energetic performance dedicated to spreading joy.',
-    playlist: 'Main Hits',
-    category: 'MV',
-    uploadedAt: 'August 21, 2020'
-  },
-  {
-    id: 'vid2',
-    videoId: 'gBut_7_t6U4',
-    title: 'BTS (방탄소년단) "Yet To Come" Official MV',
-    description: 'The title track of the anthology album Proof. Recalling 9 years of memories and looking forward with the absolute promise to fans that "The best is yet to come."',
-    playlist: 'Proof Era',
-    category: 'MV',
-    uploadedAt: 'June 10, 2022'
-  },
-  {
-    id: 'vid3',
-    videoId: 'BpcY2Ff_E6I',
-    title: 'BTS "Yet To Come" in BUSAN Live Performance',
-    description: 'Live performance of Yet to Come in front of over 50,000 screaming fans in Busan, South Korea. Highlighting the incredible vocal harmonies, deep rap verses, and legendary purple ocean of light-sticks.',
-    playlist: 'Concerts',
-    category: 'Live Performance',
-    uploadedAt: 'October 15, 2022'
-  },
-  {
-    id: 'vid4',
-    videoId: '-5q5mZgDff8',
-    title: 'BTS (방탄소년단) "Life Goes On" Official MV',
-    description: 'Directed by member Jeon Jung Kook, this MV captures a heartwarming, intimate portrait of the members spending time together at home during pandemic limitations, expressing that life keeps going.',
-    playlist: 'BE Era',
-    category: 'MV',
-    uploadedAt: 'November 20, 2020'
-  },
-  {
-    id: 'vid5',
-    videoId: 'mPVDGOVjRQ0',
-    title: 'BTS (방탄소년단) "ON" Kinetic Manifesto Film',
-    description: 'An outstanding, explosive dance performance featuring the Blue Devils marching band in Los Angeles, California. Showcasing the absolute peak of BTS structural choreography and intense physical performance.',
-    playlist: 'Map of the Soul',
-    category: 'Live Performance',
-    uploadedAt: 'February 21, 2020'
-  },
-  {
-    id: 'vid6',
-    videoId: 'XsX3ATc3FbA',
-    title: 'BTS (방탄소년단) "Boy With Luv" Official MV (feat. Halsey)',
-    description: 'The cheerful, retro, neon-soaked collaboration that brought BTS and Halsey together in a beautiful tribute to the tiny precious things that make up love and connection.',
-    playlist: 'Main Hits',
-    category: 'MV',
-    uploadedAt: 'April 12, 2019'
-  }
-];
+export const VIDEOS: Video[] = [];
 
 export const GALLERY_ITEMS: GalleryItem[] = [
-  { id: 'gal1', category: 'Concert', title: '', url: 'https://i.pinimg.com/1200x/1d/3a/8d/1d3a8d6bfe83daa52cae58d24ea5239a.jpg' },
-  { id: 'gal2', category: 'Concert', title: '', url: 'https://i.pinimg.com/736x/29/a7/41/29a741e9e3a12ed9bd9b27d89d18da27.jpg' },
-  { id: 'gal3', category: 'BTS', title: '', url: 'https://i.pinimg.com/1200x/9a/09/6d/9a096da6d88525cef90e38d2c4833241.jpg' },
-  { id: 'gal4', category: 'Festa', title: '', url: 'https://i.pinimg.com/1200x/48/7c/bc/487cbcb88f71fc6211a3e785f2458864.jpg' },
-  { id: 'gal5', category: 'RM', title: 'RM "Indigo" Forest Visual Shoot', url: 'https://i.pinimg.com/736x/dd/25/7b/dd257bc958f020bc2dd5fd90cdfd74b3.jpg' },
-  { id: 'gal6', category: 'Jin', title: 'Jin "The Astronaut" Starlit Profile', url: 'https://i.pinimg.com/736x/32/10/17/321017f47febbd9b6a2f268f2e65caee.jpg' },
-  { id: 'gal7', category: 'SUGA', title: 'Agust D "D-DAY" Traditional Sword Vibe', url: 'https://i.pinimg.com/736x/8e/a1/97/8ea19755ac88dbb212fa0cd1a520b1ca.jpg' },
-  { id: 'gal8', category: 'j-hope', title: 'j-hope "Jack In The Box" Retro Vinyl Cover', url: 'https://i.pinimg.com/736x/fa/64/15/fa6415c33f4e45d96d40178b26749ece.jpg' },
-  { id: 'gal9', category: 'Jimin', title: 'Jimin "FACE" Reflection Studio Portrait', url: 'https://i.pinimg.com/736x/1e/f5/b9/1ef5b9950134ba91ef13f1271f3c5532.jpg' },
-  { id: 'gal10', category: 'V', title: 'V "Layover" Cinematic Jazz Session', url: 'https://i.pinimg.com/736x/9b/53/17/9b5317c9c0cb29b7ffac7b079012f0ab.jpg' },
-  { id: 'gal11', category: 'Jung Kook', title: 'Jung Kook "GOLDEN" Neon Mic Angle', url: 'https://i.pinimg.com/1200x/6d/bc/fb/6dbcfb6318a367e5295818a308740a2a.jpg' },
-  { id: 'gal12', category: 'Fan Art', title: 'Borahae Whales digital painting (Purple cosmic whale, BTS concept art)', url: 'https://i.pinimg.com/1200x/26/b9/43/26b94359507ce148a2999fc5a3ce9c2e.jpg' }
+  { id: 'gal1', category: 'Concert', title: 'Purple Ocean Lights at Wembley Stadium, London', url: 'https://commons.wikimedia.org/wiki/Special:FilePath/ARMY_at_BTS_Love_Yourself_Speak_Yourself_concert_at_Wembley_Stadium,_1_June_2019.jpg?width=1280' },
+  { id: 'gal2', category: 'Concert', title: 'BTS Performing "Fire" — Speak Yourself Tour, São Paulo 2019', url: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_Fire_during_the_Speak_Yourself_tour_in_Brazil,_25_May_2019_01.jpg?width=1280' },
+  { id: 'gal3', category: 'BTS', title: 'BTS Win Their First Daesang — Melon Music Awards, 2016', url: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_win_first_Daesang_(Grand_Prize)_at_Melon_Music_Awards,_19_November_2016_02.png?width=1280' },
+  { id: 'gal4', category: 'Festa', title: 'BTS and ARMY — The Wings Tour, Anaheim 2017', url: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_and_ARMY_during_the_BTS_Live_Trilogy_Episode_III_The_Wings_Tour_in_Anaheim,_2_April_2017.jpg?width=1280' },
+  { id: 'gal5', category: 'RM', title: 'RM — Real Photo (W Korea Love Your W, 2023)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/RM_at_W_Korea_Love_Your_W%2C_November_2023.jpg/1280px-RM_at_W_Korea_Love_Your_W%2C_November_2023.jpg' },
+  { id: 'gal6', category: 'Jin', title: 'Jin — Real Photo (Maison Fred, 2025)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BTS_Jin_at_Maison_Fred%2C_13_March_2025_04.png/1280px-BTS_Jin_at_Maison_Fred%2C_13_March_2025_04.png' },
+  { id: 'gal7', category: 'SUGA', title: 'SUGA — Real Photo (Valentino × Marie Claire Korea)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Suga_for_Valentino_and_Marie_Claire_Korea_06.jpg/1280px-Suga_for_Valentino_and_Marie_Claire_Korea_06.jpg' },
+  { id: 'gal8', category: 'j-hope', title: 'j-hope — Real Photo (W Korea, 2025)', url: 'https://upload.wikimedia.org/wikipedia/commons/5/57/J-Hope_at_W_Korea_Breast_Cancer_Campaign%2C_15_October_2025.png' },
+  { id: 'gal9', category: 'Jimin', title: 'Jimin — Real Photo (SBS Radio, 2023)', url: 'https://upload.wikimedia.org/wikipedia/commons/3/33/Jimin_on_the_way_to_SBS_Radio%2C_31_March_2023_%282%29.jpg' },
+  { id: 'gal10', category: 'V', title: 'V — Real Photo (2025)', url: 'https://upload.wikimedia.org/wikipedia/commons/d/d4/BTS%27s_V_20251004_04.jpg' },
+  { id: 'gal11', category: 'Jung Kook', title: 'Jung Kook Performing "Euphoria" — Rose Bowl, 2019', url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Jeon_Jung-kook_performing_%22Euphoria%22_during_Speak_Yourself_tour_at_Rose_Bowl,_Pasadena,_5_May_2019_01.jpg?width=1280' },
+  { id: 'gal12', category: 'BTS', title: 'BTS at the MelOn Music Awards, 2018', url: 'https://commons.wikimedia.org/wiki/Special:FilePath/181201_BTS_at_the_MelOn_Music_Awards.jpg?width=1280' },
+  { id: 'gal_meme1', category: 'Memes', title: 'Jung Kook 💜 Golden Maknae — Real Photo', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Jung_Kook_of_BTS%2C_February_12%2C_2026_%281%29.png/1280px-Jung_Kook_of_BTS%2C_February_12%2C_2026_%281%29.png' },
+  { id: 'gal_meme2', category: 'Memes', title: 'Jin 💜 Worldwide Handsome — Real Photo', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BTS_Jin_at_Maison_Fred%2C_13_March_2025_04.png/1280px-BTS_Jin_at_Maison_Fred%2C_13_March_2025_04.png' },
+  { id: 'gal_meme3', category: 'Memes', title: 'SUGA 💜 Min Yoongi — Real Photo', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Suga_for_Valentino_and_Marie_Claire_Korea_06.jpg/1280px-Suga_for_Valentino_and_Marie_Claire_Korea_06.jpg' },
+  { id: 'gal_meme4', category: 'Memes', title: 'Jimin 💜 — Real Photo', url: 'https://upload.wikimedia.org/wikipedia/commons/3/33/Jimin_on_the_way_to_SBS_Radio%2C_31_March_2023_%282%29.jpg' },
+  { id: 'gal_meme5', category: 'Memes', title: 'V 💜 Kim Taehyung — Real Photo', url: 'https://upload.wikimedia.org/wikipedia/commons/d/d4/BTS%27s_V_20251004_04.jpg' }
 ];
 
 export const TIMELINE_EVENTS: TimelineEvent[] = [
@@ -629,60 +617,130 @@ export const TIMELINE_EVENTS: TimelineEvent[] = [
   }
 ];
 
-export const NEWS_ARTICLES: NewsArticle[] = [];
+export const NEWS_ARTICLES: NewsArticle[] = [
+  {
+    // PERMANENT intro article (owner request, 2026-11-05): introduces
+    // Bangtan Gallery itself. The controller also re-adds it at serve
+    // time if a stored config ever lacks it, so it cannot disappear.
+    id: 'welcome-to-bangtan-gallery',
+    slug: 'welcome-to-bangtan-gallery',
+    title: 'Welcome to BANGTAN GALLERY — Your Home for Everything BTS 💜',
+    date: 'November 5, 2026',
+    category: 'Announcement',
+    summary: 'Bangtan Gallery is an independent, fan-made home for BTS and ARMY — member profiles, music, concert replays, a photo gallery, live streams, voting, tour countdowns and daily updates, all in one purple place. Let us show you around!',
+    content: `💜 WELCOME TO BANGTAN GALLERY 💜
+
+If you love BTS, you have just found your new home. Bangtan Gallery (bangtangallery.online) is a fan-made website built by ARMY, for ARMY — a single purple place where everything about RM, Jin, SUGA, j-hope, Jimin, V and Jung Kook lives together: their profiles and stories, their music, their concerts, their photos, and the countdown to every new chapter of the ARIRANG era.
+
+This website is made purely out of love. Bangtan Gallery is an independent fan project — it is not affiliated with BTS, BIGHIT MUSIC or HYBE — created so that ARMY everywhere can celebrate the seven members in one beautiful, easy-to-use home.
+
+![img](https://commons.wikimedia.org/wiki/Special:FilePath/BTS_in_concert_at_Wembley_Stadium,_2_June_2019_01.jpg?width=1280)
+
+🌟 MEET THE MEMBERS
+
+Every member has his own full profile page here — his story, his birthday and fun facts, his own cover photo, his Aesthetic Moments gallery, his Weverse profile card, his real social links, and his Solo Performance Spotlight with his newest solo songs. Tap any member and step into his world: RM 🐨 · Jin 🐹 · SUGA 🐱 · j-hope 🐿️ · Jimin 🐥 · V 🐯 · Jung Kook 🐰
+
+🎵 MUSIC, VIDEOS & CONCERT REPLAYS
+
+Listen to BTS tracks and solo releases in our built-in music player, watch music videos and performances, and relive full concerts in the Concert Replay section — including our special ARIRANG Concert Replay page. When something new drops, it finds its home here.
+
+📸 THE GALLERY
+
+A growing gallery of real BTS photos — concerts, iconic stages and unforgettable moments — where every picture can be opened full-screen, downloaded, and shared with a link that opens that exact photo.
+
+![img](https://commons.wikimedia.org/wiki/Special:FilePath/BTS_Love_Yourself_-_Speak_Yourself_tour_at_Rose_Bowl,_Pasadena_(California),_4_May_2019_01.jpg?width=1280)
+
+🔴 LIVE STREAMS & THE ARIRANG WORLD TOUR
+
+Follow the ARIRANG World Tour with our live Tour Countdown — Europe, North America and Asia & Australia, stadium by stadium, counting down in real time to the next show. On live days, join the Live Stream page, watch together, and chat with ARMY from around the world (pick your bias emoji first!).
+
+🗳️ VOTING CENTER
+
+Support the boys where it counts! Our Voting Center collects the important votings in one place, and ARMY can share their vote proofs — with your X username, your country and your screenshot — on our global ARMY Vote Proofs board. Watch your country climb the board!
+
+📰 NEWS & UPDATES
+
+From comebacks and tour announcements to records and awards — the News section keeps you updated, and our newest stories always greet you right on the homepage.
+
+![img](https://commons.wikimedia.org/wiki/Special:FilePath/181201_BTS_at_the_MelOn_Music_Awards.jpg?width=1280)
+
+💬 JOIN THE BANGTAN GALLERY FAMILY
+
+The website is just the beginning — our community lives on Telegram and X too. Come say hello, share the love, and never miss an update:
+
+[📢 Bangtan Gallery — Telegram Channel](https://t.me/arirang_army7) · [💬 Bangtan Gallery Fan Chat](https://t.me/arirang_army7chat) · [🐦 Follow @arirang_army_7 on X](https://x.com/arirang_army_7)
+
+👉 Join the channel for announcements and updates, jump into the Fan Chat to talk with ARMY anytime, and follow us on X for daily BTS posts.
+
+💜 Seven members. One fandom. One purple home. Thank you for being here, ARMY — let's walk this bulletproof path together. Borahae! ⟭⟬⁷`,
+    imageUrl: '/images/news/bangtan-gallery-intro-cover.jpg',
+    featuredImage: '/images/news/bangtan-gallery-intro-cover.jpg',
+    seoDescription: 'Welcome to Bangtan Gallery — an independent fan-made home for BTS and ARMY: member profiles, music, concert replays, gallery, live streams, voting center, ARIRANG tour countdown and daily news. Join our Telegram channel, fan chat and X community.',
+    tags: ['#BTS', '#BangtanGallery', '#ARMY', '#Borahae', '#ARIRANG', '#Welcome'],
+    published: true,
+    gallery: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
+      'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_and_ARMY_during_the_BTS_Live_Trilogy_Episode_III_The_Wings_Tour_in_Anaheim,_2_April_2017.jpg?width=1280',
+      'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_Fire_during_the_Speak_Yourself_tour_in_Brazil,_25_May_2019_01.jpg?width=1280'
+    ],
+    links: [
+      { id: 'bg-tg-channel', label: 'Bangtan Gallery — Telegram Channel 📢', url: 'https://t.me/arirang_army7' },
+      { id: 'bg-tg-chat', label: 'Bangtan Gallery Fan Chat 💬', url: 'https://t.me/arirang_army7chat' },
+      { id: 'bg-x', label: 'Follow @arirang_army_7 on X 🐦', url: 'https://x.com/arirang_army_7' }
+    ]
+  },
+];
 
 export const DOWNLOADS: DownloadItem[] = [
   {
     id: 'dl1',
     name: 'BTS 2026 Festa official Purple Aurora Wallpaper (Ultra HD Desktop)',
     type: 'Wallpaper',
-    url: 'https://i.pinimg.com/1200x/26/b9/43/26b94359507ce148a2999fc5a3ce9c2e.jpg',
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
     size: '4.2 MB'
   },
   {
     id: 'dl2',
     name: 'Bangtan Gallery Mobile Lockscreen - RM, Jin, SUGA, j-hope, Jimin, V, JK',
     type: 'Wallpaper',
-    url: 'https://i.pinimg.com/1200x/26/b9/43/26b94359507ce148a2999fc5a3ce9c2e.jpg',
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
     size: '2.8 MB'
   },
   {
     id: 'dl3',
     name: 'Bangtan Borahae Glow Vector Icons Pack (Custom SVG PNG for Theme customizers)',
     type: 'Icon',
-    url: 'https://i.pinimg.com/1200x/e1/75/a9/e175a94276e9a87503222663b4662e71.jpg',
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
     size: '1.4 MB'
   },
   {
     id: 'dl4',
     name: 'Official High-Res BTS "Proof" Wing Logo PNG (Original Transparent)',
     type: 'Logo',
-    url: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg',
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
     size: '800 KB'
   },
   {
     id: 'dl5',
     name: 'BTS English Lyric Compilation (Dynamite, Butter, Life Goes On, Proof demo sheets)',
     type: 'PDF',
-    url: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg',
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
     size: '1.9 MB'
   },
   {
     id: 'dl6',
     name: 'FESTA 2026 Celebration Kit (HD printable postals, sticker designs, purple cutouts)',
     type: 'ZIP',
-    url: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg',
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
     size: '48.5 MB'
   }
 ];
 
 export const FAN_ARTS: FanArt[] = [
-  { id: 'fa1', imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg', title: 'Cosmic Whale over Busan Concert Stage', artist: 'ArmyPainter97', likes: 2311 },
-  { id: 'fa2', imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg', title: 'Gold and Purple Mic Sunset Silhouette', artist: 'TaeTaeGlows', likes: 1845 },
-  { id: 'fa3', imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg', title: 'RM Philosopher Indigo Reflection Sketch', artist: 'NamjoonieStudy', likes: 1420 },
-  { id: 'fa4', imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg', title: 'Worldwide Handsome Comic Pop Art', artist: 'JinDadJokes', likes: 2519 },
-  { id: 'fa5', imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg', title: 'Agust D Daechwita Traditional Ink Painting', artist: 'YoongiSlices', likes: 3105 },
-  { id: 'fa6', imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg', title: 'Sunshine J-Hope Vibrant Abstract Expression', artist: 'HobiWorld94', likes: 1980 }
+  // Owner cleanup: the template's six seeded "fan arts" all reused one
+  // group photo under invented titles, invented artist names and fake
+  // like counts — removed. Real fan art arrives via fan submissions /
+  // the Admin Panel; the section starts empty rather than fake.
 ];
 
 export const EVENTS: BTSEvent[] = [
@@ -756,5 +814,95 @@ export const FAQS: FAQItem[] = [
     question: 'Is there a login or profile registration system?',
     answer: 'No. To offer a clean, high-speed, secure, and privacy-respecting portal, there are no signup sheets, cookie accounts, or database registers. Simply access and enjoy the ultimate BTS content directly from the launch!',
     category: 'General'
+  }
+];
+
+export const DEFAULT_CONCERTS: ConcertReplay[] = [
+  {
+    id: 'concert-arirang-la-2026',
+    title: "BTS WORLD TOUR 'ARIRANG' 2026 - LOS ANGELES",
+    slug: 'bts-arirang-2026-los-angeles',
+    shortDescription: "Experience the historic night at SoFi Stadium as BTS lights up Los Angeles with explosive performances, special encore stages, and emotional ARMY bombs.",
+    fullDescription: "The ARIRANG World Tour in Los Angeles marks BTS's triumphant return with state-of-the-art stage pyrotechnics, moving stages, full live band arrangement, and 7-member solo & unit sets that captivated over 70,000 fans in person.",
+    partNumber: "Day 4 Finale",
+    location: "SoFi Stadium, Los Angeles",
+    date: "2026-05-18",
+    category: "World Tour",
+    tags: ["ARIRANG 2026", "Los Angeles", "Full Concert", "4K Ultra HD"],
+    coverUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/BTS_in_concert_at_Wembley_Stadium,_2_June_2019_01.jpg?width=1280",
+    coverAltText: "BTS World Tour Arirang 2026 Los Angeles live stage concert crowd",
+    videoUrl: "https://player.vdocipher.com/live-v2?liveId=e723f5417691462cacc834ee213c2571",
+    videoQuality: "4K",
+    watchNowEnabled: true,
+    watchNowText: "WATCH NOW",
+    downloadEnabled: true,
+    downloadText: "DOWNLOAD",
+    telegramDownloadUrl: "https://t.me/arirang_army7",
+    seoTitle: "BTS WORLD TOUR 'ARIRANG' 2026 Los Angeles Replay | BANGTAN GALLERY",
+    seoDescription: "Relive BTS World Tour ARIRANG 2026 in Los Angeles in 4K. Watch full live concert video and download on Telegram.",
+    ogTitle: "BTS ARIRANG Tour 2026 Los Angeles Concert Replay",
+    ogDescription: "Full concert replay of BTS World Tour ARIRANG 2026 in Los Angeles with exclusive download links.",
+    socialShareImage: "https://commons.wikimedia.org/wiki/Special:FilePath/BTS_in_concert_at_Wembley_Stadium,_2_June_2019_01.jpg?width=1280",
+    published: true,
+    isFeatured: true,
+    displayOrder: 1
+  },
+  {
+    id: 'concert-ptd-seoul-final',
+    title: "BTS PERMISSION TO DANCE ON STAGE - SEOUL",
+    slug: 'bts-permission-to-dance-seoul',
+    shortDescription: "Relive the iconic homecoming concert in Seoul under the purple stadium lights, celebrating resilience, unity, and timeless anthems.",
+    fullDescription: "BTS Permission to Dance on Stage in Seoul brought the members back to Olympic Stadium for an unforgettable residency broadcast live to theaters and millions of homes across the globe.",
+    partNumber: "The Final",
+    location: "Seoul Olympic Stadium, Seoul",
+    date: "2022-03-13",
+    category: "Stadium Tour",
+    tags: ["PTD on Stage", "Seoul", "Permission to Dance", "1080p"],
+    coverUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/BTS_Love_Yourself_-_Speak_Yourself_tour_at_Rose_Bowl,_Pasadena_(California),_4_May_2019_01.jpg?width=1280",
+    coverAltText: "BTS Permission to Dance on Stage in Seoul crowd stadium fireworks",
+    videoUrl: "https://www.youtube.com/embed/GdZLi9HKF38",
+    videoQuality: "1080p",
+    watchNowEnabled: true,
+    watchNowText: "WATCH NOW",
+    downloadEnabled: true,
+    downloadText: "DOWNLOAD",
+    telegramDownloadUrl: "https://t.me/arirang_army7",
+    seoTitle: "BTS Permission to Dance on Stage Seoul Concert Replay | BANGTAN GALLERY",
+    seoDescription: "Watch BTS Permission to Dance on Stage Seoul live concert replay with full stages and songs.",
+    ogTitle: "BTS Permission to Dance Seoul Concert Replay",
+    ogDescription: "Relive BTS in Seoul with full HD concert stream and Telegram download.",
+    socialShareImage: "https://commons.wikimedia.org/wiki/Special:FilePath/BTS_Love_Yourself_-_Speak_Yourself_tour_at_Rose_Bowl,_Pasadena_(California),_4_May_2019_01.jpg?width=1280",
+    published: true,
+    isFeatured: true,
+    displayOrder: 2
+  },
+  {
+    id: 'concert-mots-one',
+    title: "BTS MAP OF THE SOUL ON:E (LIVE CONCERT)",
+    slug: 'bts-map-of-the-soul-one',
+    shortDescription: "The monumental virtual arena concert viewed by nearly 1 million concurrent fans across 191 territories with massive innovative stage effects.",
+    fullDescription: "Using revolutionary AR, multi-view 4K cameras, and virtual stadium effects, BTS delivered their most ambitious conceptual concert covering the full Map of the Soul era.",
+    partNumber: "Part 1",
+    location: "KSPO Dome Virtual Arena",
+    date: "2020-10-10",
+    category: "Special Arena",
+    tags: ["Map of the Soul", "MOS ON:E", "Virtual Stage", "1080p"],
+    coverUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22Not_Today%22_during_Speak_Yourself_tour_at_MetLife_Stadium,_18_May_2019_01.jpg?width=1280",
+    coverAltText: "BTS Map of the Soul ON:E virtual stage purple lights",
+    videoUrl: "https://www.youtube.com/embed/WMweEpGlu_U",
+    videoQuality: "1080p",
+    watchNowEnabled: true,
+    watchNowText: "WATCH NOW",
+    downloadEnabled: true,
+    downloadText: "DOWNLOAD",
+    telegramDownloadUrl: "https://t.me/arirang_army7",
+    seoTitle: "BTS Map of the Soul ON:E Live Concert Replay | BANGTAN GALLERY",
+    seoDescription: "Stream BTS Map of the Soul ON:E concert replay with solo stages and group hits.",
+    ogTitle: "BTS Map of the Soul ON:E Concert Replay",
+    ogDescription: "Full live concert replay of Map of the Soul ON:E with Telegram download access.",
+    socialShareImage: "https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22Not_Today%22_during_Speak_Yourself_tour_at_MetLife_Stadium,_18_May_2019_01.jpg?width=1280",
+    published: true,
+    isFeatured: false,
+    displayOrder: 3
   }
 ];

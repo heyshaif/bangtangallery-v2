@@ -1,8 +1,6 @@
 <!doctype html>
 <html lang="en">
   <head>
-
-    
     <script>
       // Defensive global error handler to swallow cross-origin and third-party advertising script errors
       (function() {
@@ -57,28 +55,128 @@
             return true; // prevents browser from reporting the error
           }
         };
-
-        // Dynamically load third-party scripts ONLY in production domain
-        const isProduction = window.location.hostname === 'bangtangallery.online' || window.location.hostname === 'www.bangtangallery.online';
-        if (isProduction) {
-          console.log('[PROD] Loading official advertising networks...');
-          
-          // Google AdSense
-          const adSense = document.createElement('script');
-          adSense.async = true;
-          adSense.crossOrigin = "anonymous";
-          adSense.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3637601187018890";
-          document.head.appendChild(adSense);
-        } else {
-          console.log('[DEV/PREVIEW SHIELD] Suppressed third-party scripts to maintain stable error-free development.');
-        }
       })();
     </script>
-    
+
+    <!-- Google AdSense Verification & Script -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3637601187018890"
+     crossorigin="anonymous"></script>
+
+    <!-- Beaver Ad Network Script -->
+    <script async="async" data-cfasync="false" src="https://beavercolourfuldelinquent.com/1cd1da2ef14f3430dc78f359d3b2aef7/invoke.js"></script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" id="app-favicon" href="https://img.icons8.com/?size=100&id=AJsZdj4SRgq1&format=png&color=000000" />
+    <!-- Pinterest Domain Verification -->
+    <meta name="p:domain_verify" content="d15eb40eb3055dc483d8e2a38ee24091"/>
+    <!-- Google Search Console Verification -->
+    <meta name="google-site-verification" content="4x3MLG4fDQs4ztWoWG18l7AvWYYVPgslGny5fVJq7C0" />
+    <meta name="description" content="BANGTAN GALLERY: The premier independent BTS ARMY archive featuring authentic member profiles, discography, high-resolution photo galleries, lyrics, and 2026 tour milestones." />
+    <meta name="keywords" content="BTS, Bangtan Sonyeondan, RM, Jin, Suga, j-hope, Jimin, V, Jung Kook, ARMY, Bangtan Gallery, K-pop, Proof, FESTA" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    
+    <!-- Open Graph / Facebook / WhatsApp Preview -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bangtangallery.online/" />
+    <meta property="og:site_name" content="BANGTAN GALLERY" />
+    <meta property="og:title" content="BANGTAN GALLERY - The Ultimate Independent ARMY Archive" />
+    <meta property="og:description" content="Explore official BTS member profiles, albums, exclusive photo galleries, lyrics, and interactive ARMY archives." />
+    <meta property="og:image" content="https://bangtangallery.online/images/og-cover-2.jpg" />
+    <meta property="og:image:secure_url" content="https://bangtangallery.online/images/og-cover-2.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="BTS (Bangtan Sonyeondan) Group Photo" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="BANGTAN GALLERY - The Ultimate Independent ARMY Archive" />
+    <meta name="twitter:description" content="Explore official BTS member profiles, albums, exclusive photo galleries, lyrics, and interactive ARMY archives." />
+    <meta name="twitter:image" content="https://bangtangallery.online/images/og-cover-2.jpg" />
+    <meta name="twitter:image:alt" content="BTS (Bangtan Sonyeondan) Group Photo" />
+
+    <link rel="image_src" href="https://bangtangallery.online/images/og-cover-2.jpg" />
+    <link rel="icon" id="app-favicon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>BANGTAN GALLERY - The Ultimate Independent ARMY Archive</title>
+
+    <!-- Schema.org Structured Data for Google Search Image & Entity Snippets -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://bangtangallery.online/#website",
+          "url": "https://bangtangallery.online/",
+          "name": "BANGTAN GALLERY",
+          "description": "The Ultimate Independent ARMY Archive",
+          "inLanguage": "en"
+        },
+        {
+          "@type": "WebPage",
+          "@id": "https://bangtangallery.online/#webpage",
+          "url": "https://bangtangallery.online/",
+          "name": "BANGTAN GALLERY - The Ultimate Independent ARMY Archive",
+          "primaryImageOfPage": {
+            "@type": "ImageObject",
+            "url": "https://bangtangallery.online/images/og-cover-2.jpg",
+            "width": 1200,
+            "height": 630
+          }
+        },
+        {
+          "@type": "MusicGroup",
+          "@id": "https://bangtangallery.online/#bts",
+          "name": "BTS (Bangtan Sonyeondan)",
+          "alternateName": ["방탄소년단", "Bangtan Boys", "Beyond The Scene"],
+          "genre": "K-Pop",
+          "image": [
+            "https://bangtangallery.online/images/og-cover-2.jpg"
+          ],
+          "member": [
+            {
+              "@type": "Person",
+              "name": "RM (Kim Nam-joon)",
+              "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/RM_at_W_Korea_Love_Your_W%2C_November_2023.jpg/1280px-RM_at_W_Korea_Love_Your_W%2C_November_2023.jpg"
+            },
+            {
+              "@type": "Person",
+              "name": "Jin (Kim Seok-jin)",
+              "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BTS_Jin_at_Maison_Fred%2C_13_March_2025_04.png/1280px-BTS_Jin_at_Maison_Fred%2C_13_March_2025_04.png"
+            },
+            {
+              "@type": "Person",
+              "name": "SUGA (Min Yoon-gi)",
+              "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Suga_for_Valentino_and_Marie_Claire_Korea_06.jpg/1280px-Suga_for_Valentino_and_Marie_Claire_Korea_06.jpg"
+            },
+            {
+              "@type": "Person",
+              "name": "j-hope (Jung Ho-seok)",
+              "image": "https://upload.wikimedia.org/wikipedia/commons/5/57/J-Hope_at_W_Korea_Breast_Cancer_Campaign%2C_15_October_2025.png"
+            },
+            {
+              "@type": "Person",
+              "name": "Jimin (Park Ji-min)",
+              "image": "https://upload.wikimedia.org/wikipedia/commons/3/33/Jimin_on_the_way_to_SBS_Radio%2C_31_March_2023_%282%29.jpg"
+            },
+            {
+              "@type": "Person",
+              "name": "V (Kim Tae-hyung)",
+              "image": "https://upload.wikimedia.org/wikipedia/commons/d/d4/BTS%27s_V_20251004_04.jpg"
+            },
+            {
+              "@type": "Person",
+              "name": "Jung Kook (Jeon Jung-kook)",
+              "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Jung_Kook_of_BTS%2C_February_12%2C_2026_%281%29.png/1280px-Jung_Kook_of_BTS%2C_February_12%2C_2026_%281%29.png"
+            }
+          ]
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

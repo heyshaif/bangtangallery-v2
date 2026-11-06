@@ -11,6 +11,19 @@ interface ContactSectionProps {
   config?: any;
 }
 
+// Contact-form email delivery (owner request): every submission is
+// ALSO emailed to the site owner's inbox via FormSubmit (free, no
+// account), and the visitor automatically receives a thank-you reply
+// at the email they submitted. The message still saves to the Admin
+// Support Inbox exactly as before; this email copy runs in the
+// background and never blocks or breaks the form. ONE-TIME SETUP:
+// the first submission sends an activation email to the inbox below —
+// the owner clicks its confirm button once, then delivery is live.
+// To use a different inbox, change this one address.
+const CONTACT_NOTIFY_EMAIL = 'tgarirangarmy7@gmail.com';
+const CONTACT_AUTORESPONSE =
+  'Thank you for contacting BANGTAN GALLERY! 💜 We have received your message and will get back to you soon. — The Bangtan Gallery team (fan-made, by ARMY for ARMY)';
+
 export default function ContactSection({ config }: ContactSectionProps) {
   const { refreshData } = useBackend();
   const [name, setName] = useState('');
@@ -85,6 +98,24 @@ export default function ContactSection({ config }: ContactSectionProps) {
         throw new Error(errorData.error || 'Server rejected transmission.');
       }
 
+      // Email a copy to the owner's inbox + auto-reply to the visitor
+      // (background, best-effort — the inbox save above already worked).
+      try {
+        fetch(`https://formsubmit.co/ajax/${CONTACT_NOTIFY_EMAIL}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            name: targetPayload.name,
+            email: targetPayload.email,
+            _subject: `Bangtan Gallery Contact: ${targetPayload.subject || 'New message'} — from ${targetPayload.name}`,
+            message: targetPayload.message,
+            _autoresponse: CONTACT_AUTORESPONSE,
+            _template: 'table',
+            _captcha: 'false'
+          })
+        }).catch(() => {});
+      } catch {}
+
       // Play audio indicator
       playSuccessChime();
 
@@ -115,7 +146,7 @@ export default function ContactSection({ config }: ContactSectionProps) {
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="border-b border-white/5 pb-6">
-        <h2 className="text-2xl md:text-3xl font-sans font-extrabold text-white">
+        <h2 className="text-xl md:text-2xl font-sans font-extrabold text-white">
           Contact Bangtan Gallery
         </h2>
         <p className="text-gray-400 text-sm font-sans">
@@ -132,12 +163,68 @@ export default function ContactSection({ config }: ContactSectionProps) {
               <MessageSquareHeart className="w-5 h-5 text-purple-400" /> Transmit Coordinates
             </h3>
 
-            <div className="space-y-4 text-sm font-sans text-gray-300">
+            <div className="space-y-3 text-sm font-sans text-gray-300">
               <div className="flex items-start gap-3.5 p-3 rounded-lg bg-white/[0.01] border border-white/[0.03]">
                 <Mail className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-white">General Email</h4>
                   <p className="text-xs text-gray-400 mt-1">{config?.socialLinks?.email || 'tgarirangarmy7@gmail.com'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3.5 p-3 rounded-lg bg-cyan-950/20 border border-cyan-500/20">
+                <Send className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-white">Telegram Broadcast Channel</h4>
+                  <a 
+                    href={config?.socialLinks?.telegramChannel || config?.socialLinks?.telegram || 'https://t.me/arirang_army7'} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-xs text-cyan-400 hover:underline mt-0.5 block font-mono"
+                  >
+                    t.me/arirang_army7 ↗
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3.5 p-3 rounded-lg bg-purple-950/25 border border-purple-500/20">
+                <MessageSquareHeart className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-white">Telegram Community Chat</h4>
+                  <a 
+                    href={config?.socialLinks?.telegramCommunity || config?.socialLinks?.telegramChat || 'https://t.me/arirang_army7chat'} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-xs text-purple-300 hover:underline mt-0.5 block font-mono"
+                  >
+                    t.me/arirang_army7chat ↗
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3.5 p-3 rounded-lg bg-black/40 border border-purple-500/15">
+                <Globe className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-white">Fandom Coordinates</h4>
+                  <div className="flex flex-wrap items-center gap-3 mt-1 text-xs font-mono">
+                    <a 
+                      href={config?.socialLinks?.twitter || 'https://x.com/arirang_army_7'} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-sky-400 hover:underline"
+                    >
+                      X: @arirang_army_7 ↗
+                    </a>
+                    <span className="text-zinc-600">•</span>
+                    <a 
+                      href={config?.socialLinks?.kofi || config?.footer?.kofiUrl || 'https://ko-fi.com/bangtangallery'} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-rose-400 hover:underline"
+                    >
+                      Ko-fi Support ☕ ↗
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>

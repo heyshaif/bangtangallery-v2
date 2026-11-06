@@ -30,70 +30,12 @@ interface TrendingCarouselProps {
 export default function TrendingCarousel({ config, onNavigate }: TrendingCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const trendingListFallback: TrendingItem[] = [
-    {
-      id: 'trend-1',
-      rank: '#1',
-      title: 'upadting information..',
-      creator: 'HYBE LABELS',
-      views: '410M',
-      likes: '12M',
-      tag: 'Remix',
-      thumbnail: 'https://i.pinimg.com/736x/23/af/64/23af6488fc31358530284436dabb8b16.jpg',
-      category: 'YouTube',
-      published: true
-    },
-    {
-      id: 'trend-2',
-      rank: '#2',
-      title: 'upadting information..',
-      creator: 'BigHit Music Team',
-      views: '84M',
-      likes: '4.8M',
-      tag: 'Concert',
-      thumbnail: 'https://i.pinimg.com/736x/b0/b7/6a/b0b76a0e848bd6d056cb10537e8a3a7f.jpg',
-      category: 'YouTube',
-      published: true
-    },
-    {
-      id: 'trend-3',
-      rank: '#3',
-      title: 'upadting information..',
-      creator: '',
-      views: '54M',
-      likes: '3.1M',
-      tag: 'MV Re-release',
-      thumbnail: 'https://i.pinimg.com/1200x/f9/46/50/f9465065dc56e80ddd5c69cd32a2b56a.jpg',
-      category: 'Music',
-      published: true
-    },
-    {
-      id: 'trend-4',
-      rank: '#4',
-      title: 'upadting information..',
-      creator: 'ARMY Synth Labs',
-      views: '23M',
-      likes: '1.9M',
-      tag: 'Fan Creation',
-      thumbnail: 'https://i.pinimg.com/736x/6a/a8/c6/6aa8c6e003a3074f9a166c6a8639e7c9.jpg',
-      category: 'Music',
-      published: true
-    },
-    {
-      id: 'trend-5',
-      rank: '#5',
-      title: 'upadting information..',
-      creator: 'V Visualist Team',
-      views: '19M',
-      likes: '2.5M',
-      tag: 'Studio Shots',
-      thumbnail: 'https://i.pinimg.com/736x/c8/9d/ca/c89dca577fd2a694a8cbccf21c149a2a.jpg',
-      category: 'Gallery',
-      published: true
-    }
-  ];
-
-  const activeTrending = (config && config.length > 0 ? config : trendingListFallback).filter(item => item.published !== false);
+  // Owner rule (2026-11-06): this showcase is AUTO-FED from the
+  // videos and concerts the site owner adds — there is no built-in
+  // fallback content, and when the owner has added nothing the
+  // section simply does not render.
+  const activeTrending = (config || []).filter(item => item.published !== false);
+  if (activeTrending.length === 0) return null;
 
   const handleScroll = (dir: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -129,7 +71,7 @@ export default function TrendingCarousel({ config, onNavigate }: TrendingCarouse
             Trending Showcase <Flame className="w-5 h-5 text-purple-400 animate-pulse" />
           </h3>
           <p className="text-gray-400 text-xs mt-1">
-            Infinite scrollable list of trending studio remasters, fan creations, and highest rated media uploads.
+            Concert replays and videos added here by the site owner.
           </p>
         </div>
 

@@ -7,8 +7,93 @@ import React, { useState, useEffect, useId } from 'react';
 import { NewsArticle } from '../types';
 import AdsterraAd from './AdsterraAd';
 import { NEWS_ARTICLES } from '../data/btsData';
-import { Search, ChevronLeft, CalendarDays, X, BookOpen, Share2, Clock, User, ArrowRight, MessageCircle, Send } from 'lucide-react';
+import { Search, ChevronLeft, CalendarDays, X, BookOpen, Share2, Clock, User, ArrowRight, MessageCircle, Send, ExternalLink, Link2, Globe, Facebook, Check } from 'lucide-react';
 import { useBackend } from '../context/BackendContext';
+
+function SocialShareBar({ shareUrl, title }: { shareUrl: string; title: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleTelegramShare = () => {
+    const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title + ' — BANGTAN GALLERY 💜')}`;
+    window.open(tgUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleWhatsAppShare = () => {
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(title + ' ' + shareUrl)}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleFacebookShare = () => {
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+    window.open(fbUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleTwitterShare = () => {
+    const twUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}`;
+    window.open(twUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  return (
+    <div className="flex items-center gap-2 flex-nowrap">
+      <span className="text-[9px] font-mono text-zinc-400 uppercase font-bold mr-1 shrink-0">Share:</span>
+
+      {/* Telegram Share Button — icon only */}
+      <button
+        onClick={handleTelegramShare}
+        className="w-9 h-9 shrink-0 rounded-full bg-[#229ED9]/20 hover:bg-[#229ED9]/30 text-[#229ED9] border border-[#229ED9]/30 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+        title="Share to Telegram"
+        aria-label="Share to Telegram"
+      >
+        <Send className="w-4 h-4 rotate-45" />
+      </button>
+
+      {/* WhatsApp Share Button — icon only */}
+      <button
+        onClick={handleWhatsAppShare}
+        className="w-9 h-9 shrink-0 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+        title="Share to WhatsApp"
+        aria-label="Share to WhatsApp"
+      >
+        <MessageCircle className="w-4 h-4" />
+      </button>
+
+      {/* Facebook Share Button — icon only */}
+      <button
+        onClick={handleFacebookShare}
+        className="w-9 h-9 shrink-0 rounded-full bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+        title="Share to Facebook"
+        aria-label="Share to Facebook"
+      >
+        <Facebook className="w-4 h-4" />
+      </button>
+
+      {/* X / Twitter Share Button — icon only */}
+      <button
+        onClick={handleTwitterShare}
+        className="w-9 h-9 shrink-0 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-sm font-bold flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+        title="Share to X (Twitter)"
+        aria-label="Share to X (Twitter)"
+      >
+        𝕏
+      </button>
+
+      {/* Copy Link Button — icon only */}
+      <button
+        onClick={handleCopy}
+        className="w-9 h-9 shrink-0 rounded-full bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 border border-purple-500/30 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+        title="Copy Link to Clipboard"
+        aria-label="Copy Link to Clipboard"
+      >
+        {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+}
 
 function CopyButton({ shareUrl }: { shareUrl: string }) {
   const [copied, setCopied] = useState(false);
@@ -362,6 +447,47 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
     }
   };
 
+  // Dynamically synchronize Open Graph tags and page title in client-side document head when reading an article
+  useEffect(() => {
+    if (!selectedArticle) return;
+
+    const originalTitle = document.title;
+    const title = `${selectedArticle.title} — BANGTAN GALLERY`;
+    document.title = title;
+
+    const slug = selectedArticle.slug || getSlug(selectedArticle.title) || selectedArticle.id;
+    const shareUrl = `${window.location.origin}/news/${slug}`;
+    const rawImg = selectedArticle.featuredImage || selectedArticle.imageUrl || 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_win_first_Daesang_(Grand_Prize)_at_Melon_Music_Awards,_19_November_2016_02.png?width=1280';
+    const fullImgUrl = rawImg.startsWith('http') ? rawImg : `${window.location.origin}${rawImg.startsWith('/') ? '' : '/'}${rawImg}`;
+    const desc = selectedArticle.seoDescription || selectedArticle.summary || '';
+
+    const setMeta = (attr: string, key: string, content: string) => {
+      let tag = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute(attr, key);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content);
+    };
+
+    setMeta('property', 'og:title', selectedArticle.title);
+    setMeta('property', 'og:description', desc);
+    setMeta('property', 'og:image', fullImgUrl);
+    setMeta('property', 'og:image:secure_url', fullImgUrl);
+    setMeta('property', 'og:url', shareUrl);
+    setMeta('property', 'og:type', 'article');
+    setMeta('property', 'og:site_name', 'BANGTAN GALLERY');
+    setMeta('name', 'twitter:card', 'summary_large_image');
+    setMeta('name', 'twitter:title', selectedArticle.title);
+    setMeta('name', 'twitter:description', desc);
+    setMeta('name', 'twitter:image', fullImgUrl);
+
+    return () => {
+      document.title = originalTitle;
+    };
+  }, [selectedArticle]);
+
   // Authors & Reading Time Helpers
   const getAuthorName = (articleId: string, title: string = "") => {
     return "By Admin";
@@ -377,30 +503,123 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
   const gridArticles = filteredArticles.slice(1);
   const trendingArticles = displayArticles.slice(0, 5);
 
+  const renderParagraphWithLinks = (paragraph: string) => {
+    // Matches markdown links [Label](URL) or raw URLs
+    const combinedRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<]+)/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = combinedRegex.exec(paragraph)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(paragraph.slice(lastIndex, match.index));
+      }
+
+      if (match[1] && match[2]) {
+        // Markdown [label](url)
+        const label = match[1];
+        const url = match[2];
+        parts.push(
+          <a
+            key={match.index}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 font-bold text-purple-300 hover:text-white bg-purple-950/70 hover:bg-purple-900 border border-purple-500/30 px-2 py-0.5 rounded-lg transition-all hover:scale-105 active:scale-95 mx-1 underline decoration-purple-400/50 cursor-pointer shadow-sm"
+          >
+            <span>{label}</span>
+            <ExternalLink className="w-3 h-3 text-purple-400 shrink-0" />
+          </a>
+        );
+      } else if (match[3]) {
+        // Plain raw URL
+        const rawUrl = match[3];
+        parts.push(
+          <a
+            key={match.index}
+            href={rawUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-purple-400 hover:text-purple-200 underline decoration-purple-500/40 hover:decoration-purple-300 break-all transition-colors"
+          >
+            <span>{rawUrl}</span>
+            <ExternalLink className="w-3 h-3 text-purple-400 shrink-0 inline" />
+          </a>
+        );
+      }
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < paragraph.length) {
+      parts.push(paragraph.slice(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : paragraph;
+  };
+
   const renderContentWithAds = (content: string) => {
     if (!content) return null;
     const paragraphs = content.split('\n\n').filter(Boolean);
     return (
-      <div className="space-y-4">
-        {paragraphs.map((p, idx) => (
-          <p key={idx} className="leading-relaxed text-zinc-300 text-sm md:text-base">{p}</p>
-        ))}
+      <div className="space-y-5">
+        {paragraphs.map((p, idx) => {
+          // Inline image paragraph: a paragraph that is only
+          // ![img](url) renders as a full-width photo inside the
+          // article body (used by the Bangtan Gallery intro article).
+          const imgMatch = p.trim().match(/^!\[img\]\((.+)\)$/);
+          if (imgMatch) {
+            return (
+              <figure key={idx} className="my-2">
+                <img
+                  src={imgMatch[1]}
+                  alt="BTS — Bangtan Gallery"
+                  className="w-full rounded-2xl border border-white/10 object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
+                />
+              </figure>
+            );
+          }
+          return (
+          <React.Fragment key={idx}>
+            <p className="leading-relaxed text-zinc-300 text-sm md:text-base font-sans">
+              {renderParagraphWithLinks(p)}
+            </p>
+            
+            {/* In-content Real Ad Slot 1 (After 2nd paragraph) */}
+            {idx === 1 && (
+              <div className="my-4 flex justify-center">
+                <AdsterraAd type={8} />
+              </div>
+            )}
+
+            {/* In-content Real Ad Slot 2 (After 5th paragraph if article is long) */}
+            {idx === 4 && (
+              <div className="my-4 flex justify-center">
+                <AdsterraAd type={5} />
+              </div>
+            )}
+          </React.Fragment>
+          );
+        })}
       </div>
     );
   };
 
   return (
-    <div className="space-y-8 animate-fade-in font-sans">
+    <div className="space-y-5 animate-fade-in font-sans">
       {!selectedArticle ? (
         <>
           {/* Magazine Brand Header Block */}
-          <div className="text-center py-10 border-b border-white/5 space-y-3">
+          <div className="text-center pt-1 pb-5 border-b border-white/5 space-y-2">
             <div className="flex justify-center items-center gap-2">
               <span className="h-px w-8 bg-purple-500/50"></span>
               <span className="text-purple-400 font-mono text-[10px] uppercase tracking-[0.3em] font-bold">Bangtan Editorial Portal</span>
               <span className="h-px w-8 bg-purple-500/50"></span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white uppercase font-serif font-black">
+            <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-white uppercase font-serif font-black">
               BANGTAN GALLERY NEWS PORTAL
             </h1>
             <p className="text-xs text-gray-400 font-mono max-w-lg mx-auto leading-relaxed">
@@ -409,7 +628,7 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
           </div>
 
           {/* Search, Categories, and Tags Bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
             <div className="flex gap-1.5 flex-wrap overflow-x-auto select-scrollbar py-1">
               {categoryPills.map(cat => (
                 <button
@@ -507,6 +726,8 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
                               <img
                                 src={article.imageUrl}
                                 alt={article.title}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover transition-transform group-hover:scale-102 duration-500"
                                 referrerPolicy="no-referrer"
                               />
@@ -651,7 +872,7 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
         </>
       ) : (
         /* Upgraded Magazine Article Detail View */
-        <div className="w-full max-w-4xl mx-auto rounded-2xl border border-white/5 bg-gradient-to-b from-[#100824] to-[#04010a] overflow-hidden p-5 md:p-8 space-y-6 animate-fade-in font-sans">
+        <div className="news-article-view w-full max-w-4xl mx-auto rounded-2xl border border-white/5 bg-gradient-to-b from-[#100824] to-[#04010a] overflow-hidden p-5 md:p-6 space-y-4 animate-fade-in font-sans">
           {/* Back Button */}
           <button
             onClick={handleBackToGrid}
@@ -673,9 +894,11 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
                 </span>
               </div>
               
-              <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 px-2.5 py-1 rounded-full text-xs">
-                <span className="text-[9px] font-mono text-zinc-500 uppercase mr-1">Share:</span>
-                <CopyButton shareUrl={window.location.origin + '/news/' + (selectedArticle.slug || getSlug(selectedArticle.title) || selectedArticle.id)} />
+              <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 px-3 py-1.5 rounded-full text-xs">
+                <SocialShareBar 
+                  shareUrl={window.location.origin + '/news/' + (selectedArticle.slug || getSlug(selectedArticle.title) || selectedArticle.id)}
+                  title={selectedArticle.title}
+                />
               </div>
             </div>
 
@@ -690,13 +913,18 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
             </div>
 
             {/* Featured Wide Banner Image */}
-            <div className="rounded-xl overflow-hidden aspect-[16/9] relative shadow-2xl bg-black border border-white/5">
+            <div className="rounded-xl overflow-hidden aspect-[16/9] md:aspect-[21/9] relative shadow-2xl bg-black border border-white/5">
               <img
                 src={selectedArticle.featuredImage || selectedArticle.imageUrl}
                 alt={selectedArticle.title}
                 className="w-full h-full object-cover filter brightness-[0.85]"
                 referrerPolicy="no-referrer"
               />
+            </div>
+
+            {/* Top In-Article Ad Banner */}
+            <div className="w-full flex justify-center my-3">
+              <AdsterraAd type={7} />
             </div>
 
             {/* Main Content Area */}
@@ -713,7 +941,56 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
               {selectedArticle.gallery && selectedArticle.gallery.length > 0 && (
                 <ArticleGallery images={selectedArticle.gallery} />
               )}
+
+              {/* Dedicated Article Clickable Links & Resources */}
+              {selectedArticle.links && selectedArticle.links.length > 0 && (
+                <div className="my-6 p-5 md:p-6 rounded-2xl bg-gradient-to-r from-purple-950/40 via-black/60 to-purple-950/30 border border-purple-500/20 space-y-4">
+                  <div className="flex items-center justify-between border-b border-purple-500/15 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <Link2 className="w-4 h-4 text-purple-400" />
+                      <h3 className="text-xs md:text-sm font-mono font-bold text-purple-200 uppercase tracking-wider">
+                        Official Links & Resources
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-mono text-purple-400 bg-purple-950/80 px-2.5 py-0.5 rounded-full border border-purple-500/25">
+                      {selectedArticle.links.length} Connected {selectedArticle.links.length === 1 ? 'Link' : 'Links'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {selectedArticle.links.map((lnk, lIdx) => (
+                      <a
+                        key={lnk.id || lIdx}
+                        href={lnk.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-3.5 rounded-xl bg-purple-950/25 hover:bg-purple-900/40 border border-purple-500/15 hover:border-purple-400/40 flex items-center justify-between text-xs text-white transition-all group shadow-sm hover:shadow-purple-500/10 cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="w-8 h-8 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300 flex items-center justify-center shrink-0 text-sm group-hover:scale-110 transition-transform">
+                            🔗
+                          </span>
+                          <div className="min-w-0">
+                            <span className="font-bold block truncate group-hover:text-purple-300 transition-colors">
+                              {lnk.label || 'Visit Link'}
+                            </span>
+                            <span className="text-[10px] text-zinc-400 font-mono block truncate">
+                              {lnk.url.replace(/^https?:\/\//, '')}
+                            </span>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-purple-400 group-hover:text-white transition-colors shrink-0 ml-2" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
               
+              {/* Bottom In-Article Ad Slot (Before Comments) */}
+              <div className="w-full flex justify-center my-6">
+                <AdsterraAd type={8} />
+              </div>
+
               {/* Fandom Interactive Comments & Nested Replies */}
               <NewsCommentsSection articleId={selectedArticle.id} articleTitle={selectedArticle.title} />
             </div>

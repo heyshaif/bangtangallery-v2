@@ -23,8 +23,9 @@ export default function AuroraBackground({ theme = 'dark', isAmbientActive = tru
       return;
     }
 
-    // Generate organic floating particles
-    const initialParticles = Array.from({ length: 35 }).map((_, i) => ({
+    // Generate organic floating particles (kept light — 12 instead of 35 —
+    // so low-end phones do not drop frames compositing them)
+    const initialParticles = Array.from({ length: 12 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100, // percentage x
       y: Math.random() * 100, // percentage y
@@ -44,39 +45,80 @@ export default function AuroraBackground({ theme = 'dark', isAmbientActive = tru
       setRipples(prev => [...prev, newRipple].slice(-8)); // keep last 8 for smooth rendering
     };
 
+    // Mouse-follow halo only exists on devices with a real mouse; on touch
+    // devices it never shows, so don't pay for its listeners there.
+    const finePointer = typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(pointer: fine)').matches
+      : true;
+
+    let rafPending = false;
+    let lastEvent: MouseEvent | null = null;
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
+      // Coalesce bursts of mousemove events into one state update per frame
+      lastEvent = e;
+      if (rafPending) return;
+      rafPending = true;
+      requestAnimationFrame(() => {
+        rafPending = false;
+        if (lastEvent) {
+          const ev = lastEvent;
+          setMousePos(prev =>
+            Math.abs(prev.x - ev.clientX) < 3 && Math.abs(prev.y - ev.clientY) < 3
+              ? prev
+              : { x: ev.clientX, y: ev.clientY }
+          );
+        }
+      });
     };
 
     window.addEventListener('click', handleGlobalClick);
-    window.addEventListener('mousemove', handleMouseMove);
+    if (finePointer) {
+      window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    }
     return () => {
       window.removeEventListener('click', handleGlobalClick);
       window.removeEventListener('mousemove', handleMouseMove);
     };
   }, [isAmbientActive]);
 
-  // Soft elastic trailing lag for background custom cursor following
+  // Soft elastic trailing lag for background custom cursor following.
+  // The loop STOPS once the halo catches up to the cursor (it used to run a
+  // 60fps setState loop forever, even with an idle mouse — a steady source
+  // of jank on low-end phones). A fresh mousemove re-runs this effect and
+  // restarts the glide.
   useEffect(() => {
     if (!isAmbientActive) return;
+    if (mousePos.x === -100) return;
 
     let animationFrameId: number;
+    let stopped = false;
     const updateTrail = () => {
+      if (stopped) return;
+      let settled = false;
       setTrailPos(prev => {
-        if (prev.x === -100 && mousePos.x !== -100) {
+        if (prev.x === -100) {
           return mousePos;
         }
         const dx = mousePos.x - prev.x;
         const dy = mousePos.y - prev.y;
+        if (Math.abs(dx) < 0.6 && Math.abs(dy) < 0.6) {
+          settled = true;
+          return prev.x === mousePos.x && prev.y === mousePos.y ? prev : mousePos;
+        }
         return {
           x: prev.x + dx * 0.14,
           y: prev.y + dy * 0.14
         };
       });
-      animationFrameId = requestAnimationFrame(updateTrail);
+      if (!settled) {
+        animationFrameId = requestAnimationFrame(updateTrail);
+      }
     };
     animationFrameId = requestAnimationFrame(updateTrail);
-    return () => cancelAnimationFrame(animationFrameId);
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(animationFrameId);
+    };
   }, [mousePos, isAmbientActive]);
 
   return (
@@ -126,8 +168,8 @@ export default function AuroraBackground({ theme = 'dark', isAmbientActive = tru
 
       {/* Animated gradient blobs matching the Immersive UI design theme */}
       <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${isAmbientActive ? 'opacity-40' : 'opacity-10'}`}>
-        <div className={`absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-900/30 rounded-full blur-[120px] ${isAmbientActive ? 'animate-pulse' : ''}`} style={{ animationDuration: '14s' }} />
-        <div className={`absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-red-900/20 rounded-full blur-[100px] ${isAmbientActive ? 'animate-pulse' : ''}`} style={{ animationDuration: '18s', animationDelay: '3s' }} />
+        <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-900/30 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-red-900/20 rounded-full blur-[100px]" />
         <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(168, 85, 247, 0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       </div>
 

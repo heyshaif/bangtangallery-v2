@@ -3,35 +3,36 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Component, type ReactNode } from 'react';
 import { UserPreferences, Member, Album, Video, GalleryItem, TimelineEvent, NewsArticle } from './types';
 import { MEMBERS, ALBUMS, VIDEOS, GALLERY_ITEMS, TIMELINE_EVENTS, NEWS_ARTICLES, DOWNLOADS, FAN_ARTS, EVENTS, FAQS } from './data/btsData';
 
 // Component imports
 import AuroraBackground from './components/AuroraBackground';
-import MemberProfileDetail from './components/MemberProfileDetail';
-import MusicSection from './components/MusicSection';
-import YouTubeClone from './components/YouTubeClone';
-import GallerySection from './components/GallerySection';
-import TimelineSection from './components/TimelineSection';
-import NewsSection from './components/NewsSection';
-import DownloadsSection from './components/DownloadsSection';
-import FanArtSection from './components/FanArtSection';
-import EventsSection from './components/EventsSection';
-import MemesSection from './components/MemesSection';
 import TourCountdownCarousel from './components/TourCountdownCarousel';
-import FAQSection from './components/FAQSection';
-import ContactSection from './components/ContactSection';
-import FeedbackSection from './components/FeedbackSection';
-import SettingsSection from './components/SettingsSection';
 import ThemeCustomizerPanel from './components/ThemeCustomizerPanel';
 import { ThemeCustomProvider } from './context/ThemeContext';
 import WelcomePopup from './components/WelcomePopup';
-import AdminPanel from './components/AdminPanel';
-import BTSGlobalQuest from './components/BTSGlobalQuest';
-import LiveStreamSection from './components/LiveStreamSection';
-import VotingCenterSection from './components/VotingCenterSection';
 import AdsterraAd from './components/AdsterraAd';
+
+// Lazy-loaded tab sections: each page's code is downloaded only when the
+// visitor opens that tab, which keeps the first load fast and lag-free.
+const MemberProfileDetail = React.lazy(() => import('./components/MemberProfileDetail'));
+const MusicSection = React.lazy(() => import('./components/MusicSection'));
+const YouTubeClone = React.lazy(() => import('./components/YouTubeClone'));
+const GallerySection = React.lazy(() => import('./components/GallerySection'));
+const TimelineSection = React.lazy(() => import('./components/TimelineSection'));
+const NewsSection = React.lazy(() => import('./components/NewsSection'));
+const DownloadsSection = React.lazy(() => import('./components/DownloadsSection'));
+const EventsSection = React.lazy(() => import('./components/EventsSection'));
+const FAQSection = React.lazy(() => import('./components/FAQSection'));
+const ContactSection = React.lazy(() => import('./components/ContactSection'));
+const FeedbackSection = React.lazy(() => import('./components/FeedbackSection'));
+const SettingsSection = React.lazy(() => import('./components/SettingsSection'));
+const BTSGlobalQuest = React.lazy(() => import('./components/BTSGlobalQuest'));
+const LiveStreamSection = React.lazy(() => import('./components/LiveStreamSection'));
+const VotingCenterSection = React.lazy(() => import('./components/VotingCenterSection'));
+const RecentConcertReplay = React.lazy(() => import('./components/RecentConcertReplay'));
 
 // New Premium Landing Page Components
 import Preloader from './components/Preloader';
@@ -41,9 +42,7 @@ import BTSQuotesCarousel from './components/BTSQuotesCarousel';
 import TrendingCarousel from './components/TrendingCarousel';
 import InteractiveCategories from './components/InteractiveCategories';
 import HomeFeed from './components/HomeFeed';
-import GeneratePicStudio from './components/GeneratePicStudio';
-import PurpleLoveOverlay from './components/PurpleLoveOverlay';
-import DraggableButton from './components/DraggableButton';
+const GeneratePicStudio = React.lazy(() => import('./components/GeneratePicStudio'));
 import { DisclaimerPopup } from './components/DisclaimerPopup';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -53,12 +52,11 @@ import {
   Heart, HelpCircle, Mail, Settings as SettingsIcon, Menu, X, Search, Globe, Cloud, Sun, Moon,
   CheckCircle, Palette, MessageSquareHeart, Flame, ArrowUp, Zap, UserCheck, Smile, Gamepad2,
   Instagram, Twitter, Youtube, Coffee, Github, Linkedin, Facebook, Send, MoreHorizontal, Pin, Wand2, Lock,
-  Radio, Vote, Disc
+  Radio, Vote, Disc, Ticket
 } from 'lucide-react';
-import { Sparkles } from './components/CustomSparkles';
-
 import { AudioPlayerProvider, useAudioPlayer } from './context/AudioPlayerContext';
 import GlobalMiniPlayer from './components/GlobalMiniPlayer';
+import ArmyBombPlayer from './components/ArmyBombPlayer';
 
 const getSpotifyEmbedUrl = (input: string): string | null => {
   if (!input) return null;
@@ -93,30 +91,47 @@ const DEFAULT_SPOTIFY_EMBEDS = [
   }
 ];
 
+// Safety net: if any single section ever throws while rendering, show a
+// small retry card instead of unmounting the whole app into a black page.
+class SectionErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: any) {
+    console.error('Section failed to render:', error);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="py-24 flex flex-col items-center justify-center gap-3 text-center">
+          <p className="text-sm text-slate-300">This section couldn't load.</p>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="px-5 py-2 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold uppercase tracking-wider cursor-pointer"
+          >
+            Tap to retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export function AppContent() {
   const audioPlayer = useAudioPlayer();
   
   // Dynamic Web Publisher Configuration (Admin CMS Integration)
   const [publishedConfig, setPublishedConfig] = useState<any>(null);
-  const [isAdminOpen, setIsAdminOpen] = useState(() => {
-    return window.location.pathname === '/admin' || window.location.hash === '#admin' || window.location.hash === '#/admin';
-  });
-
-  const copyrightClickTimes = useRef<number[]>([]);
-
-  const handleCopyrightClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const now = Date.now();
-    const validClicks = [...copyrightClickTimes.current.filter(t => now - t < 3000), now];
-    copyrightClickTimes.current = validClicks;
-
-    if (validClicks.length >= 3) {
-      window.location.hash = 'admin';
-      setIsAdminOpen(true);
-      copyrightClickTimes.current = [];
-    }
-  };
+  // The Admin Panel is NOT part of the public website anymore. It ships
+  // as a separate app (admin.html — bangtangallery.online/admin) that
+  // connects to the same Firebase backend. The hidden 3-tap copyright
+  // entry and the /admin + #admin triggers that used to open it here
+  // have been removed.
 
   const sanitizeConfig = (config: any) => {
     if (!config) return config;
@@ -186,18 +201,8 @@ export function AppContent() {
   useEffect(() => {
     fetchPublishedConfig();
     const interval = setInterval(fetchPublishedConfig, 4000); // 4s polling for instant live-syncing!
-
-    const handleLocationChange = () => {
-      const isUrlAdmin = window.location.pathname === '/admin' || window.location.hash === '#admin' || window.location.hash === '#/admin';
-      setIsAdminOpen(isUrlAdmin);
-    };
-
-    window.addEventListener('popstate', handleLocationChange);
-    window.addEventListener('hashchange', handleLocationChange);
     return () => {
       clearInterval(interval);
-      window.removeEventListener('popstate', handleLocationChange);
-      window.removeEventListener('hashchange', handleLocationChange);
     };
   }, []);
 
@@ -293,14 +298,6 @@ export function AppContent() {
     };
   });
 
-  const [isPurpleLove, setIsPurpleLove] = useState<boolean>(() => {
-    return localStorage.getItem('bts_purple_love_active') === 'true';
-  });
-
-  const [isFireworks, setIsFireworks] = useState<boolean>(() => {
-    return localStorage.getItem('bts_fireworks_active') === 'true';
-  });
-
   const [isAmbientActive, setIsAmbientActive] = useState<boolean>(() => {
     return localStorage.getItem('bts_ambient_bg_active') !== 'false';
   });
@@ -309,13 +306,16 @@ export function AppContent() {
   const [disclaimerActive, setDisclaimerActive] = useState(false);
   const [previewDisclaimer, setPreviewDisclaimer] = useState<any>(null);
 
-  // Auto trigger disclaimer when publishedConfig successfully loads
+  // Auto trigger disclaimer when publishedConfig successfully loads.
+  // Owner rule: the admin-set disclaimer is PERMANENT — it shows on
+  // every visit (every page load) and closes itself automatically
+  // after the admin-set duration. A ref keeps it to once per load
+  // even though the config object can refresh mid-session.
+  const disclaimerShownRef = useRef(false);
   useEffect(() => {
-    if (publishedConfig?.disclaimer?.enabled) {
-      const shown = sessionStorage.getItem('bts_disclaimer_shown');
-      if (!shown) {
-        setDisclaimerActive(true);
-      }
+    if (publishedConfig?.disclaimer?.enabled && !disclaimerShownRef.current) {
+      disclaimerShownRef.current = true;
+      setDisclaimerActive(true);
     }
   }, [publishedConfig]);
 
@@ -385,6 +385,11 @@ export function AppContent() {
         setSelectedMember(null);
         setSelectedNewsSlug(null);
         setTargetUsername(null);
+      } else if (parts[0] === 'arirang_concert_reply' || parts[0] === 'concert' || parts[0] === 'concerts' || parts[0] === 'concert-replay') {
+        setActiveTab('Concert');
+        setSelectedMember(null);
+        setSelectedNewsSlug(null);
+        setTargetUsername(null);
       } else if (parts[0] === 'community') {
         setActiveTab('Voting Center');
         setSelectedMember(null);
@@ -401,7 +406,10 @@ export function AppContent() {
         setSelectedNewsSlug(null);
         setTargetUsername(null);
       } else if (parts[0] === 'memes') {
-        setActiveTab('Memes');
+        // The standalone Memes page was removed: memes now live in the
+        // Gallery under its 'Memes' category filter.
+        setActiveTab('Gallery');
+        setInitialGalleryCategory('Memes');
         setSelectedMember(null);
         setSelectedNewsSlug(null);
         setTargetUsername(null);
@@ -455,8 +463,22 @@ export function AppContent() {
         setSelectedNewsSlug(null);
         setTargetUsername(null);
         if (parts.length > 1) {
-          const memberSlug = parts[1].toLowerCase();
-          const found = (publishedConfig?.members || MEMBERS).find((m: any) => m.name.toLowerCase() === memberSlug || m.id?.toLowerCase() === memberSlug);
+          const rawSlug = decodeURIComponent(parts[1] || '').toLowerCase().trim();
+          const cleanSlug = rawSlug.replace(/[\s-_%20]+/g, '');
+          const found = (publishedConfig?.members || MEMBERS).find((m: any) => {
+            const mName = (m.name || '').toLowerCase();
+            const mId = (m.id || '').toLowerCase();
+            const mCleanName = mName.replace(/[\s-_]+/g, '');
+            const mCleanId = mId.replace(/[\s-_]+/g, '');
+            return (
+              mName === rawSlug ||
+              mId === rawSlug ||
+              mCleanName === cleanSlug ||
+              mCleanId === cleanSlug ||
+              (cleanSlug === 'jungkook' && (mId === 'jungkook' || mCleanName === 'jungkook')) ||
+              (cleanSlug === 'jk' && mId === 'jungkook')
+            );
+          });
           if (found) {
             setSelectedMember(found);
           } else {
@@ -495,6 +517,8 @@ export function AppContent() {
       targetPath = '/music';
     } else if (activeTab === 'Videos') {
       targetPath = '/videos';
+    } else if (activeTab === 'Concert') {
+      targetPath = '/arirang_concert_reply';
     } else if (activeTab === 'Live Stream') {
       targetPath = '/livestream';
     } else if (activeTab === 'Generate Pic') {
@@ -505,8 +529,6 @@ export function AppContent() {
       targetPath = '/events';
     } else if (activeTab === 'Timeline') {
       targetPath = '/timeline';
-    } else if (activeTab === 'Memes') {
-      targetPath = '/memes';
     } else if (activeTab === 'Downloads') {
       targetPath = '/download';
     } else if (activeTab === 'FAQ') {
@@ -519,7 +541,6 @@ export function AppContent() {
       targetPath = '/setting';
     } else if (activeTab === 'Members') {
       if (selectedMember) {
-        // সুন্দর এবং পরিষ্কার ইউআরএল তৈরি করবে: /members/jungkook (কোনো %20 বা স্পেস থাকবে না)
         const slug = (selectedMember.id || selectedMember.name.replace(/\s+/g, '')).toLowerCase();
         targetPath = `/members/${slug}`;
       } else {
@@ -542,25 +563,11 @@ export function AppContent() {
     setDisclaimerActive(false);
     if (previewDisclaimer) {
       setPreviewDisclaimer(null);
-    } else {
-      sessionStorage.setItem('bts_disclaimer_shown', 'true');
     }
   };
 
-  const togglePurpleLove = () => {
-    const newValue = !isPurpleLove;
-    setIsPurpleLove(newValue);
-    localStorage.setItem('bts_purple_love_active', String(newValue));
-  };
-
-  const toggleFireworks = () => {
-    const newValue = !isFireworks;
-    setIsFireworks(newValue);
-    localStorage.setItem('bts_fireworks_active', String(newValue));
-  };
-
   const toggleDarkMode = () => {
-    const newTheme = preferences.theme === 'dark' ? 'light' : 'dark';
+    const newTheme: UserPreferences['theme'] = preferences.theme === 'dark' ? 'light' : 'dark';
     const newPrefs = { ...preferences, theme: newTheme };
     handlePreferencesChange(newPrefs);
   };
@@ -621,9 +628,19 @@ export function AppContent() {
     }
   }, [typingIndex, phraseIdx]);
 
-  // Click outside listener for search suggestion panel
+  // Click outside listener for search suggestion panels.
+  // IMPORTANT: this must not hide the panel before a suggestion's own click
+  // lands. The mobile drawer search lives outside the desktop container ref,
+  // and a document 'mousedown' fires before the item's 'click' — so on phones
+  // tapping a result used to close the panel and swallow the tap entirely
+  // (search looked broken). Any element inside a [data-search-root] (either
+  // search box, or the panel itself) counts as "inside".
   useEffect(() => {
     const clickListener = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest && target.closest('[data-search-root]')) {
+        return;
+      }
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setShowSearchSuggestions(false);
       }
@@ -637,32 +654,96 @@ export function AppContent() {
     const q = globalSearchQuery.trim().toLowerCase();
     if (!q) return [];
 
-    const matches: { title: string; subtitle: string; tab: string; payload?: any }[] = [];
+    const matches: { title: string; subtitle: string; tab: string; payload?: any; newsSlug?: string; galleryCategory?: string }[] = [];
+    const cfg: any = publishedConfig || {};
 
     // Search members profile
-    (publishedConfig?.members || MEMBERS).forEach(m => {
-      if (m.name.toLowerCase().includes(q) || m.fullName.toLowerCase().includes(q)) {
-        matches.push({ title: `${m.emoji} ${m.name}`, subtitle: `Member Bio Profile`, tab: 'Members', payload: m });
+    (cfg.members || MEMBERS).forEach((m: any) => {
+      if (m.name.toLowerCase().includes(q) || (m.fullName || '').toLowerCase().includes(q)) {
+        matches.push({ title: `${m.emoji || '👤'} ${m.name}`, subtitle: `Member Bio Profile`, tab: 'Members', payload: m });
       }
     });
 
-    // Search albums
-    ALBUMS.forEach(a => {
-      if (a.title.toLowerCase().includes(q)) {
+    // Search albums & tracks (published config first, static catalogue as fallback)
+    (cfg.albums && cfg.albums.length > 0 ? cfg.albums : ALBUMS).forEach((a: any) => {
+      if ((a.title || '').toLowerCase().includes(q)) {
         matches.push({ title: `💿 ${a.title}`, subtitle: `Music Album Details`, tab: 'Music', payload: a });
       }
-      // Tracks
-      a.tracks.forEach(t => {
-        if (t.title.toLowerCase().includes(q)) {
+      (a.tracks || []).forEach((t: any) => {
+        if ((t.title || '').toLowerCase().includes(q)) {
           matches.push({ title: `🎵 ${t.title}`, subtitle: `Song Track in ${a.title}`, tab: 'Music', payload: a });
         }
       });
     });
 
-    // Search news
-    NEWS_ARTICLES.forEach(n => {
-      if (n.title.toLowerCase().includes(q) || n.summary.toLowerCase().includes(q)) {
-        matches.push({ title: `📰 ${n.title}`, subtitle: `ARMY News & Schedules`, tab: 'News' });
+    // Search uploaded digital tracks
+    (cfg.digitalTracks || []).forEach((t: any) => {
+      const name = t.title || t.name || '';
+      if (name.toLowerCase().includes(q)) {
+        matches.push({ title: `🎵 ${name}`, subtitle: `Music Track`, tab: 'Music' });
+      }
+    });
+
+    // Search site videos by title
+    (cfg.videos || []).forEach((v: any) => {
+      const title = v.title || '';
+      if (title.toLowerCase().includes(q)) {
+        matches.push({ title: `🎥 ${title}`, subtitle: `Video — watch in Videos`, tab: 'Videos' });
+      }
+    });
+
+    // Search concert replays by title / location
+    (cfg.concerts || []).forEach((c: any) => {
+      const title = c.title || '';
+      if (title.toLowerCase().includes(q) || (c.location || '').toLowerCase().includes(q)) {
+        matches.push({ title: `🎤 ${title}`, subtitle: `Concert Replay`, tab: 'Concert' });
+      }
+    });
+
+    // Search gallery photos by title / category
+    (cfg.gallery || []).forEach((g: any) => {
+      const title = g.title || '';
+      if (title.toLowerCase().includes(q) || (g.category || '').toLowerCase() === q) {
+        matches.push({ title: `🖼️ ${title || g.category}`, subtitle: `Gallery Photo — ${g.category || 'BTS'}`, tab: 'Gallery', galleryCategory: g.category });
+      }
+    });
+
+    // Search events
+    (cfg.events || []).forEach((ev: any) => {
+      const title = ev.title || ev.name || '';
+      if (title.toLowerCase().includes(q)) {
+        matches.push({ title: `📅 ${title}`, subtitle: `Event`, tab: 'Events' });
+      }
+    });
+
+    // Search timeline entries
+    (cfg.timeline || []).forEach((t: any) => {
+      const title = t.title || '';
+      if (title.toLowerCase().includes(q)) {
+        matches.push({ title: `🕰️ ${title}`, subtitle: `Timeline — ${t.year || t.date || ''}`, tab: 'Timeline' });
+      }
+    });
+
+    // Search FAQs by question text
+    (cfg.faqs || []).forEach((f: any) => {
+      const question = f.question || '';
+      if (question.toLowerCase().includes(q)) {
+        matches.push({ title: `❓ ${question}`, subtitle: `FAQ`, tab: 'FAQ' });
+      }
+    });
+
+    // Search downloads by name
+    (cfg.downloads || []).forEach((d: any) => {
+      const name = d.name || d.title || '';
+      if (name.toLowerCase().includes(q)) {
+        matches.push({ title: `📥 ${name}`, subtitle: `Download`, tab: 'Downloads' });
+      }
+    });
+
+    // Search news (published first; a hit opens that exact article)
+    (cfg.news && cfg.news.length > 0 ? cfg.news : NEWS_ARTICLES).forEach((n: any) => {
+      if ((n.title || '').toLowerCase().includes(q) || (n.summary || '').toLowerCase().includes(q)) {
+        matches.push({ title: `📰 ${n.title}`, subtitle: `ARMY News & Schedules`, tab: 'News', newsSlug: n.slug || n.id });
       }
     });
 
@@ -672,10 +753,11 @@ export function AppContent() {
       { keywords: ['members', 'profiles', 'bts septet', 'rm', 'jin', 'suga', 'j-hope', 'jimin', 'v', 'jungkook', 'names', 'agust', 'hobi', 'rap', 'vocals'], tab: 'Members', title: '👥 BTS Members Profile Directory', subtitle: 'HD portraits, vital bios, quotes & MBTIs' },
       { keywords: ['music', 'songs', 'albums', 'tracks', 'discography', 'spotify', 'lyrics', 'player', 'proof', 'be', 'golden'], tab: 'Music', title: '💿 Music Discography', subtitle: 'Listen, view tracks, lyrics & streaming lists' },
       { keywords: ['video', 'videos', 'mv', 'youtube', 'clips', 'clips player', 'media', 'theatre', 'watch'], tab: 'Videos', title: '🎥 Video & MV Cinema Portal', subtitle: 'Interactive video portal, embed links & review logs' },
+      { keywords: ['concert', 'concerts', 'replay', 'arirang concert', 'stage replay', 'full concert'], tab: 'Concert', title: '🎤 Concert Replay Archive', subtitle: 'Full concert replays — watch & download via Telegram' },
       { keywords: ['gallery', 'photos', 'images', 'artworks', 'visuals', 'pictures', 'stage'], tab: 'Gallery', title: '🖼️ HD Photo Gallery', subtitle: 'Beautiful conceptual photos and stage pictures' },
       { keywords: ['timeline', 'history', 'debut', 'anniversary dates', 'milestones', 'chronology', 'years'], tab: 'Timeline', title: '🕰️ Bangtan Chronicles Timeline', subtitle: 'Trace historical BTS events from 2013' },
       { keywords: ['news', 'articles', 'schedules', 'updates', 'hybe official', 'notices'], tab: 'News', title: '📰 News & Official Schedules', subtitle: 'BTS current notices, albums timeline' },
-      { keywords: ['memes', 'meme', 'upload memes', 'funny', 'pictures', 'laughter'], tab: 'Memes', title: '😆 ARMY Meme Vault', subtitle: 'Discover and upload community memes' },
+      { keywords: ['memes', 'meme', 'upload memes', 'funny', 'pictures', 'laughter'], tab: 'Gallery', title: '😆 ARMY Meme & Photo Vault', subtitle: 'Discover and upload community memes in Gallery' },
       { keywords: ['festa', 'anniversary', 'june 13', 'festa countdown', 'celebration', 'events', 'concerts', 'tours', 'world tour', 'tickets', 'locations'], tab: 'Events', title: '📅 Events & Tour Hub', subtitle: 'Concerts schedules, tickers, maps & notices' },
       { keywords: ['download', 'downloads', 'wallpapers', 'assets', 'saves', 'cards'], tab: 'Downloads', title: '📥 Downloads & Wallpapers Room', subtitle: 'Grab high resolution screens & sheets' },
       { keywords: ['faq', 'questions', 'support help', 'rules', 'frequently', 'answers'], tab: 'FAQ', title: '❓ Help FAQ Accordions', subtitle: 'Answers to essential ARMY portal guidelines' },
@@ -691,7 +773,7 @@ export function AppContent() {
       }
     });
 
-    return matches.slice(0, 6);
+    return matches.slice(0, 8);
   };
 
   const handlesSuggestionClick = (sug: any) => {
@@ -700,11 +782,30 @@ export function AppContent() {
     if (sug.tab === 'Members' && sug.payload) {
       setSelectedMember(sug.payload);
       setActiveTab('Members');
+    } else if (sug.tab === 'News' && sug.newsSlug) {
+      setSelectedMember(null);
+      setSelectedNewsSlug(sug.newsSlug);
+      setActiveTab('News');
+    } else if (sug.tab === 'Gallery' && sug.galleryCategory) {
+      setSelectedMember(null);
+      setInitialGalleryCategory(sug.galleryCategory);
+      setActiveTab('Gallery');
     } else {
       setSelectedMember(null);
       setActiveTab(sug.tab);
     }
     setMobileMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Pressing Enter / the keyboard Search key jumps to the best match inside
+  // the site (never a page reload, never an outside web search).
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const suggestions = getSearchSuggestions();
+    if (suggestions.length > 0) {
+      handlesSuggestionClick(suggestions[0]);
+    }
   };
 
   const handleQuickAccess = (tabName: string) => {
@@ -722,17 +823,17 @@ export function AppContent() {
   // Nav categories matching headers & sidebar
   const navItems = [
     { name: 'Home', icon: <Home className="w-4 h-4" /> },
-    { name: 'Voting Center', icon: <Vote className="w-4 h-4 text-purple-400 animate-pulse" /> },
-    { name: 'Live Stream', icon: <Radio className="w-4 h-4 text-rose-500 animate-pulse" /> },
+    { name: 'Voting Center', icon: <Vote className="w-4 h-4 text-purple-400" /> },
+    { name: 'Live Stream', icon: <Radio className="w-4 h-4 text-rose-500" /> },
     { name: 'Members', icon: <Users className="w-4 h-4" /> },
-    { name: 'Generate Pic', icon: <Wand2 className="w-4 h-4 text-pink-400 animate-pulse" /> },
+    { name: 'Generate Pic', icon: <Wand2 className="w-4 h-4 text-pink-400" /> },
     { name: 'Music', icon: <Music className="w-4 h-4" /> },
     { name: 'Videos', icon: <VideoIcon className="w-4 h-4" /> },
+    { name: 'Concert', icon: <Ticket className="w-4 h-4 text-pink-400" /> },
     { name: 'Gallery', icon: <ImageIcon className="w-4 h-4" /> },
     { name: 'Timeline', icon: <Clock className="w-4 h-4" /> },
-    { name: 'News', icon: <BookOpen className="w-4 h-4 animate-pulse" /> },
+    { name: 'News', icon: <BookOpen className="w-4 h-4" /> },
     { name: 'Events', icon: <Calendar className="w-4 h-4" /> },
-    { name: 'Memes', icon: <Smile className="w-4 h-4 text-purple-400" /> },
     { name: 'Downloads', icon: <Download className="w-4 h-4" /> },
     { name: 'Play Game', icon: <Gamepad2 className="w-4 h-4 text-purple-400" /> },
     { name: 'FAQ', icon: <HelpCircle className="w-4 h-4" /> },
@@ -801,13 +902,13 @@ export function AppContent() {
   const isPlayerOnly = checkIsPlayerOnlyEmbed();
 
   if (isPlayerOnly) {
-    return <LiveStreamSection playerOnly={true} />;
+    return <LiveStreamSection playerOnly={true} config={publishedConfig?.liveStream} />;
   }
 
   if (isEmbedMode) {
     return (
       <div className="min-h-screen bg-[#05000a] text-slate-100 font-sans p-2 md:p-4 flex flex-col justify-start">
-        <LiveStreamSection playerOnly={false} />
+        <LiveStreamSection playerOnly={false} config={publishedConfig?.liveStream} />
       </div>
     );
   }
@@ -824,9 +925,6 @@ export function AppContent() {
       
       {/* Aurora Particle Canvas Background */}
       <AuroraBackground theme={preferences.theme} isAmbientActive={isAmbientActive} />
-
-      {/* Global Immersive Overlay: Floating Hearts & Sparks */}
-      {(isPurpleLove || isFireworks) && <PurpleLoveOverlay isPurpleLove={isPurpleLove} isFireworks={isFireworks} />}
 
       {/* Dynamic Disclaimer Popup */}
       <DisclaimerPopup
@@ -849,25 +947,27 @@ export function AppContent() {
             onClick={() => handleQuickAccess('Home')}
             className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none group shrink-0"
           >
-            <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-600/10 border border-purple-500/30 flex items-center justify-center shadow-lg shadow-purple-500/10 group-hover:bg-purple-600 group-hover:border-purple-400 transition-all duration-300 shrink-0">
-              <span className="font-sans font-black text-purple-400 group-hover:text-white text-base sm:text-lg tracking-tight select-none">
-                ⟭⟬⁷
-              </span>
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden border-2 border-purple-500/70 shadow-lg shadow-purple-500/30 group-hover:border-purple-400 transition-all duration-300 shrink-0">
+              <img
+                src="/images/bts-logo.png"
+                alt="BTS — Bangtan Gallery logo"
+                className="w-full h-full object-cover"
+                loading="eager"
+              />
             </div>
             <div className="min-w-0">
               <h1 className="font-sans font-black text-xs min-[380px]:text-sm md:text-base tracking-widest uppercase transition-colors flex items-center gap-1 sm:gap-1.5 whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-fuchsia-400 to-indigo-400">
-                {publishedConfig?.sidebar?.logoText || 'BANGTAN GALLERY'} <Sparkles className="w-3.5 h-3.5 text-purple-400 fill-purple-400/20 shrink-0 animate-pulse" />
+                {publishedConfig?.sidebar?.logoText || 'BANGTAN GALLERY'}
               </h1>
               <p className={`text-[8px] font-mono uppercase tracking-[0.2em] leading-none hidden md:block mt-1 ${preferences.theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
                 Premium Fan Experience &bull; 2026
               </p>
               <div className="md:hidden flex items-center gap-1 mt-0.5 select-none text-[8px] font-mono uppercase text-purple-400 leading-none">
-                <Clock className="w-2.5 h-2.5 text-purple-400 shrink-0 animate-spin-slow" style={{ animationDuration: '8s' }} />
+                <Clock className="w-2.5 h-2.5 text-purple-400 shrink-0" />
                 <span>{currentTime || '12:00:00 PM'}</span>
                 <span className="text-slate-500">•</span>
                 <span className="relative flex h-1 w-1 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1 w-1 bg-emerald-500"></span>
+                                    <span className="relative inline-flex rounded-full h-1 w-1 bg-emerald-500"></span>
                 </span>
                 <span className="text-emerald-400">Live</span>
               </div>
@@ -879,44 +979,51 @@ export function AppContent() {
             {/* Active Database Live Syncing status next to search bar on desktop */}
             <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-950/20 border border-emerald-500/15 rounded-full font-mono text-[9px] text-emerald-400 select-none">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
               </span>
               <span>Syncing Live</span>
             </div>
 
             {/* Just Time (Seoul Time) on left of search bar on desktop */}
             <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-purple-950/20 border border-purple-500/15 rounded-full font-mono text-[10px] text-purple-300 select-none">
-              <Clock className="w-3 h-3 text-purple-400 animate-spin-slow" style={{ animationDuration: '8s' }} />
+              <Clock className="w-3 h-3 text-purple-400" />
               <span>{currentTime || '12:00:00 PM'}</span>
             </div>
 
             {/* Elegant Search Input */}
-            <div ref={searchContainerRef} className="relative w-48 xl:w-60 hidden md:block">
-              <span className="absolute inset-y-0 left-3.5 flex items-center text-slate-400 opacity-60">
-                <Search className="w-3.5 h-3.5" />
-              </span>
-              <input
-                type="text"
-                placeholder="Search..."
-                value={globalSearchQuery}
-                onChange={(e) => {
-                  setGlobalSearchQuery(e.target.value);
-                  setShowSearchSuggestions(true);
-                }}
-                onFocus={() => setShowSearchSuggestions(true)}
-                className={`w-full bg-white/5 border rounded-full py-1.5 pl-9 pr-4 text-xs outline-none transition-all ${
-                  preferences.theme === 'light'
-                    ? 'border-slate-300/60 text-slate-800 focus:border-purple-500 focus:bg-white'
-                    : 'border-white/10 text-white focus:border-purple-500/50'
-                }`}
-              />
-              {showSearchSuggestions && searchSuggestions.length > 0 && (
+            <div ref={searchContainerRef} data-search-root className="relative w-48 xl:w-60 hidden md:block">
+              <form onSubmit={handleSearchSubmit}>
+                <span className="absolute inset-y-0 left-3.5 flex items-center text-slate-400 opacity-60">
+                  <Search className="w-3.5 h-3.5" />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  enterKeyHint="search"
+                  value={globalSearchQuery}
+                  onChange={(e) => {
+                    setGlobalSearchQuery(e.target.value);
+                    setShowSearchSuggestions(true);
+                  }}
+                  onFocus={() => setShowSearchSuggestions(true)}
+                  className={`w-full bg-white/5 border rounded-full py-1.5 pl-9 pr-4 text-xs outline-none transition-all ${
+                    preferences.theme === 'light'
+                      ? 'border-slate-300/60 text-slate-800 focus:border-purple-500 focus:bg-white'
+                      : 'border-white/10 text-white focus:border-purple-500/50'
+                  }`}
+                />
+              </form>
+              {showSearchSuggestions && globalSearchQuery.trim() && (
                 <div className={`absolute top-full left-0 right-0 mt-2 rounded-2xl border p-2.5 space-y-1.5 z-50 animate-fade-in shadow-2xl ${
                   preferences.theme === 'light'
                     ? 'border-slate-200 bg-white/95 text-slate-800 shadow-[0_10px_40px_rgba(0,0,0,0.1)]'
                     : 'border-white/10 bg-[#05000a]/95 text-white shadow-[0_10px_40px_rgba(0,0,0,0.5)]'
                 } backdrop-blur-xl`}>
+                  {searchSuggestions.length === 0 && (
+                    <p className="text-[11px] text-slate-400 px-2 py-1.5 leading-relaxed">
+                      No results for “{globalSearchQuery.trim()}” in the site. Try a member name, song, video or concert title.
+                    </p>
+                  )}
                   {searchSuggestions.map((sug, i) => (
                     <div
                       key={i}
@@ -941,9 +1048,9 @@ export function AppContent() {
             </div>
 
             {/* Premium Social Links (Telegram, YouTube, Instagram) */}
-            <div className="hidden sm:flex items-center gap-2 border-r border-slate-500/20 pr-2">
+            <div className="hidden sm:flex items-center gap-1.5 border-r border-slate-500/20 pr-2">
               <a
-                href={publishedConfig?.socialLinks?.telegram || "https://t.me/bts_bighit"}
+                href={publishedConfig?.socialLinks?.telegramChannel || publishedConfig?.socialLinks?.telegram || "https://t.me/arirang_army7"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
@@ -951,12 +1058,25 @@ export function AppContent() {
                     ? 'bg-slate-100 hover:bg-cyan-50 text-slate-500 hover:text-cyan-500'
                     : 'bg-white/5 hover:bg-cyan-950/40 text-slate-400 hover:text-cyan-400 border border-white/5'
                 }`}
-                title="Telegram Official"
+                title="Telegram Channel (Broadcasts)"
               >
                 <Send className="w-3.5 h-3.5" />
               </a>
               <a
-                href={publishedConfig?.socialLinks?.twitter || "https://twitter.com/bts_bighit"}
+                href={publishedConfig?.socialLinks?.telegramCommunity || publishedConfig?.socialLinks?.telegramChat || "https://t.me/arirang_army7chat"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                  preferences.theme === 'light'
+                    ? 'bg-slate-100 hover:bg-purple-50 text-slate-500 hover:text-purple-500'
+                    : 'bg-white/5 hover:bg-purple-950/40 text-slate-400 hover:text-purple-400 border border-white/5'
+                }`}
+                title="Telegram Community Chat (ARMY Group)"
+              >
+                <MessageSquareHeart className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href={publishedConfig?.socialLinks?.twitter || "https://x.com/arirang_army_7"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
@@ -969,7 +1089,20 @@ export function AppContent() {
                 <Twitter className="w-3.5 h-3.5" />
               </a>
               <a
-                href={publishedConfig?.socialLinks?.instagram || "https://instagram.com/bts.bighitofficial"}
+                href={publishedConfig?.socialLinks?.kofi || publishedConfig?.footer?.kofiUrl || "https://ko-fi.com/bangtangallery"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                  preferences.theme === 'light'
+                    ? 'bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-500'
+                    : 'bg-white/5 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-white/5'
+                }`}
+                title="Support on Ko-fi"
+              >
+                <Coffee className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href={publishedConfig?.socialLinks?.instagram || "https://instagram.com/arirang_army_7"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
@@ -1023,7 +1156,7 @@ export function AppContent() {
       </header>
 
       {/* Main Body container */}
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 flex-grow flex flex-col lg:flex-row gap-8 py-8">
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 flex-grow flex flex-col lg:flex-row gap-8 pt-3 pb-8 lg:py-8">
         
         {/* Left PERSISTENT Desktop Sidebar (Column span 1) */}
         <aside className="w-64 shrink-0 hidden lg:flex flex-col gap-4">
@@ -1098,24 +1231,51 @@ export function AppContent() {
                 <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-slate-500 block mb-2 text-center">
                   Official Socials
                 </span>
-                <div className="flex flex-wrap items-center gap-1.5 justify-center max-w-[180px] mx-auto">
+                <div className="flex flex-wrap items-center gap-1.5 justify-center max-w-[190px] mx-auto">
                   <a
-                    href={publishedConfig?.socialLinks?.instagram || "https://instagram.com/bts.bighitofficial"}
+                    href={publishedConfig?.socialLinks?.telegramChannel || publishedConfig?.socialLinks?.telegram || "https://t.me/arirang_army7"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-fuchsia-950/40 border border-white/5 hover:border-fuchsia-500/30 flex items-center justify-center text-slate-400 hover:text-fuchsia-400 transition-all group cursor-pointer"
-                    title="Instagram Official"
+                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-cyan-950/40 border border-white/5 hover:border-cyan-500/30 flex items-center justify-center text-slate-400 hover:text-cyan-400 transition-all group cursor-pointer"
+                    title="Telegram Channel (Broadcasts)"
                   >
-                    <Instagram className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    <Send className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   </a>
                   <a
-                    href={publishedConfig?.socialLinks?.twitter || "https://twitter.com/bts_bighit"}
+                    href={publishedConfig?.socialLinks?.telegramCommunity || publishedConfig?.socialLinks?.telegramChat || "https://t.me/arirang_army7chat"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-purple-950/40 border border-white/5 hover:border-purple-500/30 flex items-center justify-center text-slate-400 hover:text-purple-400 transition-all group cursor-pointer"
+                    title="Telegram Community Chat (ARMY Group)"
+                  >
+                    <MessageSquareHeart className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  </a>
+                  <a
+                    href={publishedConfig?.socialLinks?.twitter || "https://x.com/arirang_army_7"}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-8 h-8 rounded-lg bg-white/5 hover:bg-sky-950/40 border border-white/5 hover:border-sky-500/30 flex items-center justify-center text-slate-400 hover:text-sky-400 transition-all group cursor-pointer"
                     title="X (Twitter) Official"
                   >
                     <Twitter className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  </a>
+                  <a
+                    href={publishedConfig?.socialLinks?.kofi || publishedConfig?.footer?.kofiUrl || "https://ko-fi.com/bangtangallery"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-950/40 border border-white/5 hover:border-rose-500/30 flex items-center justify-center text-slate-400 hover:text-rose-400 transition-all group cursor-pointer"
+                    title="Support on Ko-fi"
+                  >
+                    <Coffee className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  </a>
+                  <a
+                    href={publishedConfig?.socialLinks?.instagram || "https://instagram.com/arirang_army_7"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-fuchsia-950/40 border border-white/5 hover:border-fuchsia-500/30 flex items-center justify-center text-slate-400 hover:text-fuchsia-400 transition-all group cursor-pointer"
+                    title="Instagram Official"
+                  >
+                    <Instagram className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   </a>
                   <a
                     href={publishedConfig?.socialLinks?.youtube || "https://www.youtube.com/user/BANGTANTV"}
@@ -1136,66 +1296,13 @@ export function AppContent() {
                     <Facebook className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   </a>
                   <a
-                    href={publishedConfig?.socialLinks?.pinterest || "https://www.pinterest.com/hey_shaif/"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-pink-950/40 border border-white/5 hover:border-pink-500/30 flex items-center justify-center text-slate-400 hover:text-pink-400 transition-all group cursor-pointer"
-                    title="Pinterest Official"
-                  >
-                    <Pin className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
-                  <a
-                    href={publishedConfig?.socialLinks?.telegram || "https://t.me/bts_bighit"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-cyan-950/40 border border-white/5 hover:border-cyan-500/30 flex items-center justify-center text-slate-400 hover:text-cyan-400 transition-all group cursor-pointer"
-                    title="Telegram Official"
-                  >
-                    <Send className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
-                  <a
                     href={publishedConfig?.socialLinks?.weverse || "https://weverse.io/bts/feed"}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-8 h-8 rounded-lg bg-white/5 hover:bg-teal-950/40 border border-white/5 hover:border-teal-500/30 flex items-center justify-center text-slate-400 hover:text-teal-400 transition-all group cursor-pointer"
-                    title="More Official Channels"
+                    title="Weverse Official"
                   >
                     <MoreHorizontal className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
-                </div>
-              </div>
-
-              <div className="border-t border-white/5 pt-3">
-                <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-slate-500 block mb-2 text-center">
-                  Website Owner
-                </span>
-                <div className="flex items-center gap-2.5 justify-center">
-                  <a
-                    href={publishedConfig?.socialLinks?.github || "https://github.com/shaifsiam"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-purple-950/40 border border-white/5 hover:border-purple-500/30 flex items-center justify-center text-slate-400 hover:text-purple-400 transition-all group cursor-pointer"
-                    title="Developer GitHub"
-                  >
-                    <Github className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
-                  <a
-                    href={publishedConfig?.socialLinks?.linkedin || "https://linkedin.com/in/shaifsiam"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-blue-950/40 border border-white/5 hover:border-blue-500/30 flex items-center justify-center text-slate-400 hover:text-blue-400 transition-all group cursor-pointer"
-                    title="Developer LinkedIn"
-                  >
-                    <Linkedin className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
-                  <a
-                    href={publishedConfig?.socialLinks?.email ? `mailto:${publishedConfig.socialLinks.email}` : "mailto:shaifsiam@gmail.com"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-emerald-950/40 border border-white/5 hover:border-emerald-500/30 flex items-center justify-center text-slate-400 hover:text-emerald-400 transition-all group cursor-pointer"
-                    title="Email Creator"
-                  >
-                    <Mail className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   </a>
                 </div>
               </div>
@@ -1223,7 +1330,7 @@ export function AppContent() {
                 <span className={`font-sans font-black text-base tracking-widest flex items-center gap-1.5 uppercase ${
                   preferences.theme === 'light' ? 'text-slate-800' : 'text-white'
                 }`}>
-                  <Sparkles className="w-4 h-4 text-purple-500 animate-pulse" /> Bangtan Portal
+                  Bangtan Portal
                 </span>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
@@ -1238,30 +1345,39 @@ export function AppContent() {
               </div>
 
             {/* Mobile Instant search filter */}
-            <div className="relative mb-6">
-              <span className="absolute inset-y-0 left-3.5 flex items-center text-slate-400">
-                <Search className="w-4 h-4" />
-              </span>
-              <input
-                type="text"
-                placeholder="Search portal index..."
-                value={globalSearchQuery}
-                onChange={(e) => {
-                  setGlobalSearchQuery(e.target.value);
-                  setShowSearchSuggestions(true);
-                }}
-                className={`w-full text-xs pl-10 pr-4 py-3 rounded-xl border outline-none transition-all ${
-                  preferences.theme === 'light'
-                    ? 'bg-slate-100 border-slate-200 text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-purple-500'
-                    : 'bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-purple-500/50'
-                }`}
-              />
-              {showSearchSuggestions && searchSuggestions.length > 0 && (
+            <div className="relative mb-6" data-search-root>
+              <form onSubmit={handleSearchSubmit}>
+                <span className="absolute inset-y-0 left-3.5 flex items-center text-slate-400">
+                  <Search className="w-4 h-4" />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search portal index..."
+                  enterKeyHint="search"
+                  value={globalSearchQuery}
+                  onChange={(e) => {
+                    setGlobalSearchQuery(e.target.value);
+                    setShowSearchSuggestions(true);
+                  }}
+                  onFocus={() => setShowSearchSuggestions(true)}
+                  className={`w-full text-xs pl-10 pr-4 py-3 rounded-xl border outline-none transition-all ${
+                    preferences.theme === 'light'
+                      ? 'bg-slate-100 border-slate-200 text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-purple-500'
+                      : 'bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-purple-500/50'
+                  }`}
+                />
+              </form>
+              {showSearchSuggestions && globalSearchQuery.trim() && (
                 <div className={`absolute top-full left-0 right-0 mt-2 rounded-xl border p-2.5 space-y-1.5 z-50 shadow-2xl ${
                   preferences.theme === 'light'
                     ? 'border-slate-200 bg-white text-slate-800'
                     : 'border-white/10 bg-[#05000a] text-white'
                 }`}>
+                  {searchSuggestions.length === 0 && (
+                    <p className="text-[11px] text-slate-400 px-2 py-1.5 leading-relaxed">
+                      No results for “{globalSearchQuery.trim()}” in the site. Try a member name, song, video or concert title.
+                    </p>
+                  )}
                   {searchSuggestions.map((sug, i) => (
                     <div
                       key={i}
@@ -1314,24 +1430,51 @@ export function AppContent() {
                   <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-slate-500 block mb-2 text-center">
                     Official Socials
                   </span>
-                  <div className="flex flex-wrap items-center gap-2 justify-center max-w-[240px] mx-auto">
+                  <div className="flex flex-wrap items-center gap-2 justify-center max-w-[260px] mx-auto">
                     <a
-                      href={publishedConfig?.socialLinks?.instagram || "https://instagram.com/bts.bighitofficial"}
+                      href={publishedConfig?.socialLinks?.telegramChannel || publishedConfig?.socialLinks?.telegram || "https://t.me/arirang_army7"}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-lg bg-white/5 hover:bg-fuchsia-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-fuchsia-400 transition-all cursor-pointer"
-                      title="Instagram Official"
+                      className="w-9 h-9 rounded-lg bg-white/5 hover:bg-cyan-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-cyan-400 transition-all cursor-pointer"
+                      title="Telegram Channel (Broadcasts)"
                     >
-                      <Instagram className="w-4.5 h-4.5" />
+                      <Send className="w-4.5 h-4.5" />
                     </a>
                     <a
-                      href={publishedConfig?.socialLinks?.twitter || "https://twitter.com/bts_bighit"}
+                      href={publishedConfig?.socialLinks?.telegramCommunity || publishedConfig?.socialLinks?.telegramChat || "https://t.me/arirang_army7chat"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-lg bg-white/5 hover:bg-purple-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-purple-400 transition-all cursor-pointer"
+                      title="Telegram Community Chat (ARMY Group)"
+                    >
+                      <MessageSquareHeart className="w-4.5 h-4.5" />
+                    </a>
+                    <a
+                      href={publishedConfig?.socialLinks?.twitter || "https://x.com/arirang_army_7"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-9 h-9 rounded-lg bg-white/5 hover:bg-sky-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-sky-400 transition-all cursor-pointer"
                       title="X (Twitter) Official"
                     >
                       <Twitter className="w-4.5 h-4.5" />
+                    </a>
+                    <a
+                      href={publishedConfig?.socialLinks?.kofi || publishedConfig?.footer?.kofiUrl || "https://ko-fi.com/bangtangallery"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-lg bg-white/5 hover:bg-rose-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-rose-400 transition-all cursor-pointer"
+                      title="Support on Ko-fi"
+                    >
+                      <Coffee className="w-4.5 h-4.5" />
+                    </a>
+                    <a
+                      href={publishedConfig?.socialLinks?.instagram || "https://instagram.com/arirang_army_7"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-lg bg-white/5 hover:bg-fuchsia-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-fuchsia-400 transition-all cursor-pointer"
+                      title="Instagram Official"
+                    >
+                      <Instagram className="w-4.5 h-4.5" />
                     </a>
                     <a
                       href={publishedConfig?.socialLinks?.youtube || "https://www.youtube.com/user/BANGTANTV"}
@@ -1352,71 +1495,18 @@ export function AppContent() {
                       <Facebook className="w-4.5 h-4.5" />
                     </a>
                     <a
-                      href={publishedConfig?.socialLinks?.pinterest || "https://www.pinterest.com/hey_shaif/"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-lg bg-white/5 hover:bg-pink-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-pink-400 transition-all cursor-pointer"
-                      title="Pinterest Official"
-                    >
-                      <Pin className="w-4.5 h-4.5" />
-                    </a>
-                    <a
-                      href={publishedConfig?.socialLinks?.telegram || "https://t.me/bts_bighit"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-lg bg-white/5 hover:bg-cyan-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-cyan-400 transition-all cursor-pointer"
-                      title="Telegram Official"
-                    >
-                      <Send className="w-4.5 h-4.5" />
-                    </a>
-                    <a
                       href={publishedConfig?.socialLinks?.weverse || "https://weverse.io/bts/feed"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-9 h-9 rounded-lg bg-white/5 hover:bg-teal-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-teal-400 transition-all cursor-pointer"
-                      title="More Official Channels"
+                      title="Weverse Official"
                     >
                       <MoreHorizontal className="w-4.5 h-4.5" />
                     </a>
                   </div>
                 </div>
               </div>
-
-              <div className="border-t border-white/5 pt-3">
-                  <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-slate-500 block mb-2 text-center">
-                    Website Owner
-                  </span>
-                  <div className="flex items-center gap-3 justify-center">
-                    <a
-                      href={publishedConfig?.socialLinks?.github || "https://github.com/shaifsiam"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-lg bg-white/5 hover:bg-purple-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-purple-400 transition-all cursor-pointer"
-                      title="Developer GitHub"
-                    >
-                      <Github className="w-4.5 h-4.5" />
-                    </a>
-                    <a
-                      href={publishedConfig?.socialLinks?.linkedin || "https://linkedin.com/in/shaifsiam"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-lg bg-white/5 hover:bg-blue-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-blue-400 transition-all cursor-pointer"
-                      title="Developer LinkedIn"
-                    >
-                      <Linkedin className="w-4.5 h-4.5" />
-                    </a>
-                    <a
-                      href={publishedConfig?.socialLinks?.email ? `mailto:${publishedConfig.socialLinks.email}` : "mailto:shaifsiam@gmail.com"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-lg bg-white/5 hover:bg-emerald-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-emerald-400 transition-all cursor-pointer"
-                      title="Email Creator"
-                    >
-                      <Mail className="w-4.5 h-4.5" />
-                    </a>
-                  </div>
-                </div>
-              </div>
+            </div>
 
             </motion.div>
           )}
@@ -1427,12 +1517,19 @@ export function AppContent() {
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab + (selectedMember ? `-${selectedMember.id}` : '')}
-              initial={{ opacity: 0, y: 24, scale: 0.97, filter: 'blur(8px)' }}
-              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: -20, scale: 0.97, filter: 'blur(8px)' }}
-              transition={{ duration: 0.48, ease: [0.19, 1, 0.22, 1] }}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.28, ease: [0.19, 1, 0.22, 1] }}
               className="outline-none"
             >
+              <SectionErrorBoundary key={activeTab}>
+              <React.Suspense fallback={
+                <div className="py-24 flex flex-col items-center justify-center gap-3">
+                  <div className="w-8 h-8 rounded-full border-2 border-purple-500/30 border-t-purple-400 animate-spin" />
+                  <p className="text-[11px] font-mono uppercase tracking-widest text-purple-300/70">Loading…</p>
+                </div>
+              }>
               
               {/* VIEW: HOME VIEW */}
               {activeTab === 'Home' && !selectedMember && (
@@ -1447,10 +1544,10 @@ export function AppContent() {
                     // Fallbacks for empty news just in case
                     const fallbackFeatured = {
                       id: 'featured-default',
-                      title: 'Welcome to the Ultimate BTS Premium Fan Portal ⟭⟬⁷ BANGTAN GALLERY',
+                      title: 'Welcome to the Ultimate BTS Premium Fan Portal',
                       summary: 'Discover active schedules, exclusive comebacks, real-time voting trends, and digital artwork curated directly for the global ARMY.',
                       category: 'Announcement',
-                      imageUrl: publishedConfig?.home?.heroImageUrl || "https://i.pinimg.com/1200x/39/3b/79/393b7932accffa8825ea8c1d1174b38b.jpg",
+                      imageUrl: publishedConfig?.home?.heroImageUrl || "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg",
                       date: '2026-07-05',
                       slug: 'welcome'
                     };
@@ -1462,15 +1559,16 @@ export function AppContent() {
                       <div className="space-y-8">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                           
-                          {/* Left Block: 1 Large Featured News (Col Span 2) */}
-                          <div 
+                          {/* Left Block: 1 Large Featured News (Col Span 2, or
+                              full width when the Latest Updates block is hidden) */}
+                          <div
                             onClick={() => handleNewsClick(featuredArticle)}
-                            className="lg:col-span-2 relative rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-end min-h-[460px] md:min-h-[500px] group/feat border border-white/10 dark:border-white/5 cursor-pointer"
+                            className={`${latestNewsList.length > 0 ? 'lg:col-span-2' : 'lg:col-span-3'} relative rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-end min-h-[460px] md:min-h-[500px] group/feat border border-white/10 dark:border-white/5 cursor-pointer`}
                           >
                             {/* Background Image with beautiful Ken Burns zoom style */}
                             <div className="absolute inset-0 z-0">
                               <img 
-                                src={featuredArticle.imageUrl || "https://i.pinimg.com/1200x/59/d6/15/59d615de0cb04d3a0fcd82a415b69133.jpg"} 
+                                src={featuredArticle.imageUrl || "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg"} 
                                 alt={featuredArticle.title} 
                                 className="w-full h-full object-cover scale-100 group-hover/feat:scale-105 transition-transform duration-[2000ms]"
                                 referrerPolicy="no-referrer"
@@ -1486,7 +1584,7 @@ export function AppContent() {
                             </div>
 
                             {/* Featured Article details wrapper */}
-                            <div className="relative z-10 p-6 md:p-10 space-y-4">
+                            <div className="on-media relative z-10 p-6 md:p-10 space-y-4">
                               <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-600 text-white rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-purple-600/30">
                                 {featuredArticle.category || 'FEATURED'}
                               </div>
@@ -1499,8 +1597,7 @@ export function AppContent() {
                                 {featuredArticle.summary}
                               </p>
 
-                              <div className="flex items-center gap-4 pt-2">
-                                <div className="flex flex-wrap items-center gap-3 pt-2">
+                              <div className="flex flex-wrap items-center gap-3 pt-2">
                                 <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-black hover:bg-purple-600 hover:text-white rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-md">
                                   Read More &rarr;
                                 </button>
@@ -1510,7 +1607,7 @@ export function AppContent() {
                                     e.stopPropagation();
                                     handleQuickAccess('Live Stream');
                                   }}
-                                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-lg shadow-rose-600/30 hover:scale-105 group/livebtn cursor-pointer"
+                                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-lg shadow-rose-600/30 hover:scale-105 group/livebtn"
                                 >
                                   <span className="relative flex h-2.5 w-2.5">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-300 opacity-75"></span>
@@ -1522,13 +1619,18 @@ export function AppContent() {
 
                                 <span className="text-slate-400 text-[10px] font-mono ml-auto sm:ml-0">{featuredArticle.date}</span>
                               </div>
-                              
-                                <span className="text-slate-400 text-[10px] font-mono">{featuredArticle.date}</span>
-                              </div>
                             </div>
                           </div>
 
-                          {/* Right Block: 4 Latest News (Col Span 1) */}
+                          {/* Right Block: 4 Latest News (Col Span 1).
+                              Owner rule: this block exists ONLY when there
+                              are 2+ published news articles (i.e. something
+                              beyond the featured one). With a single article
+                              it disappears completely — no empty "No
+                              additional articles" box — and it comes back
+                              on its own as soon as a 2nd article is
+                              published. Applies to mobile and desktop. */}
+                          {latestNewsList.length > 0 && (
                           <div className={`rounded-3xl p-6 flex flex-col justify-between border ${
                             preferences.theme === 'light'
                               ? 'bg-white border-slate-200/60 shadow-[0_8px_32px_rgba(31,38,135,0.03)]'
@@ -1590,6 +1692,7 @@ export function AppContent() {
                               </div>
                             </div>
                           </div>
+                          )}
 
                         </div>
 
@@ -1624,7 +1727,7 @@ export function AppContent() {
                             <div className="absolute inset-0 rounded-full bg-purple-500/0 outline-none group-hover:scale-110 group-hover:bg-purple-600/35 transition-all duration-300" />
                             <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-purple-500 to-rose-500 opacity-0 group-hover:opacity-70 blur-md transition-all duration-300" />
                             <img
-                              src={m.portraitUrl || 'https://i.pinimg.com/736x/3a/b4/cf/3ab4cfd97022bacb6ef6474f20eed9be.jpg'}
+                              src={m.portraitUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'}
                               alt={m.name}
                               className="relative w-14 h-14 md:w-20 md:h-20 rounded-full object-cover border-2 border-white/10 group-hover:border-purple-400 transition-colors shadow-lg"
                               referrerPolicy="no-referrer"
@@ -1640,7 +1743,7 @@ export function AppContent() {
 
                   {/* Golden Quotes & Lyrics - APPEARS AFTER MEMBER SECTION */}
                   <div className="w-full">
-                    <BTSQuotesCarousel />
+                    <BTSQuotesCarousel items={publishedConfig?.homeQuotes} />
                   </div>
 
                   {/* Tour Countdown Carousel with daily live starlight ticks */}
@@ -1714,12 +1817,54 @@ export function AppContent() {
 
                   {/* Curated Interactive Curved 3D Media Wall - Displays Weverse Posts */}
                   <div className="w-full">
-                    <InteractiveMediaWall config={publishedConfig?.weversePosts} onTileClick={handleQuickAccess} />
+                    <InteractiveMediaWall config={publishedConfig?.weversePosts} feed={publishedConfig?.weverseFeed} members={publishedConfig?.members} onTileClick={handleQuickAccess} />
                   </div>
 
                   {/* Trending Showcase Snapping Carousel */}
                   <div className="w-full">
-                    <TrendingCarousel config={publishedConfig?.trending} onNavigate={handleQuickAccess} />
+                    <TrendingCarousel
+                      config={(() => {
+                        // Auto-fed Trending Showcase (owner choice,
+                        // 2026-11-06): cards are built ONLY from the
+                        // concerts and videos the owner has added —
+                        // nothing built-in, nothing invented.
+                        const items: any[] = [];
+                        const concerts = Array.isArray(publishedConfig?.concerts) ? publishedConfig.concerts : [];
+                        concerts.forEach((c: any, i: number) => {
+                          if (!c || !c.title) return;
+                          items.push({
+                            id: `trend-concert-${c.id || i}`,
+                            rank: `#${items.length + 1}`,
+                            title: c.title,
+                            tag: 'Concert',
+                            thumbnail: c.coverUrl || '/images/og-cover-2.jpg',
+                            category: 'Concert',
+                            categoryLabel: 'Concert Replay',
+                            subtitle: c.date || '',
+                            watchButtonLink: 'Concert',
+                            published: true
+                          });
+                        });
+                        const videos = Array.isArray(publishedConfig?.videos) ? publishedConfig.videos : [];
+                        videos.forEach((v: any, i: number) => {
+                          if (!v || !v.title || !v.videoId) return;
+                          items.push({
+                            id: `trend-video-${v.id || v.videoId || i}`,
+                            rank: `#${items.length + 1}`,
+                            title: v.title,
+                            tag: v.category || 'Video',
+                            thumbnail: `https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`,
+                            category: 'Videos',
+                            categoryLabel: v.category || 'Video',
+                            subtitle: v.uploaderName || v.channel || '',
+                            watchButtonLink: 'Videos',
+                            published: true
+                          });
+                        });
+                        return items.slice(0, 10);
+                      })()}
+                      onNavigate={handleQuickAccess}
+                    />
                   </div>
 
                   {/* Curated Mixed Multiplatform Feed */}
@@ -1762,26 +1907,34 @@ export function AppContent() {
                         onClick={() => setSelectedMember(member)}
                         className="group relative rounded-2xl border border-white/5 bg-black/55 overflow-hidden hover:border-purple-500/35 transition-all duration-300 hover:shadow-[0_10px_25px_-10px_rgba(168,85,247,0.2)] cursor-pointer"
                       >
-                        <div className="h-64 overflow-hidden relative">
+                        {/* Card cover (owner's per-member cover image) with the
+                            portrait avatar overlapping its bottom edge */}
+                        <div className="relative">
+                          <div className="h-36 overflow-hidden relative">
+                            <img
+                              src={member.cardCoverUrl || member.bannerUrl}
+                              alt={`${member.name} cover`}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                          </div>
                           <img
-                            src={member.portraitUrl || 'https://i.pinimg.com/736x/5f/01/e4/5f01e4f756da2e5e605c7272ff16e63b.jpg'}
+                            src={member.portraitUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'}
                             alt={member.name}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            className="absolute -bottom-8 left-4 w-16 h-16 rounded-full object-cover border-2 border-purple-400/60 shadow-lg shadow-black/60 bg-black"
                             referrerPolicy="no-referrer"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                          
-                          {/* Banner Floating Name */}
-                          <div className="absolute bottom-4 left-4 z-10 text-white">
+                        </div>
+
+                        <div className="p-4 pt-10 space-y-3.5">
+                          <div className="text-white">
                             <div className="flex items-center gap-1 ml-0.5">
                               <span className="text-2xl font-sans font-extrabold">{member.name}</span>
                               <span className="text-xl">{member.emoji}</span>
                             </div>
                             <span className="text-[10px] font-mono text-purple-300 uppercase tracking-wider">{member.fullName}</span>
                           </div>
-                        </div>
-
-                        <div className="p-4 space-y-3.5">
                           <div className="flex flex-wrap gap-1">
                             {member.position.slice(0, 2).map((pos, idx) => (
                               <span key={idx} className="text-[9px] font-mono px-2 py-0.5 rounded border border-purple-500/20 bg-purple-950/20 text-purple-300">
@@ -1808,6 +1961,7 @@ export function AppContent() {
                 <MemberProfileDetail
                   member={(publishedConfig?.members || MEMBERS).find((m: any) => m.id === selectedMember?.id) || selectedMember}
                   onBack={() => setSelectedMember(null)}
+                  weverseFeed={Array.isArray(publishedConfig?.weverseFeed) ? publishedConfig.weverseFeed : []}
                 />
               )}
             </div>
@@ -1817,7 +1971,7 @@ export function AppContent() {
           {activeTab === 'Music' && <MusicSection config={publishedConfig} />}
 
           {/* VIEW: LIVE STREAM */}
-          {activeTab === 'Live Stream' && <LiveStreamSection />}
+          {activeTab === 'Live Stream' && <LiveStreamSection config={publishedConfig?.liveStream} />}
 
           {/* VIEW: GENERATE PIC STUDIO SECTION */}
           {activeTab === 'Generate Pic' && (
@@ -1829,6 +1983,9 @@ export function AppContent() {
 
           {/* VIEW: VIDEO SECTION CLONE */}
           {activeTab === 'Videos' && <YouTubeClone config={publishedConfig} />}
+
+          {/* VIEW: CONCERT REPLAY (own nav page, share link /arirang_concert_reply) */}
+          {activeTab === 'Concert' && <RecentConcertReplay concerts={publishedConfig?.concerts} standalone />}
 
           {/* VIEW: PHOTO GALLERY MASONRY */}
           {activeTab === 'Gallery' && <GallerySection items={publishedConfig?.gallery} initialCategory={initialGalleryCategory} />}
@@ -1848,9 +2005,6 @@ export function AppContent() {
 
           {/* VIEW: EVENTS AND COORDINATES */}
           {activeTab === 'Events' && <EventsSection items={publishedConfig?.events} />}
-
-          {/* VIEW: COMMUNITY MEME VAULT */}
-          {activeTab === 'Memes' && <MemesSection />}
 
           {/* VIEW: DOWNLOADS BASE */}
           {activeTab === 'Downloads' && <DownloadsSection items={publishedConfig?.downloads} />}
@@ -1894,6 +2048,8 @@ export function AppContent() {
 
 
 
+              </React.Suspense>
+              </SectionErrorBoundary>
             </motion.div>
           </AnimatePresence>
         </main>
@@ -1910,12 +2066,93 @@ export function AppContent() {
             <p className="text-xs text-gray-400 leading-relaxed max-w-xs">
               {publishedConfig?.footer?.description || 'The ultimate independent fan coordinates created by ARMY to track BTS. Enjoy music sheets, media players and 13 June anniversary countdown animations.'}
             </p>
+
+            {/* Permanent & Official Social Links */}
+            <div className="pt-2">
+              <span className="text-[10px] font-mono uppercase text-purple-300 font-bold block mb-2 tracking-wider">
+                Official Communities & Channels
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={publishedConfig?.socialLinks?.telegramChannel || publishedConfig?.socialLinks?.telegram || "https://t.me/arirang_army7"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-cyan-950/50 border border-white/5 hover:border-cyan-500/40 text-slate-400 hover:text-cyan-400 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                  title="Telegram Channel (Broadcasts)"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href={publishedConfig?.socialLinks?.telegramCommunity || publishedConfig?.socialLinks?.telegramChat || "https://t.me/arirang_army7chat"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-purple-950/50 border border-white/5 hover:border-purple-500/40 text-slate-400 hover:text-purple-400 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                  title="Telegram Community Chat (ARMY Group)"
+                >
+                  <MessageSquareHeart className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href={publishedConfig?.socialLinks?.twitter || "https://x.com/arirang_army_7"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-sky-950/50 border border-white/5 hover:border-sky-500/40 text-slate-400 hover:text-sky-400 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                  title="X (Twitter) Official"
+                >
+                  <Twitter className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href={publishedConfig?.socialLinks?.kofi || publishedConfig?.footer?.kofiUrl || "https://ko-fi.com/bangtangallery"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-rose-950/50 border border-white/5 hover:border-rose-500/40 text-slate-400 hover:text-rose-400 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                  title="Support on Ko-fi"
+                >
+                  <Coffee className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href={publishedConfig?.socialLinks?.youtube || "https://www.youtube.com/user/BANGTANTV"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-red-950/50 border border-white/5 hover:border-red-500/40 text-slate-400 hover:text-red-500 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                  title="YouTube Official"
+                >
+                  <Youtube className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href={publishedConfig?.socialLinks?.instagram || "https://instagram.com/arirang_army_7"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-fuchsia-950/50 border border-white/5 hover:border-fuchsia-500/40 text-slate-400 hover:text-fuchsia-400 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                  title="Instagram Official"
+                >
+                  <Instagram className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href={publishedConfig?.socialLinks?.facebook || "https://www.facebook.com/bangtan.official"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-950/50 border border-white/5 hover:border-blue-500/40 text-slate-400 hover:text-blue-500 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                  title="Facebook Official"
+                >
+                  <Facebook className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href={publishedConfig?.socialLinks?.weverse || "https://weverse.io/bts/feed"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-teal-950/50 border border-white/5 hover:border-teal-500/40 text-slate-400 hover:text-teal-400 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                  title="Weverse Official"
+                >
+                  <MoreHorizontal className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-3.5">
             <h4 className="text-purple-300 font-mono text-xs uppercase font-bold tracking-wider">Quick Navigation</h4>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              {['Home', 'Members', 'Music', 'Videos', 'Gallery', 'Timeline', 'News', 'Events', 'Memes'].map(link => (
+              {['Home', 'Members', 'Music', 'Videos', 'Gallery', 'Timeline', 'News', 'Events'].map(link => (
                 <span
                   key={link}
                   onClick={() => handleQuickAccess(link)}
@@ -1958,10 +2195,10 @@ export function AppContent() {
         </div>
 
         <div className="w-full max-w-7xl mx-auto px-4 md:px-8 pt-8 mt-8 border-t border-white/10 text-center text-xs text-slate-500 font-mono flex flex-col md:flex-row justify-between items-center gap-4">
-          <span onClick={handleCopyrightClick} className="cursor-default select-none">
+          <span className="cursor-default select-none">
             {publishedConfig?.footer?.copyright || `© ${new Date().getFullYear()} Bangtan Gallery. Crafted for BTS and ARMY.`}
           </span>
-          <span className="flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-amber-500" /> BTS 13 Winters & Springs</span>
+          <span className="flex items-center gap-1.5">BTS 13 Winters & Springs</span>
         </div>
       </footer>
 
@@ -1977,29 +2214,6 @@ export function AppContent() {
       {/* Immediacy blocker Welcome popup prompt */}
       <WelcomePopup onAccept={() => {}} />
 
-      {/* Draggable Immersive Visual Mode Controller Buttons */}
-      <DraggableButton
-        id="purple_love"
-        icon="💜"
-        label="Purple Love"
-        tooltipText={isPurpleLove ? '💜 Disable Purple Love' : '💜 Enable Purple Love'}
-        isActive={isPurpleLove}
-        onToggle={togglePurpleLove}
-        defaultTop={20}
-        defaultRight={20}
-      />
-
-      <DraggableButton
-        id="fireworks"
-        icon="🎆"
-        label="Fireworks"
-        tooltipText={isFireworks ? '🎆 Disable Fireworks' : '🎆 Enable Fireworks'}
-        isActive={isFireworks}
-        onToggle={toggleFireworks}
-        defaultTop={80}
-        defaultRight={20}
-      />
-
       {/* Styled Floating Customizer Drawer */}
       <AnimatePresence>
         {isThemeOpen && (
@@ -2007,9 +2221,12 @@ export function AppContent() {
         )}
       </AnimatePresence>
 
+      {/* Floating ARMY Bomb background player (bottom-left) */}
+      <ArmyBombPlayer />
+
       {/* Floating Ko-fi Me CTA Button (permanently active on bottom-right corner) */}
       {(() => {
-        const kofiUrl = publishedConfig?.footer?.kofiUrl !== undefined ? publishedConfig.footer.kofiUrl : "https://ko-fi.com/shaifsiam";
+        const kofiUrl = publishedConfig?.socialLinks?.kofi || publishedConfig?.footer?.kofiUrl || "https://ko-fi.com/bangtangallery";
         if (!kofiUrl || kofiUrl.trim() === "") return null;
         return (
           <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 pointer-events-auto">
@@ -2026,28 +2243,6 @@ export function AppContent() {
         );
       })()}
 
-      {/* Admin Panel Portal Overlays */}
-      {isAdminOpen && (
-        <AdminPanel 
-          onClose={() => {
-            setIsAdminOpen(false);
-            if (window.location.pathname === '/admin') {
-              window.history.pushState({}, '', '/');
-            } else if (window.location.hash.startsWith('#admin')) {
-              window.location.hash = '';
-            }
-          }}
-          publicThemeConfig={publishedConfig?.theme}
-          onThemeConfigChange={(newTheme: any) => {
-            if (newTheme?.accentColor) {
-              setPreferences((prev: any) => ({ ...prev, accentColor: newTheme.accentColor }));
-            }
-          }}
-          onPublishSuccess={() => {
-            fetchPublishedConfig();
-          }}
-        />
-      )}
 
     </div>
     </>

@@ -8,9 +8,50 @@ import { VotingEvent, VotingSubmission } from '../types';
 import AdsterraAd from './AdsterraAd';
 import { 
   Vote, Calendar, ExternalLink, Plus, AlertCircle, Clock, 
-  Trash2, Edit, CheckCircle, XCircle, Tag, Info, Image, Upload, Search, Link as LinkIcon
+  Trash2, Edit, CheckCircle, XCircle, Tag, Info, Image, Upload, Search, Link as LinkIcon,
+  CheckCircle2, Shield, User, Sparkles, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useBackend } from '../context/BackendContext';
+
+const COUNTRIES = [
+  'Bangladesh', 'India', 'Pakistan', 'Nepal', 'Sri Lanka', 'Bhutan', 'Maldives',
+  'South Korea', 'Japan', 'China', 'Taiwan', 'Hong Kong', 'Thailand', 'Vietnam',
+  'Philippines', 'Indonesia', 'Malaysia', 'Singapore', 'Myanmar', 'Cambodia', 'Laos',
+  'United States', 'Canada', 'Mexico', 'Brazil', 'Argentina', 'Chile', 'Peru',
+  'Colombia', 'Venezuela', 'Ecuador', 'Bolivia',
+  'United Kingdom', 'France', 'Germany', 'Spain', 'Italy', 'Portugal', 'Netherlands',
+  'Belgium', 'Poland', 'Romania', 'Ukraine', 'Russia', 'Turkey', 'Greece', 'Sweden',
+  'Norway', 'Denmark', 'Finland', 'Ireland', 'Austria', 'Switzerland',
+  'Saudi Arabia', 'United Arab Emirates', 'Qatar', 'Kuwait', 'Oman', 'Iraq', 'Iran',
+  'Israel', 'Jordan', 'Lebanon', 'Egypt',
+  'Nigeria', 'South Africa', 'Kenya', 'Ghana', 'Morocco', 'Algeria', 'Ethiopia',
+  'Australia', 'New Zealand',
+  'Other'
+];
+
+// Compress a vote screenshot to a modest JPEG data URL so it fits inside
+// the ballot's database record (Firestore caps a document at 1 MiB).
+const readScreenshot = (file: File): Promise<string> => new Promise((resolve, reject) => {
+  const url = URL.createObjectURL(file);
+  const img = new window.Image();
+  img.onload = () => {
+    try {
+      const maxW = 900;
+      const scale = Math.min(1, maxW / (img.width || maxW));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round((img.width || maxW) * scale);
+      canvas.height = Math.round((img.height || maxW) * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas unavailable');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.72));
+    } catch (e) { reject(e); }
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read that image.')); };
+  img.src = url;
+});
 
 // Generate some unique user id for local suggestions persistence if not loaded
 const getUserId = () => {
@@ -58,6 +99,143 @@ export default function VotingCenterSection({ votingEvents = [], onRefresh }: Vo
   // Form success alert states
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
+  // User Information & Vote Confirmation Modal States (Requirement 3)
+  const { currentUser } = useBackend();
+  const [voteModalEvent, setVoteModalEvent] = useState<VotingEvent | null>(null);
+  const [detailsEvent, setDetailsEvent] = useState<VotingEvent | null>(null);
+  const [voteUsername, setVoteUsername] = useState('');
+  const [voteFullName, setVoteFullName] = useState('');
+  const [voteError, setVoteError] = useState('');
+  const [voteSuccess, setVoteSuccess] = useState(false);
+  const [isSubmittingVote, setIsSubmittingVote] = useState(false);
+
+  // Vote proof states: X username, country and the vote screenshot.
+  // The owner can switch the whole proof system off from the Admin
+  // Panel (Voting Center CMS -> Vote Proof switch, then Publish).
+  const [voteProofEnabled, setVoteProofEnabled] = useState(true);
+  const [voteXUsername, setVoteXUsername] = useState('');
+  const [voteCountry, setVoteCountry] = useState('');
+  const [voteShot, setVoteShot] = useState('');
+  const [voteShotName, setVoteShotName] = useState('');
+  const [proofs, setProofs] = useState<any[]>([]);
+
+  const fetchProofs = async () => {
+    try {
+      const res = await fetch('/api/voting/proofs');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) setProofs(data.ballots || []);
+      }
+    } catch {}
+  };
+
+  useEffect(() => { fetchProofs(); }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/config/published');
+        if (res.ok) {
+          const cfg = await res.json();
+          if (cfg && typeof cfg.voteProofEnabled === 'boolean') {
+            setVoteProofEnabled(cfg.voteProofEnabled);
+          }
+        }
+      } catch {}
+    })();
+  }, []);
+
+  const handleOpenVoteModal = (event: VotingEvent) => {
+    setVoteModalEvent(event);
+    setVoteUsername(currentUser?.username || localStorage.getItem('bts_vote_username') || '');
+    setVoteFullName(currentUser?.displayName || localStorage.getItem('bts_vote_fullname') || '');
+    setVoteXUsername(localStorage.getItem('bts_vote_x') || '');
+    setVoteCountry(localStorage.getItem('bts_vote_country') || '');
+    setVoteShot('');
+    setVoteShotName('');
+    setVoteError('');
+    setVoteSuccess(false);
+  };
+
+  const handleConfirmVote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!voteModalEvent) return;
+
+    const trimmedUser = voteUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const trimmedName = voteFullName.trim();
+
+    if (!trimmedUser || trimmedUser.length < 2) {
+      setVoteError('Please enter a valid username (at least 2 alphanumeric characters).');
+      return;
+    }
+    if (!trimmedName || trimmedName.length < 2) {
+      setVoteError('Please enter your full name for voter verification.');
+      return;
+    }
+
+    const trimmedX = voteXUsername.trim().toLowerCase().replace(/^@+/, '').replace(/[^a-z0-9_]/g, '');
+    if (voteProofEnabled) {
+      if (!trimmedX || trimmedX.length < 2) {
+        setVoteError('Please enter your X (Twitter) username — it is shown with your vote proof.');
+        return;
+      }
+      if (!voteCountry) {
+        setVoteError('Please select your country — votes are counted country by country.');
+        return;
+      }
+      if (!voteShot) {
+        setVoteError('Please upload a screenshot of your vote as proof.');
+        return;
+      }
+    }
+
+    // Check duplicate voting rule
+    const voteKey = `bts_voted_${voteModalEvent.id}_${trimmedUser}`;
+    if (localStorage.getItem(voteKey)) {
+      setVoteError(`You have already cast a vote for "${voteModalEvent.title}" as @${trimmedUser}. Duplicate voting is restricted according to event rules!`);
+      return;
+    }
+
+    setIsSubmittingVote(true);
+    setVoteError('');
+
+    try {
+      const res = await fetch('/api/voting/ballot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId: voteModalEvent.id,
+          eventTitle: voteModalEvent.title,
+          username: trimmedUser,
+          fullName: trimmedName,
+          xUsername: voteProofEnabled ? trimmedX : '',
+          country: voteProofEnabled ? voteCountry : '',
+          screenshotUrl: voteProofEnabled ? voteShot : '',
+          timestamp: new Date().toISOString()
+        })
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || 'The vote could not be recorded. Please try again.');
+      }
+
+      localStorage.setItem('bts_vote_username', trimmedUser);
+      localStorage.setItem('bts_vote_fullname', trimmedName);
+      if (voteProofEnabled) {
+        localStorage.setItem('bts_vote_x', trimmedX);
+        localStorage.setItem('bts_vote_country', voteCountry);
+      }
+      localStorage.setItem(voteKey, new Date().toISOString());
+
+      setVoteSuccess(true);
+      fetchProofs();
+    } catch (err: any) {
+      setVoteError(err.message || 'Error recording vote. Please try again.');
+    } finally {
+      setIsSubmittingVote(false);
+    }
+  };
+
   // Fetch my submissions
   const fetchMySubmissions = async () => {
     setIsLoadingSubs(true);
@@ -82,10 +260,10 @@ export default function VotingCenterSection({ votingEvents = [], onRefresh }: Vo
 
   // Standard preset banner options for easier suggestions
   const presetCovers = [
-    { title: 'Golden FESTA Violet', url: 'https://i.pinimg.com/736x/bb/95/ce/bb95ce759bd3f6db21cff00d9865eb2f.jpg' },
-    { title: 'Concert Light Arena', url: 'https://i.pinimg.com/736x/bb/95/ce/bb95ce759bd3f6db21cff00d9865eb2f.jpg' },
-    { title: 'Euphoria Blue Stage', url: 'https://i.pinimg.com/736x/bb/95/ce/bb95ce759bd3f6db21cff00d9865eb2f.jpg' },
-    { title: 'Neon Magic Shop', url: 'https://i.pinimg.com/736x/bb/95/ce/bb95ce759bd3f6db21cff00d9865eb2f.jpg' }
+    { title: 'Golden FESTA Violet', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg' },
+    { title: 'Concert Light Arena', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg' },
+    { title: 'Euphoria Blue Stage', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg' },
+    { title: 'Neon Magic Shop', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg' }
   ];
 
   // Drag and drop handler
@@ -275,6 +453,19 @@ export default function VotingCenterSection({ votingEvents = [], onRefresh }: Vo
     ev.platform.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Vote proofs grouped by country, most votes first.
+  const countryCounts = (() => {
+    const map = new Map<string, number>();
+    proofs.forEach(p => {
+      const c = (p.country || '').trim();
+      if (c) map.set(c, (map.get(c) || 0) + 1);
+    });
+    return Array.from(map.entries())
+      .map(([country, count]) => ({ country, count }))
+      .sort((a, b) => b.count - a.count);
+  })();
+  const totalProofVotes = countryCounts.reduce((s, r) => s + r.count, 0);
+
   return (
     <div id="voting-center-hub" className="space-y-8 animate-fade-in">
       
@@ -286,7 +477,7 @@ export default function VotingCenterSection({ votingEvents = [], onRefresh }: Vo
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/20 bg-purple-500/10 text-xs font-mono text-purple-300">
               <Vote className="w-4 h-4 animate-pulse" /> BTS Voting Center Active Desk
             </div>
-            <h1 className="text-3xl md:text-4xl font-sans font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-sans font-extrabold text-white tracking-tight">
               🗳️ BTS Voting Center
             </h1>
             <p className="text-gray-300 md:text-base max-w-2xl text-sm leading-relaxed">
@@ -404,7 +595,7 @@ export default function VotingCenterSection({ votingEvents = [], onRefresh }: Vo
                       }`}
                     >
                       {/* Cover Banner Area */}
-                      <div className="relative h-44 overflow-hidden w-full bg-gray-950">
+                      <div className="relative h-44 overflow-hidden w-full bg-gray-950 cursor-pointer" onClick={() => setDetailsEvent(event)} title="View event details">
                         <img 
                           src={event.coverUrl} 
                           alt={event.title}
@@ -443,7 +634,7 @@ export default function VotingCenterSection({ votingEvents = [], onRefresh }: Vo
                           <span className="inline-block px-2 py-0.5 rounded bg-white/[0.04] text-[10px] font-mono uppercase text-gray-400 tracking-wider">
                             🛡 {event.platform}
                           </span>
-                          <h3 className="text-base font-bold text-white line-clamp-1 group-hover:text-purple-300 transition-colors">
+                          <h3 className="text-base font-bold text-white line-clamp-1 group-hover:text-purple-300 transition-colors cursor-pointer" onClick={() => setDetailsEvent(event)} title="View event details">
                             {event.title}
                           </h3>
                           <p className="text-gray-400 text-xs line-clamp-3 leading-relaxed">
@@ -461,15 +652,23 @@ export default function VotingCenterSection({ votingEvents = [], onRefresh }: Vo
                           <span>{event.endDate || 'ongoing'}</span>
                         </div>
 
-                        {/* Vote Button */}
-                        <a 
-                          href={event.voteNowUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-purple-500/10 hover:border-purple-500/30 bg-[#250d4d]/30 hover:bg-purple-600/30 transition-all font-medium text-xs text-white text-center shadow-inner cursor-pointer"
+                        <button
+                          type="button"
+                          onClick={() => setDetailsEvent(event)}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-white/10 hover:border-purple-500/40 bg-white/[0.03] hover:bg-purple-950/30 transition-all font-bold text-xs text-purple-200 cursor-pointer active:scale-95"
                         >
-                          投 Vote Now <ExternalLink className="w-3.5 h-3.5 text-purple-400" />
-                        </a>
+                          <span>👁 View Details</span>
+                        </button>
+
+                        {/* Submit Vote Button - Triggers User Information Confirmation Flow */}
+                        <button 
+                          type="button"
+                          onClick={() => handleOpenVoteModal(event)}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-purple-500/20 hover:border-purple-500/50 bg-gradient-to-r from-purple-700/60 to-pink-700/60 hover:from-purple-600 hover:to-pink-600 transition-all font-bold text-xs text-white text-center shadow-lg shadow-purple-900/30 cursor-pointer active:scale-95"
+                        >
+                          <Vote className="w-3.5 h-3.5 text-purple-200" />
+                          <span>Submit Vote</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -824,6 +1023,64 @@ export default function VotingCenterSection({ votingEvents = [], onRefresh }: Vo
         )}
       </AnimatePresence>
 
+      {/* Vote proofs by country — shown at the BOTTOM of the page (owner request) */}
+      {voteProofEnabled && (
+        <div className="rounded-2xl border border-purple-500/15 bg-[#0d0518]/80 p-5 md:p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm md:text-base font-extrabold text-white flex items-center gap-2">
+              🌍 ARMY Vote Proofs — by Country
+            </h3>
+            <span className="text-[10px] font-mono text-purple-300 bg-purple-500/10 border border-purple-500/25 rounded-full px-2.5 py-1">
+              {totalProofVotes} verified votes
+            </span>
+          </div>
+
+          {countryCounts.length === 0 ? (
+            <p className="text-xs text-gray-400">
+              No vote proofs yet — cast a vote with your screenshot proof and your country appears here. 💜
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {countryCounts.map(({ country, count }) => (
+                <div key={country} className="rounded-xl border border-white/5 bg-white/[0.03] px-3.5 py-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-gray-100 truncate">{country}</span>
+                    <span className="font-mono font-bold text-purple-300 shrink-0 ml-2">{count} {count === 1 ? 'vote' : 'votes'}</span>
+                  </div>
+                  <div className="h-1.5 mt-2 rounded-full bg-white/5 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
+                      style={{ width: `${Math.max(6, (count / countryCounts[0].count) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {proofs.some(p => p.screenshotUrl) && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Latest vote proofs</p>
+              <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+                {proofs.filter(p => p.screenshotUrl).slice(0, 12).map(p => (
+                  <div key={p.id} className="shrink-0 w-24">
+                    <img
+                      src={p.screenshotUrl}
+                      alt={`Vote proof from ${p.country || 'ARMY'}`}
+                      className="w-24 h-16 object-cover rounded-lg border border-purple-500/25"
+                      loading="lazy"
+                    />
+                    <p className="text-[9px] text-gray-300 truncate mt-1">@{p.xUsername || p.username}</p>
+                    <p className="text-[9px] text-purple-300 truncate">{p.country}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+
       {/* Editing Dialog Modal overlay */}
       {editingSub && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto backdrop-blur-sm animate-fade-in">
@@ -970,6 +1227,343 @@ export default function VotingCenterSection({ votingEvents = [], onRefresh }: Vo
                 </button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* User Information & Vote Confirmation Modal */}
+      {detailsEvent && (
+        <div
+          className="fixed inset-0 z-[100001] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+          onClick={() => setDetailsEvent(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-purple-500/25 bg-[#0b0618] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative h-52 w-full bg-gray-950">
+              <img
+                src={detailsEvent.coverUrl || (detailsEvent as any).coverImageUrl || ''}
+                alt={detailsEvent.title}
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0b0618] via-transparent to-transparent" />
+              <button
+                type="button"
+                onClick={() => setDetailsEvent(null)}
+                className="absolute top-3 right-3 p-2 rounded-full bg-black/70 hover:bg-black border border-white/20 text-white cursor-pointer"
+                aria-label="Close details"
+              >
+                ✕
+              </button>
+              <span className="absolute bottom-3 left-4 px-2 py-0.5 rounded bg-white/[0.08] text-[10px] font-mono uppercase text-gray-200 tracking-wider">
+                🛡 {detailsEvent.platform}
+              </span>
+            </div>
+            <div className="p-5 space-y-4">
+              <h3 className="text-lg font-bold text-white leading-snug">{detailsEvent.title}</h3>
+              <p className="text-gray-300 text-xs leading-relaxed whitespace-pre-wrap">{detailsEvent.description || 'No extra details were provided for this voting event.'}</p>
+              <div className="grid grid-cols-2 gap-3 text-[11px] font-mono">
+                <div className="rounded-lg border border-white/5 bg-black/30 p-3">
+                  <span className="block text-gray-500 uppercase tracking-wider text-[9px]">Starts</span>
+                  <span className="text-purple-200">{detailsEvent.startDate || 'Flexible'}</span>
+                </div>
+                <div className="rounded-lg border border-white/5 bg-black/30 p-3">
+                  <span className="block text-gray-500 uppercase tracking-wider text-[9px]">Ends</span>
+                  <span className="text-purple-200">{detailsEvent.endDate || 'Ongoing'}</span>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                {detailsEvent.voteNowUrl && (
+                  <a
+                    href={detailsEvent.voteNowUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1db954]/80 hover:bg-[#1db954] transition-all font-bold text-xs text-white cursor-pointer active:scale-95"
+                  >
+                    🗳 Vote Now
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => { const ev = detailsEvent; setDetailsEvent(null); handleOpenVoteModal(ev); }}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-purple-500/20 hover:border-purple-500/50 bg-gradient-to-r from-purple-700/60 to-pink-700/60 hover:from-purple-600 hover:to-pink-600 transition-all font-bold text-xs text-white cursor-pointer active:scale-95"
+                >
+                  <Vote className="w-3.5 h-3.5 text-purple-200" />
+                  <span>Submit Vote</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {voteModalEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+            className="w-full max-w-md max-h-[92vh] overflow-y-auto bg-[#0f0a1c] border border-purple-500/30 rounded-2xl p-6 shadow-2xl relative text-left"
+          >
+            {/* Top decorative gradient bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500" />
+
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-900/50 border border-purple-500/30 flex items-center justify-center text-purple-300">
+                  <Vote className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white leading-tight">Cast Verified Vote</h3>
+                  <p className="text-[10px] text-gray-400">ARMY Official Voter Identity Verification</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setVoteModalEvent(null)}
+                className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Campaign Summary */}
+            <div className="bg-purple-950/20 border border-purple-500/20 rounded-xl p-3 mb-4 flex items-center gap-3">
+              {voteModalEvent.coverUrl ? (
+                <img 
+                  src={voteModalEvent.coverUrl} 
+                  alt={voteModalEvent.title} 
+                  className="w-12 h-12 rounded-lg object-cover border border-purple-500/30 shrink-0" 
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-lg bg-purple-900/40 border border-purple-500/30 flex items-center justify-center text-purple-300 font-bold shrink-0">
+                  💜
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <h4 className="text-xs font-bold text-white truncate">{voteModalEvent.title}</h4>
+                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-purple-300">
+                  <span className="font-mono bg-purple-900/40 px-1.5 py-0.5 rounded border border-purple-500/20">
+                    {voteModalEvent.platform || 'ARMY Polling'}
+                  </span>
+                  <span>•</span>
+                  <span>{voteModalEvent.status === 'published' ? 'Active' : voteModalEvent.status || 'Active'}</span>
+                </div>
+              </div>
+            </div>
+
+            {voteSuccess ? (
+              <div className="text-center py-4 space-y-4">
+                <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-white flex items-center justify-center gap-1.5">
+                    Vote Recorded Successfully! 💜
+                  </h4>
+                  <p className="text-xs text-gray-300 mt-1 max-w-xs mx-auto">
+                    Thank you, <strong className="text-purple-300">@{voteUsername}</strong> ({voteFullName}). Your verified ballot has been logged.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-purple-950/40 border border-purple-500/20 rounded-xl text-left text-[11px] text-gray-300 space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-purple-300">
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>Ballot Status: Validated & Protected</span>
+                  </div>
+                  <p className="text-[10px] text-gray-400">
+                    Duplicate vote restriction is now active for this account on this device.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-2">
+                  {voteModalEvent.voteNowUrl && (
+                    <a
+                      href={voteModalEvent.voteNowUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-xs shadow-lg shadow-purple-900/40 transition-all cursor-pointer"
+                    >
+                      <span>Proceed to Official Voting Platform 🔗</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setVoteModalEvent(null)}
+                    className="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-gray-300 transition-colors cursor-pointer"
+                  >
+                    Done & Return to Voting Center
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleConfirmVote} className="space-y-4">
+                <div className="space-y-3">
+                  {voteProofEnabled && (
+                    <div>
+                      <label className="block text-[11px] font-mono uppercase text-gray-300 mb-1 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-purple-400 font-bold text-xs">𝕏</span>
+                          <span>Your X Username *</span>
+                        </span>
+                        <span className="text-[10px] text-gray-500">Shown on proof wall</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono text-gray-500">@</span>
+                        <input
+                          type="text"
+                          value={voteXUsername}
+                          onChange={(e) => setVoteXUsername(e.target.value)}
+                          placeholder="your_x_handle"
+                          className="w-full bg-[#160d26] border border-purple-500/20 focus:border-purple-500/60 rounded-xl pl-8 pr-3.5 py-2.5 text-xs text-white placeholder-gray-600 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-gray-300 mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Voter Username *</span>
+                      </span>
+                      <span className="text-[10px] text-gray-500">Handle / Nickname</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono text-gray-500">@</span>
+                      <input
+                        type="text"
+                        required
+                        value={voteUsername}
+                        onChange={(e) => setVoteUsername(e.target.value)}
+                        placeholder="army_jungkook7"
+                        className="w-full bg-[#160d26] border border-purple-500/20 focus:border-purple-500/60 rounded-xl pl-8 pr-3.5 py-2.5 text-xs text-white placeholder-gray-600 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-gray-300 mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Shield className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Full Name / Legal Identifier *</span>
+                      </span>
+                      <span className="text-[10px] text-gray-500">Verification</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={voteFullName}
+                      onChange={(e) => setVoteFullName(e.target.value)}
+                      placeholder="e.g., Min Yoon-gi or Jane Doe"
+                      className="w-full bg-[#160d26] border border-purple-500/20 focus:border-purple-500/60 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-600 outline-none transition-all"
+                    />
+                  </div>
+
+                  {voteProofEnabled && (
+                    <>
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase text-gray-300 mb-1 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-purple-400 text-xs">🌍</span>
+                            <span>Your Country *</span>
+                          </span>
+                          <span className="text-[10px] text-gray-500">Counted by country</span>
+                        </label>
+                        <select
+                          value={voteCountry}
+                          onChange={(e) => setVoteCountry(e.target.value)}
+                          className="w-full bg-[#160d26] border border-purple-500/20 focus:border-purple-500/60 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none transition-all cursor-pointer"
+                        >
+                          <option value="">Select your country…</option>
+                          {COUNTRIES.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase text-gray-300 mb-1 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Image className="w-3.5 h-3.5 text-purple-400" />
+                            <span>Vote Screenshot (Proof) *</span>
+                          </span>
+                          <span className="text-[10px] text-gray-500">JPG / PNG</span>
+                        </label>
+                        <label className="flex items-center gap-3 w-full bg-[#160d26] border border-dashed border-purple-500/30 hover:border-purple-500/60 rounded-xl px-3.5 py-3 cursor-pointer transition-all">
+                          {voteShot ? (
+                            <img src={voteShot} alt="Vote proof" className="w-10 h-10 rounded-lg object-cover border border-purple-500/30 shrink-0" />
+                          ) : (
+                            <Upload className="w-5 h-5 text-purple-400 shrink-0" />
+                          )}
+                          <span className="text-xs text-gray-300 truncate">
+                            {voteShot ? (voteShotName || 'Screenshot attached ✓') : 'Tap to upload your vote screenshot'}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const f = e.target.files?.[0];
+                              if (!f) return;
+                              try {
+                                const data = await readScreenshot(f);
+                                setVoteShot(data);
+                                setVoteShotName(f.name);
+                                setVoteError('');
+                              } catch {
+                                setVoteError('That image could not be read. Please pick another screenshot.');
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="p-2.5 bg-black/40 border border-white/5 rounded-xl text-[10px] text-gray-400 flex items-start gap-2">
+                  <Info className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                  <span>
+                    To maintain fair democratic BTS fandom standings, only one verified vote per registered identity is counted for this poll.
+                  </span>
+                </div>
+
+                {voteError && (
+                  <div className="p-3 bg-red-950/40 border border-red-500/30 rounded-xl text-xs text-red-300 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    <span>{voteError}</span>
+                  </div>
+                )}
+
+                <div className="flex gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setVoteModalEvent(null)}
+                    className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-gray-300 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingVote}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-xs shadow-lg shadow-purple-900/40 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmittingVote ? (
+                      <span>Verifying & Submitting...</span>
+                    ) : (
+                      <>
+                        <Vote className="w-3.5 h-3.5" />
+                        <span>Confirm & Submit</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </motion.div>
         </div>
       )}

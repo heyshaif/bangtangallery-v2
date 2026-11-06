@@ -42,7 +42,8 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
     setVolume,
     toggleMute,
     toggleShuffle,
-    toggleRepeat
+    toggleRepeat,
+    playbackError,
   } = useAudioPlayer();
 
   // Local Storage states for player presentation choice
@@ -206,6 +207,11 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
                 <p className="text-[10px] text-purple-300/80 truncate font-mono mt-0.5">
                   {currentTrack.artist || 'BTS'}
                 </p>
+                {playbackError && (
+                  <p className="text-[10px] text-red-400 font-sans mt-0.5 leading-snug">
+                    ⚠ {playbackError}
+                  </p>
+                )}
               </div>
             </div>
 
