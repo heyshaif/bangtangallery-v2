@@ -163,7 +163,7 @@ export interface FAQItem {
 }
 
 export interface UserPreferences {
-  theme: 'dark' | 'light' | 'system';
+  theme: 'dark' | 'light' | 'system' | 'arirang';
   accentColor: 'indigo' | 'purple' | 'crimson' | 'violet' | 'amber';
   animationsEnabled: boolean;
   fontSize: 'sm' | 'base' | 'lg' | 'xl';

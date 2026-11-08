@@ -44,6 +44,9 @@ interface AudioPlayerContextType {
   spotifyPanelActive: boolean;
   setSpotifyPanelActive: (active: boolean) => void;
   playbackError: string | null;
+  lyricsTrack: Track | null;
+  openLyrics: (track: Track) => void;
+  closeLyrics: () => void;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
@@ -69,6 +72,9 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
   const [spotifyPanelActive, setSpotifyPanelActive] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [lyricsTrack, setLyricsTrack] = useState<Track | null>(null);
+  const openLyrics = (track: Track) => setLyricsTrack(track);
+  const closeLyrics = () => setLyricsTrack(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -552,6 +558,9 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
         spotifyPanelActive,
         setSpotifyPanelActive,
         playbackError,
+        lyricsTrack,
+        openLyrics,
+        closeLyrics,
       }}
     >
       {children}

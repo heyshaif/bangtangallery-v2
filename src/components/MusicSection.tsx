@@ -5,7 +5,7 @@ import {
   AlertCircle, Trash2, X, Clipboard, ExternalLink, Calendar, User,
   Star, Pin, Pause, RotateCcw, RotateCw, Volume2, VolumeX, SkipBack, SkipForward,
   ChevronDown, ChevronUp, UploadCloud, CheckCircle2,
-  Mic, Radio, Music2, Wand2, RefreshCw, Send, Clock
+  Mic, Radio, Music2, Wand2, RefreshCw, Send, Clock, FileText
 } from 'lucide-react';
 import { useBackend } from '../context/BackendContext';
 import { useAudioPlayer, QueueItem } from '../context/AudioPlayerContext';
@@ -99,7 +99,7 @@ export default function MusicSection({ config: passedConfig }: { config?: any })
   });
 
   // Get variables from global audio player
-  const { currentTrack, setWholeQueue, isPlaying, togglePlay, setSpotifyPanelActive } = useAudioPlayer();
+  const { currentTrack, setWholeQueue, isPlaying, togglePlay, setSpotifyPanelActive, openLyrics } = useAudioPlayer();
 
   // Track currently selected mapped directly from the global bottom player
   const activePlaybackId = currentTrack?.id || null;
@@ -644,6 +644,7 @@ export default function MusicSection({ config: passedConfig }: { config?: any })
           duration: t.duration || '3:30',
           audioUrl: t.audioUrl || '',
           spotifyUrl: t.spotifyUrl || '',
+          lyrics: t.lyrics || '',
           description: t.description || '',
           genre: t.genre || 'BTS',
           coverUrl: t.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg',
@@ -851,6 +852,28 @@ export default function MusicSection({ config: passedConfig }: { config?: any })
 
                         {/* Right Block: Interactive triggers (favorites, embed toggle, and play) */}
                         <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          {track.lyrics && track.lyrics.trim() !== '' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openLyrics({
+                                  id: track.id,
+                                  title: track.title,
+                                  artist: track.artist,
+                                  duration: track.duration || '',
+                                  lyrics: track.lyrics,
+                                  coverUrl: track.coverUrl,
+                                  audioUrl: track.audioUrl || '',
+                                  spotifyUrl: track.spotifyUrl || '',
+                                });
+                              }}
+                              className="p-2 rounded-xl border bg-black/40 border-purple-500/10 text-stone-300 hover:text-white hover:bg-purple-500/20 transition-all cursor-pointer"
+                              title="View lyrics"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
                           <button
                             onClick={(e) => toggleFavorite(track.id, e)}
                             className={`p-2 rounded-xl border transition-all cursor-pointer ${

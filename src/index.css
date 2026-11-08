@@ -244,6 +244,120 @@ body {
   color: #5b21b6 !important;
 }
 
+/* ARIRANG Mode overrides: Dark mode's near-black glass look kept, with the
+   purple/pink accent family shifted to a SOFT red/rose (deliberately subtle),
+   deep panels tinted maroon, and white text left untouched. */
+.arirang {
+  color-scheme: dark;
+}
+
+.arirang .glass-panel {
+  background: rgba(26, 5, 11, 0.72) !important;
+  border-color: rgba(244, 63, 94, 0.16) !important;
+}
+
+.arirang .glow-purple {
+  box-shadow: 0 0 35px -5px rgba(244, 63, 94, 0.28) !important;
+}
+
+/* Accent text */
+.arirang .text-purple-200 { color: #fecdd3 !important; }
+.arirang .text-purple-300 { color: #fda4af !important; }
+.arirang .text-purple-400 { color: #fb7185 !important; }
+.arirang .text-purple-500 { color: #f43f5e !important; }
+.arirang .text-purple-600 { color: #dc2626 !important; }
+.arirang .text-pink-300 { color: #fda4af !important; }
+.arirang .text-pink-400 { color: #fb7185 !important; }
+.arirang .text-fuchsia-300 { color: #fda4af !important; }
+.arirang .text-fuchsia-400 { color: #fb7185 !important; }
+.arirang .hover\:text-purple-300:hover { color: #fda4af !important; }
+.arirang .hover\:text-purple-400:hover { color: #fb7185 !important; }
+.arirang .hover\:text-fuchsia-400:hover { color: #fb7185 !important; }
+
+/* Accent borders */
+.arirang .border-purple-400 { border-color: #fb7185 !important; }
+.arirang .border-purple-500 { border-color: #f43f5e !important; }
+.arirang .border-purple-500\/5 { border-color: rgb(244 63 94 / 0.05) !important; }
+.arirang .border-purple-500\/10 { border-color: rgb(244 63 94 / 0.1) !important; }
+.arirang .border-purple-500\/15 { border-color: rgb(244 63 94 / 0.15) !important; }
+.arirang .border-purple-500\/20 { border-color: rgb(244 63 94 / 0.2) !important; }
+.arirang .border-purple-500\/25 { border-color: rgb(244 63 94 / 0.25) !important; }
+.arirang .border-purple-500\/30 { border-color: rgb(244 63 94 / 0.3) !important; }
+.arirang .border-purple-500\/35 { border-color: rgb(244 63 94 / 0.35) !important; }
+.arirang .border-purple-500\/40 { border-color: rgb(244 63 94 / 0.4) !important; }
+.arirang .border-purple-500\/50 { border-color: rgb(244 63 94 / 0.5) !important; }
+.arirang .border-pink-400 { border-color: #fb7185 !important; }
+.arirang .hover\:border-purple-400:hover { border-color: #fb7185 !important; }
+.arirang .hover\:border-purple-500\/20:hover { border-color: rgb(244 63 94 / 0.2) !important; }
+.arirang .hover\:border-purple-500\/30:hover { border-color: rgb(244 63 94 / 0.3) !important; }
+.arirang .hover\:border-purple-500\/40:hover { border-color: rgb(244 63 94 / 0.4) !important; }
+.arirang .hover\:border-purple-500\/50:hover { border-color: rgb(244 63 94 / 0.5) !important; }
+
+/* Solid accent backgrounds */
+.arirang .bg-purple-400 { background-color: #fb7185 !important; }
+.arirang .bg-purple-500 { background-color: #f43f5e !important; }
+.arirang .bg-purple-600 { background-color: #dc2626 !important; }
+.arirang .bg-purple-800 { background-color: #991b1b !important; }
+.arirang .bg-purple-500\/5 { background-color: rgb(244 63 94 / 0.05) !important; }
+.arirang .bg-purple-500\/10 { background-color: rgb(244 63 94 / 0.1) !important; }
+.arirang .bg-purple-500\/20 { background-color: rgb(244 63 94 / 0.2) !important; }
+.arirang .bg-purple-600\/30 { background-color: rgb(220 38 38 / 0.3) !important; }
+.arirang .hover\:bg-purple-500:hover { background-color: #f43f5e !important; }
+.arirang .hover\:bg-purple-600:hover { background-color: #dc2626 !important; }
+.arirang .hover\:bg-purple-800:hover { background-color: #991b1b !important; }
+
+/* Deep tinted panels: purple-950/900 family becomes deep maroon */
+.arirang .bg-purple-950 { background-color: #450a0a !important; }
+.arirang .bg-purple-950\/5 { background-color: rgb(69 10 10 / 0.05) !important; }
+.arirang .bg-purple-950\/10 { background-color: rgb(69 10 10 / 0.1) !important; }
+.arirang .bg-purple-950\/20 { background-color: rgb(69 10 10 / 0.2) !important; }
+.arirang .bg-purple-950\/25 { background-color: rgb(69 10 10 / 0.25) !important; }
+.arirang .bg-purple-950\/30 { background-color: rgb(69 10 10 / 0.3) !important; }
+.arirang .bg-purple-950\/40 { background-color: rgb(69 10 10 / 0.4) !important; }
+.arirang .bg-purple-950\/50 { background-color: rgb(69 10 10 / 0.5) !important; }
+.arirang .bg-purple-950\/60 { background-color: rgb(69 10 10 / 0.6) !important; }
+.arirang .bg-purple-900\/30 { background-color: rgb(127 29 29 / 0.3) !important; }
+.arirang .bg-purple-900\/40 { background-color: rgb(127 29 29 / 0.4) !important; }
+.arirang .bg-purple-900\/60 { background-color: rgb(127 29 29 / 0.6) !important; }
+.arirang .bg-fuchsia-950\/20 { background-color: rgb(69 10 10 / 0.2) !important; }
+.arirang .hover\:bg-purple-900\/40:hover { background-color: rgb(127 29 29 / 0.4) !important; }
+.arirang .hover\:bg-purple-950\/40:hover { background-color: rgb(69 10 10 / 0.4) !important; }
+
+/* Near-black page panels take a faint warm red tint */
+.arirang .bg-\[\#05000a\] { background-color: #0a0206 !important; }
+.arirang .bg-\[\#05000a\]\/95 { background-color: rgb(10 2 6 / 0.95) !important; }
+.arirang .bg-\[\#0d071a\]\/40 { background-color: rgb(20 4 9 / 0.4) !important; }
+.arirang .bg-\[\#0c0617\]\/90 { background-color: rgb(16 3 8 / 0.9) !important; }
+
+/* Gradients: shift the stop colors to red/rose, keep positions and shapes */
+.arirang .from-purple-400 { --tw-gradient-from: #fb7185 !important; }
+.arirang .from-purple-500 { --tw-gradient-from: #f43f5e !important; }
+.arirang .from-purple-600 { --tw-gradient-from: #dc2626 !important; }
+.arirang .from-purple-700 { --tw-gradient-from: #b91c1c !important; }
+.arirang .from-purple-950 { --tw-gradient-from: #450a0a !important; }
+.arirang .from-pink-500 { --tw-gradient-from: #f43f5e !important; }
+.arirang .via-purple-500 { --tw-gradient-via: #f43f5e !important; }
+.arirang .via-purple-600 { --tw-gradient-via: #dc2626 !important; }
+.arirang .via-fuchsia-500 { --tw-gradient-via: #f43f5e !important; }
+.arirang .via-fuchsia-600 { --tw-gradient-via: #e11d48 !important; }
+.arirang .via-pink-500 { --tw-gradient-via: #f43f5e !important; }
+.arirang .to-purple-600 { --tw-gradient-to: #dc2626 !important; }
+.arirang .to-purple-600\/15 { --tw-gradient-to: rgb(220 38 38 / 0.15) !important; }
+.arirang .to-fuchsia-500 { --tw-gradient-to: #f43f5e !important; }
+.arirang .to-fuchsia-600 { --tw-gradient-to: #e11d48 !important; }
+.arirang .to-pink-500 { --tw-gradient-to: #f43f5e !important; }
+.arirang .to-pink-600 { --tw-gradient-to: #e11d48 !important; }
+.arirang .to-pink-700 { --tw-gradient-to: #be123c !important; }
+
+/* Accent shadows and rings */
+.arirang .shadow-purple-500\/20 { --tw-shadow-color: rgb(244 63 94 / 0.2) !important; }
+.arirang .shadow-purple-600\/30 { --tw-shadow-color: rgb(225 29 72 / 0.3) !important; }
+.arirang .ring-purple-500 { --tw-ring-color: #f43f5e !important; }
+
+/* Inner scrollbars */
+.arirang ::-webkit-scrollbar-thumb { background: rgba(225, 29, 72, 0.35); }
+.arirang ::-webkit-scrollbar-thumb:hover { background: rgba(225, 29, 72, 0.55); }
+
 /* ==========================================
    ULTRA-PREMIUM BTS PURPLE ADMIN Facelift
    ========================================== */

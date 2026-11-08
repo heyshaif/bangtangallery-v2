@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 interface AuroraBackgroundProps {
-  theme?: 'dark' | 'light' | 'system';
+  theme?: 'dark' | 'light' | 'system' | 'arirang';
   isAmbientActive?: boolean;
 }
 
@@ -123,7 +123,7 @@ export default function AuroraBackground({ theme = 'dark', isAmbientActive = tru
 
   return (
     <div ref={bgRef} className={`fixed inset-0 -z-50 overflow-hidden transition-all duration-750 ${
-      theme === 'light' ? 'bg-[#f4edf8]' : 'bg-[#05000a]'
+      theme === 'light' ? 'bg-[#f4edf8]' : theme === 'arirang' ? 'bg-[#0a0206]' : 'bg-[#05000a]'
     }`}>
       
       {/* Immersive low-opacity custom trailing cursor halo background glow */}
@@ -135,9 +135,11 @@ export default function AuroraBackground({ theme = 'dark', isAmbientActive = tru
               left: `${trailPos.x}px`,
               top: `${trailPos.y}px`,
               transform: 'translate(-50%, -50%)',
-              background: theme === 'light' 
-                ? 'radial-gradient(circle, rgba(147, 51, 234, 0.3) 0%, transparent 70%)' 
-                : 'radial-gradient(circle, rgba(168, 85, 247, 0.45) 0%, transparent 70%)',
+              background: theme === 'light'
+                ? 'radial-gradient(circle, rgba(147, 51, 234, 0.3) 0%, transparent 70%)'
+                : theme === 'arirang'
+                  ? 'radial-gradient(circle, rgba(244, 63, 94, 0.45) 0%, transparent 70%)'
+                  : 'radial-gradient(circle, rgba(168, 85, 247, 0.45) 0%, transparent 70%)',
             }}
           />
           {/* Sharp minimal inner dot */}
@@ -170,7 +172,7 @@ export default function AuroraBackground({ theme = 'dark', isAmbientActive = tru
       <div className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${isAmbientActive ? 'opacity-40' : 'opacity-10'}`}>
         <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-900/30 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-red-900/20 rounded-full blur-[100px]" />
-        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(168, 85, 247, 0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+        <div className="absolute inset-0" style={{ backgroundImage: theme === 'arirang' ? 'radial-gradient(rgba(244, 63, 94, 0.1) 1px, transparent 1px)' : 'radial-gradient(rgba(168, 85, 247, 0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       </div>
 
       {/* Floating Sparkles & Particles */}

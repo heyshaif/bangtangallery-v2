@@ -2207,3 +2207,64 @@ Build + tsc clean; the built bundle contains the new error
 string. The security question/answer save (PUT
 /api/admin/security/settings) was checked too — its keys
 already matched and it genuinely persists.
+
+## Batch 68 — ARIRANG full-song audio files (owner-supplied, 2026-11-08)
+No code changes. The owner supplied the 14 ARIRANG album tracks as
+.m4a files (they own the files; sent to Muse on 2026-11-08). They are
+self-hosted in `public/audio/arirang/`:
+body-to-body, hooligan, aliens, fya, 2-0, no-29, swim,
+merry-go-round, normal, like-animals, they-dont-know-bout-us,
+one-more-night, please, into-the-sun (~40 MB total).
+Context: Firebase Storage cannot host them — this project never had
+a bucket, and Google now requires the paid Blaze plan to create one
+(owner's rule: free only, so that route is closed; it also explains
+why Storage uploads always stalled/fell back to embeds).
+After this batch is pushed and Render deploys, each file serves at
+https://bangtangallery.online/audio/arirang/<slug>.m4a and Muse
+will set each digitalTrack's `audioUrl` to its file URL directly in
+the live database (published + draft) — the player prefers audioUrl
+over the Spotify link, so visitors then get the full song in the
+bottom player with no Spotify login. Until that attach step runs,
+the tracks keep playing via Spotify exactly as before. Do NOT set
+the audioUrl values before the deploy is live — a set-but-missing
+file makes the player show an error instead of the Spotify fallback.
+
+## Batch 69 — Synced (line-by-line) lyrics viewer (2026-11-08)
+Owner asked for lyrics that follow the song line by line ("je line
+bolbe oi lyrics ashbe cute vabe"). New `src/components/LyricsViewer.tsx`
+overlay (mounted once in App next to the player): it reads the
+playing track's existing `lyrics` field. If the text carries LRC-style
+time tags ([mm:ss.xx]) on at least 3 lines AND the viewed track is
+the one playing through the native player, lines highlight as they
+are sung — the active line is larger, purple→pink gradient with a
+soft glow and a 💜 marker, past lines dim, and the view auto-scrolls
+to keep the active line centered. Without time tags it shows the
+lyrics as a plain scrollable page. Open it from the new "Lyrics"
+button in the player bar header (GlobalMiniPlayer) or from the
+per-track Lyrics button in the Music list; both appear ONLY when the
+track actually has lyrics text, so nothing shows empty. Plumbing:
+AudioPlayerContext gained lyricsTrack/openLyrics/closeLyrics, and
+MusicSection's queue mapping now carries `lyrics` into the player.
+No data changes: lyrics text itself is owner-supplied (paste timed
+.lrc text into the track's lyrics, or send it to Muse to attach in
+the database — no deploy needed for the data). Build + tsc clean.
+
+## Batch 70 — Third theme: "ARIRANG" (2026-11-08)
+Owner asked for an ARIRANG theme next to Dark/Light: dark near-black
+base with a faint warm red tint, purple/pink accents shifted to a
+SOFT red/rose ("beshi lal na" — not too red), white text kept, and
+the header switch must stay ICON-ONLY (no text label).
+- Theme value 'arirang' added to UserPreferences (types.ts),
+  SettingsSection (new "Theme ARIRANG" card) and AuroraBackground
+  (deep red-black base, rose cursor halo and dot grid).
+- Header button cycles Dark -> Light -> ARIRANG -> Dark with icons
+  only: Sun (to Light), red Flame (to ARIRANG), Moon (to Dark);
+  tooltip names the target theme.
+- Styling is a `.arirang` override block in src/index.css (same
+  technique as `.light`): glass panels and the purple-950/900 panel
+  tints become deep maroon, text/border/bg purple+fuchsia+pink
+  utilities remap to rose/red at the SAME opacity, gradient stops
+  (from/via/to CSS variables) shift to red/rose, accent shadows,
+  rings, glow and inner scrollbars follow. Photos/images untouched.
+  Admin Panel is a separate app and keeps its own design.
+Build + tsc clean; compiled CSS verified to contain the overrides.

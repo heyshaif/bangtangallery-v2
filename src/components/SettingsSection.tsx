@@ -14,7 +14,7 @@ interface SettingsSectionProps {
 
 export default function SettingsSection({ preferences, onPreferencesChange }: SettingsSectionProps) {
   
-  const handleThemeChange = (theme: 'dark' | 'light' | 'system') => {
+  const handleThemeChange = (theme: 'dark' | 'light' | 'system' | 'arirang') => {
     onPreferencesChange({ ...preferences, theme });
   };
 
@@ -74,10 +74,11 @@ export default function SettingsSection({ preferences, onPreferencesChange }: Se
             <Moon className="w-4 h-4 text-purple-400" /> Color Theme Preset
           </h3>
 
-          <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
             {[
               { id: 'dark', label: 'Theme Dark' },
               { id: 'light', label: 'Theme Light (Slight)' },
+              { id: 'arirang', label: 'Theme ARIRANG' },
               { id: 'system', label: 'Sync System' }
             ].map(thm => (
               <button

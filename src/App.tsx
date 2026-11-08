@@ -56,6 +56,7 @@ import {
 } from 'lucide-react';
 import { AudioPlayerProvider, useAudioPlayer } from './context/AudioPlayerContext';
 import GlobalMiniPlayer from './components/GlobalMiniPlayer';
+import LyricsViewer from './components/LyricsViewer';
 import ArmyBombPlayer from './components/ArmyBombPlayer';
 
 const getSpotifyEmbedUrl = (input: string): string | null => {
@@ -567,7 +568,9 @@ export function AppContent() {
   };
 
   const toggleDarkMode = () => {
-    const newTheme: UserPreferences['theme'] = preferences.theme === 'dark' ? 'light' : 'dark';
+    // Icon-only theme switch cycles: Dark -> Light -> ARIRANG -> Dark
+    const newTheme: UserPreferences['theme'] =
+      preferences.theme === 'dark' ? 'light' : preferences.theme === 'light' ? 'arirang' : 'dark';
     const newPrefs = { ...preferences, theme: newTheme };
     handlePreferencesChange(newPrefs);
   };
@@ -920,7 +923,7 @@ export function AppContent() {
       </AnimatePresence>
 
       <div className={`min-h-screen selection:bg-purple-500/30 flex flex-col font-sans ${getFontSizeClass()} ${
-        preferences.theme === 'light' ? 'light bg-[#faf8fd] text-slate-900' : 'bg-[#05000a] text-slate-100'
+        preferences.theme === 'light' ? 'light bg-[#faf8fd] text-slate-900' : preferences.theme === 'arirang' ? 'arirang bg-[#0a0206] text-slate-100' : 'bg-[#05000a] text-slate-100'
       }`}>
       
       {/* Aurora Particle Canvas Background */}
@@ -1116,17 +1119,31 @@ export function AppContent() {
               </a>
             </div>
 
-            {/* Dark Mode Toggle */}
+            {/* Theme Toggle (icon only): Dark -> Light -> ARIRANG -> Dark */}
             <button
               onClick={toggleDarkMode}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                 preferences.theme === 'light'
-                  ? 'bg-slate-100 hover:bg-purple-100 text-purple-600'
-                  : 'bg-white/5 hover:bg-purple-950/40 text-purple-400 border border-white/5'
+                  ? 'bg-slate-100 hover:bg-red-50 text-purple-600'
+                  : preferences.theme === 'arirang'
+                    ? 'bg-red-950/50 hover:bg-red-900/40 text-red-400 border border-red-500/25'
+                    : 'bg-white/5 hover:bg-purple-950/40 text-purple-400 border border-white/5'
               }`}
-              title="Toggle Dark/Light Mode"
+              title={
+                preferences.theme === 'light'
+                  ? 'Switch to ARIRANG Theme'
+                  : preferences.theme === 'arirang'
+                    ? 'Switch to Dark Theme'
+                    : 'Switch to Light Theme'
+              }
             >
-              {preferences.theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+              {preferences.theme === 'light' ? (
+                <Flame className="w-4 h-4 text-red-500" />
+              ) : preferences.theme === 'arirang' ? (
+                <Moon className="w-4 h-4" />
+              ) : (
+                <Sun className="w-4 h-4" />
+              )}
             </button>
 
             {/* Theme Studio Trigger (Desktop settings toggle) */}
@@ -2210,6 +2227,9 @@ export function AppContent() {
         }}
         activeTab={activeTab}
       />
+
+      {/* Synced lyrics overlay (opens from the player bar or a track's Lyrics button) */}
+      <LyricsViewer />
 
       {/* Immediacy blocker Welcome popup prompt */}
       <WelcomePopup onAccept={() => {}} />
