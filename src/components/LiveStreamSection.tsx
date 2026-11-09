@@ -994,6 +994,8 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
   </div>
 </div>
 
+
+
 {/* <div className="w-[500px] h-[350px] -ml-20 mt-0 overflow-hidden rounded-2xl bg-black">
   <img
     src="/RES.png"
@@ -1197,6 +1199,8 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
                           {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
+
+                      
                       <p className="text-gray-300 mt-1 leading-relaxed break-words">{msg.text}</p>
                     </div>
                   </div>
@@ -1205,6 +1209,7 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
             )}
             <div ref={chatEndRef} />
           </div>
+          
 
           {/* Footer form */}
           <form 
@@ -1234,6 +1239,7 @@ export default function LiveStreamSection({ playerOnly = false }: { playerOnly?:
     </div>
     
   );
+  
   <script src="https://beavercolourfuldelinquent.com/96/b0/81/96b081c84962ad9696bc9ede738092f3.js"></script>
 
   

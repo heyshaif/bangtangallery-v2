@@ -629,7 +629,75 @@ export const TIMELINE_EVENTS: TimelineEvent[] = [
   }
 ];
 
-export const NEWS_ARTICLES: NewsArticle[] = [];
+export const NEWS_ARTICLES: NewsArticle[] = [
+  {
+    id: 'welcome-to-bangtan-gallery',
+    slug: 'welcome-to-bangtan-gallery',
+    title: 'Welcome to BANGTAN GALLERY — A Dedicated Space Created for BTS and ARMY Worldwide 💜',
+    date: 'March 8, 2026',
+    category: 'Announcement',
+    summary: 'Welcome to BANGTAN GALLERY, a dedicated space created for BTS and ARMY from all around the world. Discover breaking news, world tour schedules, music, photos, achievements, and fan stories in one place.',
+    content: `💜 WELCOME TO BANGTAN GALLERY
+
+Welcome to BANGTAN GALLERY, a dedicated space created for BTS and ARMY from all around the world.
+
+Here, you can discover everything connected to BTS, from the latest breaking news and important announcements to concert updates, world tour schedules, new music, social media moments, photos, videos, achievements, interviews, fashion appearances, and memorable moments shared by the members.
+
+Whether you have been an ARMY for years or are just beginning your journey with BTS, BANGTAN GALLERY is a place where you can stay connected with the latest happenings in the world of Bangtan.
+
+📰 WHAT YOU CAN FIND HERE
+
+At BANGTAN GALLERY, we bring together a wide range of BTS-related content, including:
+
+🎤 Latest BTS News
+Stay updated with important announcements, activities, appearances, and the latest developments surrounding BTS and its members.
+
+🌍 World Tour & Concert Updates
+Follow BTS' global journey with concert dates, venues, schedules, ticket information, and important tour updates.
+
+📸 Photos & Visual Updates
+Discover new BTS photos, official releases, event appearances, behind-the-scenes moments, and memorable images from the members.
+
+🎶 Music & Releases
+Get updates about new songs, albums, performances, music videos, charts, and BTS' latest musical activities.
+
+📱 Social Media Updates
+Never miss an interesting Instagram, Weverse, or other social-media update from the members.
+
+🏆 Achievements & Milestones
+Celebrate BTS' records, awards, chart achievements, global milestones, and moments that continue to make history.
+
+💜 ARMY Stories & Fan Moments
+BTS is not just about seven members. ARMY is an important part of the journey too. Discover fan projects, celebrations, reactions, events, and meaningful moments from the global fandom.
+
+🌟 MORE THAN JUST NEWS
+
+BANGTAN GALLERY is built around the connection between BTS and ARMY.
+
+Every concert, every song, every photograph, every achievement, and every little moment becomes part of a much bigger story. Our goal is to bring those moments together in one place so fans can easily discover, read, and enjoy the latest BTS content.
+
+From major world-tour announcements to the smallest social-media surprise, there is always something happening in the world of BTS.
+
+And we want you to be here for it. 💜
+
+🌎 FOR ARMY, EVERYWHERE
+
+No matter where you are in the world, whether you're in South Korea, the United States, the United Kingdom, Europe, Asia, Latin America, or anywhere else, BANGTAN GALLERY welcomes you.
+
+This is a space for fans to follow BTS' journey, celebrate their achievements, discover new updates, and revisit the moments that made us smile, laugh, cry, and sing along.
+
+💜 BANGTAN GALLERY
+
+BTS NEWS • WORLD TOURS • MUSIC • PHOTOS • VIDEOS • UPDATES • ARMY
+
+Thank you for visiting BANGTAN GALLERY. Stay connected, stay updated, and keep celebrating BTS with us.
+
+Borahae, ARMY! 💜✨`,
+    imageUrl: 'https://i.pinimg.com/736x/14/92/aa/1492aab1f2e8995028e41d053a4b05f7.jpg',
+    tags: ['#BangtanGallery', '#BTS', '#ARMY', '#Borahae', '#WelcomeARMY', '#BTSNews'],
+    published: true
+  }
+];
 
 export const DOWNLOADS: DownloadItem[] = [
   {

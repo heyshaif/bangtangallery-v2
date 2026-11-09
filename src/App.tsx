@@ -943,7 +943,7 @@ export function AppContent() {
             {/* Premium Social Links (Telegram, YouTube, Instagram) */}
             <div className="hidden sm:flex items-center gap-2 border-r border-slate-500/20 pr-2">
               <a
-                href={publishedConfig?.socialLinks?.telegram || "https://t.me/bts_bighit"}
+                href={publishedConfig?.socialLinks?.telegram || "https://t.me/arirang_army7"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
@@ -956,7 +956,7 @@ export function AppContent() {
                 <Send className="w-3.5 h-3.5" />
               </a>
               <a
-                href={publishedConfig?.socialLinks?.twitter || "https://twitter.com/bts_bighit"}
+                href={publishedConfig?.socialLinks?.twitter || "https://t.me/arirang_army7"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
@@ -1109,7 +1109,7 @@ export function AppContent() {
                     <Instagram className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   </a>
                   <a
-                    href={publishedConfig?.socialLinks?.twitter || "https://twitter.com/bts_bighit"}
+                    href={publishedConfig?.socialLinks?.twitter || "https://t.me/arirang_army7"}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-8 h-8 rounded-lg bg-white/5 hover:bg-sky-950/40 border border-white/5 hover:border-sky-500/30 flex items-center justify-center text-slate-400 hover:text-sky-400 transition-all group cursor-pointer"
@@ -1118,7 +1118,7 @@ export function AppContent() {
                     <Twitter className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   </a>
                   <a
-                    href={publishedConfig?.socialLinks?.youtube || "https://www.youtube.com/user/BANGTANTV"}
+                    href={publishedConfig?.socialLinks?.youtube || "https://t.me/arirang_army7"}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-8 h-8 rounded-lg bg-white/5 hover:bg-red-950/40 border border-white/5 hover:border-red-500/30 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all group cursor-pointer"
@@ -1145,7 +1145,7 @@ export function AppContent() {
                     <Pin className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   </a>
                   <a
-                    href={publishedConfig?.socialLinks?.telegram || "https://t.me/bts_bighit"}
+                    href={publishedConfig?.socialLinks?.telegram || "https://t.me/arirang_army7"}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-8 h-8 rounded-lg bg-white/5 hover:bg-cyan-950/40 border border-white/5 hover:border-cyan-500/30 flex items-center justify-center text-slate-400 hover:text-cyan-400 transition-all group cursor-pointer"
@@ -1325,7 +1325,7 @@ export function AppContent() {
                       <Instagram className="w-4.5 h-4.5" />
                     </a>
                     <a
-                      href={publishedConfig?.socialLinks?.twitter || "https://twitter.com/bts_bighit"}
+                      href={publishedConfig?.socialLinks?.twitter || "https://t.me/arirang_army7"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-9 h-9 rounded-lg bg-white/5 hover:bg-sky-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-sky-400 transition-all cursor-pointer"
@@ -1334,7 +1334,7 @@ export function AppContent() {
                       <Twitter className="w-4.5 h-4.5" />
                     </a>
                     <a
-                      href={publishedConfig?.socialLinks?.youtube || "https://www.youtube.com/user/BANGTANTV"}
+                      href={publishedConfig?.socialLinks?.youtube || "https://t.me/arirang_army7"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-9 h-9 rounded-lg bg-white/5 hover:bg-red-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all cursor-pointer"
@@ -1361,7 +1361,7 @@ export function AppContent() {
                       <Pin className="w-4.5 h-4.5" />
                     </a>
                     <a
-                      href={publishedConfig?.socialLinks?.telegram || "https://t.me/bts_bighit"}
+                      href={publishedConfig?.socialLinks?.telegram || "https://t.me/arirang_army7"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-9 h-9 rounded-lg bg-white/5 hover:bg-cyan-950/40 border border-white/5 flex items-center justify-center text-slate-400 hover:text-cyan-400 transition-all cursor-pointer"
@@ -2009,7 +2009,7 @@ export function AppContent() {
 
       {/* Floating Ko-fi Me CTA Button (permanently active on bottom-right corner) */}
       {(() => {
-        const kofiUrl = publishedConfig?.footer?.kofiUrl !== undefined ? publishedConfig.footer.kofiUrl : "https://ko-fi.com/shaifsiam";
+        const kofiUrl = publishedConfig?.footer?.kofiUrl !== undefined ? publishedConfig.footer.kofiUrl : "https://ko-fi.com/bangtangallery";
         if (!kofiUrl || kofiUrl.trim() === "") return null;
         return (
           <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 pointer-events-auto">
