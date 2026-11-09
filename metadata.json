@@ -1,0 +1,6 @@
+{
+  "name": "Bangtan Gallery",
+  "description": "The ultimate premium BTS interactive fan experience with media galleries, lyrics, event calendars, and offline settings.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
