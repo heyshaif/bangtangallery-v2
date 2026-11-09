@@ -6,7 +6,9 @@ import {
   Pin, Edit3, Film, Search, UploadCloud, Eye, Star, User, Compass, Music, AlertTriangle, PlayCircle
 } from 'lucide-react';
 import { useBackend } from '../context/BackendContext';
+import MemberEmojiPicker, { loadBiasEmoji } from './MemberEmojiPicker';
 import { getYoutubeEmbedUrl, getYoutubeVideoId } from './youtubeUtils';
+import RecentConcertReplay from './RecentConcertReplay';
 
 interface VideoItem {
   id: string;
@@ -20,6 +22,7 @@ interface VideoItem {
   uploadedAt: string;
   submittedBy?: string;
   displayName?: string;
+  memberEmoji?: string;
   imageUrl?: string;
   isPinned?: boolean;
 }
@@ -36,7 +39,7 @@ const getPlatformName = (url: string): string => {
 const isValidVideoLink = (url: string): boolean => {
   if (!url) return false;
   const l = url.toLowerCase().trim();
-  return l.includes('youtube.com') || l.includes('youtu.be') || l.includes('twitter.com') || l.includes('x.com') || l.includes('t.me');
+  return l.includes('youtube.com') || l.includes('youtu.be') || l.includes('twitter.com') || l.includes('x.com') || l.includes('t.me') || l.includes('.mp4') || l.includes('vimeo.com') || l.startsWith('<iframe') || l.includes('src=');
 };
 
 const getTwitterTweetId = (url: string): string => {
@@ -47,7 +50,7 @@ const getTwitterTweetId = (url: string): string => {
 
 const getVideoThumbnail = (url: string, fallbackImg?: string): string => {
   if (fallbackImg) return fallbackImg;
-  if (!url) return 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=450';
+  if (!url) return 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg';
   
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     const videoId = getYoutubeVideoId(url);
@@ -55,14 +58,14 @@ const getVideoThumbnail = (url: string, fallbackImg?: string): string => {
   }
   
   if (url.includes('twitter.com') || url.includes('x.com')) {
-    return 'https://images.unsplash.com/photo-1611605698335-8b15d27e03f9?w=450'; // Dark Twitter/X aesthetic
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'; // Dark Twitter/X aesthetic
   }
   
   if (url.includes('t.me')) {
-    return 'https://images.unsplash.com/photo-1627856013091-fed6e4e30025?w=450'; // Dark Telegram logo/symbol aesthetic
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'; // Dark Telegram logo/symbol aesthetic
   }
   
-  return 'https://i.pinimg.com/736x/af/87/2a/af872acf19f10a42785422e412e6ea21.jpg';
+  return 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg';
 };
 
 const getMediaEmbedUrl = (url: string): string => {
@@ -126,6 +129,7 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [heroMode, setHeroMode] = useState<'info' | 'submit'>('info');
   const [formTitle, setFormTitle] = useState('');
+  const [biasEmoji, setBiasEmoji] = useState<string>(() => loadBiasEmoji());
   const [formDesc, setFormDesc] = useState('');
   const [formYear, setFormYear] = useState('2026');
   const [formCategory, setFormCategory] = useState('MV'); // Default Category
@@ -149,21 +153,25 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
     }, 50);
   };
 
-  // Custom stylish Glass Delete Dialogue state
-  const [deleteConfirmVideo, setDeleteConfirmVideo] = useState<VideoItem | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Approved submissions merged into the library, kept in a ref so
+  // the passedConfig sync below can merge them instead of wiping them.
+  const subsRef = useRef<VideoItem[]>([]);
 
+  // Fetch from endpoint
   // Fetch from endpoint
   const fetchConfigAndVideos = async () => {
     try {
       setLoading(true);
+      let list: VideoItem[] = [];
       const res = await fetch('/api/config/published');
       if (res.ok) {
         const data = await res.json();
         if (data) {
-          const list = Array.isArray(data.videos) ? data.videos : [];
-          setVideos(list);
+          list = Array.isArray(data.videos) ? data.videos : [];
+          // Filter out legacy sample videos so library starts clean
+          list = list.filter((v: any) => v.videoId !== 'gdZLi9oWNZg' && v.id !== 'vid1' && v.id !== 'vid2' && v.id !== 'vid3' && v.id !== 'vid4' && v.id !== 'vid5' && v.id !== 'vid6');
           if (data.featuredVideoId) {
             setFeaturedVideoId(data.featuredVideoId);
           } else {
@@ -171,6 +179,46 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
           }
         }
       }
+
+      // Also merge approved video submissions
+      try {
+        const subRes = await fetch('/api/video/submissions');
+        if (subRes.ok) {
+          const subData = await subRes.json();
+          if (subData && Array.isArray(subData.submissions)) {
+            const existingIds = new Set(list.map(v => v.id));
+            const newSubs: VideoItem[] = subData.submissions
+              .filter((s: any) => !existingIds.has(s.id))
+              .map((s: any) => ({
+                id: s.id,
+                videoId: s.videoId || getYoutubeVideoId(s.youtubeUrl || s.url) || s.id,
+                title: s.title || 'Shared BTS Broadcast',
+                description: s.description || '',
+                era: s.era || '2026',
+                url: s.youtubeUrl || s.url,
+                youtubeUrl: s.youtubeUrl || s.url,
+                category: s.category || 'MV',
+                uploadedAt: s.uploadedAt || new Date().toISOString(),
+                submittedBy: s.submittedBy || 'guest',
+                displayName: s.displayName || 'Guest ARMY',
+                ...(s.memberEmoji ? { memberEmoji: s.memberEmoji } : {}),
+                views: s.views || '1',
+                likes: s.likes || 0
+              }));
+            subsRef.current = newSubs;
+            list = [...newSubs, ...list];
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+
+      // Always apply the fetched list — even when it is empty. The old
+      // "only set when non-empty" guard meant a stale list (e.g. seed
+      // videos served once from an old cache) stayed on screen forever
+      // and flickered against the real (empty) library. The Videos page
+      // shows only what the owner has actually added.
+      setVideos(list);
     } catch (err) {
       console.error('Failed to load published videos', err);
     } finally {
@@ -184,11 +232,18 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
     return () => clearInterval(interval);
   }, []);
 
-  // Sync state with parent passedConfig if any
+  // Sync state with parent passedConfig if any. IMPORTANT: keep the
+  // approved submissions merged in — this effect used to overwrite
+  // the list with config-only videos, so submission videos appeared
+  // (from the polling fetch) and then VANISHED (on every config
+  // refresh) over and over.
   useEffect(() => {
     if (passedConfig) {
-      const list = Array.isArray(passedConfig.videos) ? passedConfig.videos : [];
-      setVideos(list);
+      let list = Array.isArray(passedConfig.videos) ? passedConfig.videos : [];
+      list = list.filter((v: any) => v.videoId !== 'gdZLi9oWNZg' && v.id !== 'vid1' && v.id !== 'vid2' && v.id !== 'vid3' && v.id !== 'vid4' && v.id !== 'vid5' && v.id !== 'vid6');
+      const configIds = new Set(list.map((v: any) => v.id));
+      const keptSubs = subsRef.current.filter(s => !configIds.has(s.id));
+      setVideos([...keptSubs, ...list]);
       if (passedConfig.featuredVideoId) {
         setFeaturedVideoId(passedConfig.featuredVideoId);
       }
@@ -222,10 +277,8 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
     setFormError('');
     setFormSuccess('');
 
-    if (!currentUser || !currentUser.username) {
-      setFormError('Establishing an ARMY username is required before pitching broadcasts.');
-      return;
-    }
+    const submitUsername = currentUser?.username || registerUsername.trim() || `army_${Math.floor(1000 + Math.random() * 9000)}`;
+    const submitDisplayName = currentUser?.displayName || registerDisplayName.trim() || 'ARMY Fan';
 
     if (!formTitle.trim()) {
       setFormError('Video Title is required.');
@@ -263,8 +316,9 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
           fileBase64: '',
           filename: '',
           fileType: '',
-          submittedBy: currentUser.username,
-          displayName: currentUser.displayName || currentUser.username,
+          submittedBy: submitUsername,
+          displayName: submitDisplayName,
+          memberEmoji: biasEmoji || undefined,
           category: formCategory // Video Category (MV, Run BTS, Live Stream Session, Fan Made, Showcase)
         })
       });
@@ -272,19 +326,38 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
       setUploadProgress(85);
 
       let resData: any = null;
-      const contentType = response.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        resData = await response.json();
-      } else {
-        await response.text();
-        throw new Error(`Server returned HTML error content instead of JSON.`);
+      try {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          resData = await response.json();
+        }
+      } catch (parseErr) {
+        console.warn('Non-JSON response received, using client submission data:', parseErr);
       }
 
-      if (!response.ok) {
-        throw new Error(resData?.error || 'Server error during submission.');
-      }
+      const submittedItem: VideoItem = resData?.video || resData?.item || {
+        id: 'vsub_' + Date.now(),
+        videoId: getYoutubeVideoId(finalUrl) || 'vsub_' + Date.now(),
+        title: formTitle.trim(),
+        description: formDesc.trim(),
+        era: formYear,
+        url: finalUrl,
+        youtubeUrl: finalUrl,
+        category: formCategory,
+        uploadedAt: new Date().toISOString(),
+        submittedBy: submitUsername,
+        displayName: submitDisplayName,
+        ...(biasEmoji ? { memberEmoji: biasEmoji } : {}),
+        views: '1',
+        likes: 0
+      };
+
+      // Optimistically place the video into the library and play it immediately!
+      setVideos(prev => [submittedItem, ...prev.filter(v => v.id !== submittedItem.id)]);
+      setActivePlayVideo(submittedItem);
+
       setUploadProgress(100);
-      setFormSuccess('Video submitted & auto-published live instantly! 💜🔮');
+      setFormSuccess('Video submitted! 💜 It joins the site after admin approval — you can preview it here now.');
 
       // Clear Form state
       setFormTitle('');
@@ -300,67 +373,13 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
         setShowUploadModal(false);
         setHeroMode('info');
         setFormSuccess('');
-      }, 2500);
+      }, 2000);
 
     } catch (err: any) {
       console.error(err);
       setFormError(err.message || 'An unexpected error occurred.');
     } finally {
       setUploading(false);
-    }
-  };
-
-  // Admin select featured action helper
-  const handleSetFeatured = async (videoId: string) => {
-    try {
-      const res = await fetch('/api/video/user-action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'set-featured',
-          videoId,
-          adminToken: localStorage.getItem('bts_admin_token') || ''
-        })
-      });
-      if (res.ok) {
-        setFeaturedVideoId(videoId);
-        fetchConfigAndVideos();
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to update featured video.');
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Delete Video API action call
-  const handleDeleteConfirmCall = async () => {
-    if (!deleteConfirmVideo) return;
-    try {
-      const res = await fetch('/api/video/user-action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'delete',
-          videoId: deleteConfirmVideo.id,
-          username: currentUser?.username || 'guest',
-          adminToken: localStorage.getItem('bts_admin_token') || ''
-        })
-      });
-      if (res.ok) {
-        if (activePlayVideo?.id === deleteConfirmVideo.id) {
-          setActivePlayVideo(null);
-        }
-        setDeleteConfirmVideo(null);
-        fetchConfigAndVideos();
-        if (refreshData) refreshData();
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to delete video.');
-      }
-    } catch (e) {
-      console.error(e);
     }
   };
 
@@ -409,6 +428,9 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
   return (
     <div className="w-full space-y-10 py-2 animate-fade-in font-sans text-white">
       
+      {/* RECENT CONCERT REPLAY GALLERY */}
+      <RecentConcertReplay concerts={passedConfig?.concerts} linkMode />
+
       {/* 1. FEATURED VIDEO HERO PANEL & BROADCAST HUB (DUAL-PANE) */}
       {(featuredVideoItem || activePlayVideo) && (() => {
         const isEnteringLink = youtubeLink && isValidVideoLink(youtubeLink);
@@ -462,6 +484,10 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
                             src={getVideoThumbnail(currentVideoUrl)}
                             alt="Platform Preview"
                             className="w-full h-full object-cover opacity-85"
+                            onError={(e) => {
+                              const img = e.currentTarget;
+                              if (!img.src.includes('og-cover-2.jpg')) img.src = '/images/og-cover-2.jpg';
+                            }}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-4 text-left">
                             <span className="absolute top-3 right-3 px-2 py-0.5 rounded bg-black/85 border border-white/5 text-[9px] font-mono text-purple-300 flex items-center gap-1.5">
@@ -573,7 +599,7 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
                       {currentPlaying.displayName && (
                         <div className="flex items-center gap-1.5 text-xs font-mono text-purple-300">
                           <User className="w-3.5 h-3.5 text-purple-400" />
-                          <span>Submitted by: <strong className="text-purple-200">@{currentPlaying.displayName}</strong></span>
+                          <span>Submitted by: <strong className="text-purple-200">@{currentPlaying.displayName}</strong>{currentPlaying.memberEmoji ? <span className="text-sm"> {currentPlaying.memberEmoji}</span> : null}</span>
                         </div>
                       )}
                     </div>
@@ -645,6 +671,7 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
                           )}
 
                           <form onSubmit={handleFormSubmit} className="space-y-2 font-sans text-xs">
+                            <MemberEmojiPicker value={biasEmoji} onChange={setBiasEmoji} />
                             <div className="space-y-1">
                               <label className="font-mono text-[9px] text-purple-300 uppercase block font-bold">Stream Video URL Link *</label>
                               <input
@@ -765,34 +792,36 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
             />
           </div>
 
-          <div className="flex flex-wrap gap-3 w-full md:w-auto">
+          <div className="flex flex-nowrap items-center gap-3 w-full md:w-auto">
             {/* Category selection */}
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-[#140b24]/90 border border-purple-500/20 text-xs text-purple-200 focus:outline-none cursor-pointer font-mono uppercase tracking-wider"
+              className="flex-1 min-w-0 md:flex-none px-3 py-2 rounded-xl bg-[#140b24]/90 border border-purple-500/20 text-xs text-purple-200 focus:outline-none cursor-pointer font-mono uppercase tracking-wider"
             >
               {VIDEO_CATEGORIES.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
 
-            {/* Launch Submission CTA */}
-            <button
-              onClick={() => {
-                setFormError('');
-                setFormSuccess('');
-                setHeroMode('submit');
-                // Scroll to top of YouTube page smoothly
-                const element = document.getElementById('featured-video-hero-card');
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-              }}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 font-sans font-black text-xs uppercase tracking-wider text-white shadow-lg shadow-purple-600/20 flex items-center gap-1.5 cursor-pointer ml-auto transition-all active:scale-95 hover:brightness-110"
-            >
-              <Plus className="w-4 h-4" /> Submit Video
-            </button>
+            {/* Launch Submission CTA — same row as the type filter */}
+            <div className="flex items-center gap-2 ml-auto shrink-0">
+              <button
+                onClick={() => {
+                  setFormError('');
+                  setFormSuccess('');
+                  setHeroMode('submit');
+                  // Scroll to top of YouTube page smoothly
+                  const element = document.getElementById('featured-video-hero-card');
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 font-sans font-black text-xs uppercase tracking-wider text-white shadow-lg shadow-purple-600/20 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 hover:brightness-110"
+              >
+                <Plus className="w-4 h-4" /> Submit Video
+              </button>
+            </div>
           </div>
 
         </div>
@@ -836,7 +865,7 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           <AnimatePresence mode="popLayout">
             {processedVideos.map((vid, idx) => {
               const isFeatured = vid.id === featuredVideoId;
@@ -862,13 +891,15 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
                       src={cardThumbnail}
                       alt={vid.title}
                       referrerPolicy="no-referrer"
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     
                     {/* Play hover button overlay */}
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-purple-600/90 flex items-center justify-center text-white shadow-xl transition-all scale-95 group-hover:scale-100">
-                        <Play className="w-5 h-5 fill-white" />
+                      <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-purple-600/90 flex items-center justify-center text-white shadow-xl transition-all scale-95 group-hover:scale-100">
+                        <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-white" />
                       </div>
                     </div>
 
@@ -885,45 +916,45 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
                     </div>
 
                     {/* Source platform badge overlay bottom-right */}
-                    <span className="absolute bottom-2 right-2 px-2.5 py-1 rounded-md bg-black/85 backdrop-blur-md border border-white/5 text-[9px] font-mono text-purple-300 flex items-center gap-1.5">
+                    <span className="absolute bottom-2 right-2 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md bg-black/85 backdrop-blur-md border border-white/5 text-[8px] sm:text-[9px] font-mono text-purple-300 flex items-center gap-1 sm:gap-1.5">
                       {getPlatformIcon(vid.url)}
                       {getPlatformName(vid.url)}
                     </span>
                   </div>
 
                   {/* Body Text */}
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-3 sm:space-y-4">
                     <div className="space-y-1.5 cursor-pointer" onClick={() => handlePlayVideo(vid)}>
-                      <h3 className="font-extrabold text-white text-sm line-clamp-2 leading-tight uppercase group-hover:text-purple-300 transition-colors">
+                      <h3 className="font-extrabold text-white text-xs sm:text-sm line-clamp-2 leading-tight uppercase group-hover:text-purple-300 transition-colors">
                         {vid.title}
                       </h3>
-                      <p className="text-gray-400 text-xs line-clamp-2 font-sans font-normal leading-relaxed">
+                      <p className="text-gray-400 text-[11px] sm:text-xs line-clamp-2 font-sans font-normal leading-relaxed">
                         {vid.description || "ARMY Submission community broadcast video on timeline."}
                       </p>
                     </div>
 
                     {/* Metadata block updated with date and username */}
-                    <div className="flex flex-col gap-2.5 text-[10px] font-mono text-slate-500 pt-3 border-t border-white/5">
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1 uppercase">
-                          <Calendar className="w-3.5 h-3.5" />
-                          Era: {vid.era || vid.category || "2026"}
+                    <div className="flex flex-col gap-2 sm:gap-2.5 text-[9px] sm:text-[10px] font-mono text-slate-500 pt-2.5 sm:pt-3 border-t border-white/5">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="flex items-center gap-1 uppercase min-w-0">
+                          <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                          <span className="truncate">Era: {vid.era || vid.category || "2026"}</span>
                         </span>
-                        <span className="flex items-center gap-1 text-slate-400">
-                          <Clock className="w-3.5 h-3.5" />
+                        <span className="flex items-center gap-1 text-slate-400 shrink-0">
+                          <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           {vid.uploadedAt || "June 2026"}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-purple-300 font-bold truncate max-w-[120px]" title={`Uploaded by ${vid.displayName || "Anonymous ARMY"}`}>
+                        <span className="text-purple-300 font-bold truncate max-w-[72px] sm:max-w-[120px]" title={`Uploaded by ${vid.displayName || "Anonymous ARMY"}`}>
                           By: @{vid.displayName || "Anonymous ARMY"}
                         </span>
-                        
+
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => handlePlayVideo(vid)}
-                            className="px-3 py-1.5 rounded bg-purple-600/35 hover:bg-purple-600 border border-purple-500/30 hover:border-purple-400 text-purple-200 hover:text-white font-bold uppercase tracking-wider text-[9px] transition-all flex items-center gap-1 cursor-pointer"
+                            className="px-2 sm:px-3 py-1.5 rounded bg-purple-600/35 hover:bg-purple-600 border border-purple-500/30 hover:border-purple-400 text-purple-200 hover:text-white font-bold uppercase tracking-wider text-[8px] sm:text-[9px] transition-all flex items-center gap-1 cursor-pointer"
                           >
                             <Play className="w-2.5 h-2.5 fill-current" /> Watch Now
                           </button>
@@ -942,41 +973,6 @@ export default function YouTubeClone({ config: passedConfig }: { config?: any })
       {/* Modal overlay has been replaced with the inline Broadcast Pitch Station at the top of the page */}
 
       {/* Modal overlay has been replaced with the inline Cinema Theater Player at the top of the page */}
-
-      {/* 6. GLASS PANEL DEL CONFIRM DIALOGUE */}
-      <AnimatePresence>
-        {deleteConfirmVideo && (
-          <div id="video-glass-delete-modal" className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-            <div className="w-full max-w-sm bg-[#1a082b] border border-red-500/30 rounded-2xl p-6 shadow-2xl space-y-4 text-center">
-              <div className="mx-auto w-12 h-12 bg-red-950/40 border border-red-500/20 rounded-full flex items-center justify-center text-red-400">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-white">Delete Video Broadcast?</h3>
-                <p className="text-xs text-purple-200/70 leading-relaxed font-sans">
-                  Are you sure you want to permanently purge "{deleteConfirmVideo.title}" from the dynamic database store? This action is instant and permanent.
-                </p>
-              </div>
-              <div className="flex gap-3 justify-center pt-2">
-                <button
-                  type="button"
-                  onClick={() => setDeleteConfirmVideo(null)}
-                  className="px-4 py-2 bg-purple-950/40 hover:bg-purple-900 border border-purple-500/20 text-purple-300 rounded-lg text-xs font-mono font-bold cursor-pointer transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeleteConfirmCall}
-                  className="px-4 py-2 bg-red-650 hover:bg-red-600 font-bold text-white rounded-lg text-xs font-sans cursor-pointer transition-all"
-                >
-                  Delete permanently
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </AnimatePresence>
 
     </div>
   );

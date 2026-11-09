@@ -3,10 +3,34 @@ export function getYoutubeEmbedUrl(input: string): string {
   const trimmed = input.trim();
   
   // 1. Check if it's a full iframe tag
-  if (trimmed.startsWith('<iframe')) {
-    const srcMatch = trimmed.match(/src="([^"]+)"/);
+  if (trimmed.startsWith('<iframe') || trimmed.includes('<iframe')) {
+    const srcMatch = trimmed.match(/src=["']([^"']+)["']/i);
     if (srcMatch && srcMatch[1]) {
-      return srcMatch[1];
+      return getYoutubeEmbedUrl(srcMatch[1]);
+    }
+  }
+
+  // 1b. Detect YouTube Channel Live URL (e.g. youtube.com/channel/CHANNEL_ID/live or youtube.com/channel/CHANNEL_ID)
+  const channelMatch = trimmed.match(/youtube\.com\/channel\/([a-zA-Z0-9_\-]+)/i);
+  if (channelMatch && channelMatch[1]) {
+    return `https://www.youtube.com/embed/live_stream?channel=${channelMatch[1]}`;
+  }
+
+  // 1c. Detect YouTube Handle Live URL (e.g. youtube.com/@BANGTANTV/live)
+  const handleMatch = trimmed.match(/youtube\.com\/@([a-zA-Z0-9_\-]+)/i);
+  if (handleMatch && handleMatch[1]) {
+    if (handleMatch[1].toLowerCase() === 'bangtantv') {
+      return `https://www.youtube.com/embed/live_stream?channel=UC3IZKseVpdzPSBaWxBxundA`;
+    }
+    return `https://www.youtube.com/embed?listType=user_uploads&list=${handleMatch[1]}`;
+  }
+
+  // 1d. Detect YouTube Live URL (e.g. youtube.com/live/VIDEO_ID)
+  if (trimmed.includes('youtube.com/live/') || trimmed.includes('/live/')) {
+    const liveMatch = trimmed.match(/\/live\/([a-zA-Z0-9_\-]+)/);
+    const videoId = liveMatch ? liveMatch[1] : '';
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
     }
   }
 

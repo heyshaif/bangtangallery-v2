@@ -9,6 +9,7 @@ export interface Member {
   fullName: string;
   portraitUrl: string;
   bannerUrl: string;
+  cardCoverUrl?: string;
   biography: string;
   birthday: string;
   age: number;
@@ -34,6 +35,7 @@ export interface Member {
   tiktokUrl?: string;
   spotifyUrl?: string;
   weverseUrl?: string;
+  weversePicUrl?: string;
   twitterUrl?: string;
   websiteUrl?: string;
   introductionText?: string;
@@ -58,6 +60,8 @@ export interface Track {
   appleMusicUrl?: string;
   soundCloudUrl?: string;
   customExternalUrl?: string;
+  isSpotlight?: boolean;
+  isPinned?: boolean;
 }
 
 export interface Album {
@@ -89,7 +93,7 @@ export interface GalleryItem {
   id: string;
   url: string;
   title: string;
-  category: 'BTS' | 'RM' | 'Jin' | 'SUGA' | 'j-hope' | 'Jimin' | 'V' | 'Jung Kook' | 'Concert' | 'Festa' | 'Fan Art';
+  category: 'BTS' | 'RM' | 'Jin' | 'SUGA' | 'j-hope' | 'Jimin' | 'V' | 'Jung Kook' | 'Concert' | 'Festa' | 'Fan Art' | 'Memes';
 }
 
 export interface TimelineEvent {
@@ -98,6 +102,12 @@ export interface TimelineEvent {
   title: string;
   description: string;
   category: 'Debut' | 'Albums' | 'Awards' | 'Tours' | 'Military' | 'Solo Era' | 'Comebacks';
+}
+
+export interface ArticleLink {
+  id?: string;
+  label: string;
+  url: string;
 }
 
 export interface NewsArticle {
@@ -113,6 +123,8 @@ export interface NewsArticle {
   seoDescription?: string;
   featuredImage?: string;
   published?: boolean;
+  gallery?: string[];
+  links?: ArticleLink[];
 }
 
 export interface DownloadItem {
@@ -151,7 +163,7 @@ export interface FAQItem {
 }
 
 export interface UserPreferences {
-  theme: 'dark' | 'light' | 'system';
+  theme: 'dark' | 'light' | 'system' | 'arirang';
   accentColor: 'indigo' | 'purple' | 'crimson' | 'violet' | 'amber';
   animationsEnabled: boolean;
   fontSize: 'sm' | 'base' | 'lg' | 'xl';
@@ -199,5 +211,66 @@ export interface SpotifyEmbed {
   url: string;
   color: string;
   order: number;
+}
+
+export interface ConcertReplay {
+  id: string;
+  title: string;
+  slug: string;
+  shortDescription: string;
+  fullDescription?: string;
+  partNumber?: string;
+  location?: string;
+  date?: string;
+  category?: string;
+  tags?: string[];
+  coverUrl: string;
+  coverAltText?: string;
+  videoUrl: string;
+  videoStorageRef?: string;
+  videoFileName?: string;
+  videoFileSize?: string;
+  videoDuration?: string;
+  videoQuality?: '4K' | '1080p' | '720p';
+  watchNowEnabled?: boolean;
+  watchNowText?: string;
+  videoPosterUrl?: string;
+  downloadEnabled?: boolean;
+  downloadText?: string;
+  telegramDownloadUrl: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  socialShareImage?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  twitterCardImage?: string;
+  published: boolean;
+  isFeatured?: boolean;
+  displayOrder?: number;
+}
+
+export interface MusicSubmission {
+  id: string;
+  youtubeUrl: string;
+  title: string;
+  thumbnailUrl: string;
+  artist?: string;
+  album?: string;
+  submittedBy?: string;
+  submittedAt: string;
+  status: 'pending' | 'approved' | 'rejected';
+  notes?: string;
+}
+
+export interface VideoSubmission {
+  id: string;
+  youtubeUrl: string;
+  title: string;
+  thumbnailUrl: string;
+  category?: string;
+  description?: string;
+  submittedBy?: string;
+  submittedAt: string;
+  status: 'pending' | 'approved' | 'rejected';
 }
 

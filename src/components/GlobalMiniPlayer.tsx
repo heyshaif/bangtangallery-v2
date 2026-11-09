@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAudioPlayer } from '../context/AudioPlayerContext';
 import { 
   Play, Pause, SkipForward, SkipBack, Music, Volume2, VolumeX, 
-  Sparkles, X, ChevronDown, ChevronUp, Shuffle, RotateCcw, Maximize2 
+  Sparkles, X, ChevronDown, ChevronUp, Shuffle, RotateCcw, Maximize2, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -42,7 +42,9 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
     setVolume,
     toggleMute,
     toggleShuffle,
-    toggleRepeat
+    toggleRepeat,
+    playbackError,
+    openLyrics,
   } = useAudioPlayer();
 
   // Local Storage states for player presentation choice
@@ -157,6 +159,21 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Lyrics (only when the current track has lyrics text) */}
+            {currentTrack.lyrics && currentTrack.lyrics.trim() !== '' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openLyrics(currentTrack);
+                }}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-purple-300 hover:text-white hover:bg-purple-500/20 border border-purple-500/25 transition-all cursor-pointer"
+                title="View lyrics"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-bold uppercase tracking-wide">Lyrics</span>
+              </button>
+            )}
+
             {/* Toggle Minimize/Maximize Mode */}
             <button
               onClick={() => setIsMinimized(!isMinimized)}
@@ -206,6 +223,11 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
                 <p className="text-[10px] text-purple-300/80 truncate font-mono mt-0.5">
                   {currentTrack.artist || 'BTS'}
                 </p>
+                {playbackError && (
+                  <p className="text-[10px] text-red-400 font-sans mt-0.5 leading-snug">
+                    ⚠ {playbackError}
+                  </p>
+                )}
               </div>
             </div>
 

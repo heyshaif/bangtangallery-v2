@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Album, Track } from '../types';
 import { ALBUMS } from '../data/btsData';
+import { resolvePlayableMediaUrl } from '../utils/mediaStore';
 
 export interface QueueItem {
   track: Track;
@@ -40,23 +41,16 @@ interface AudioPlayerContextType {
   clearQueue: () => void;
   startPlayingFirstTime: () => void;
   setWholeQueue: (items: QueueItem[], index: number) => void;
+  spotifyPanelActive: boolean;
+  setSpotifyPanelActive: (active: boolean) => void;
+  playbackError: string | null;
+  lyricsTrack: Track | null;
+  openLyrics: (track: Track) => void;
+  closeLyrics: () => void;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
 
-// A list of reliable educational instrumental streams wrapping securely
-const AUDIO_URLS = [
-  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
-  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
-  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
-  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
-  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',
-  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3',
-];
 
 // Flat list of all tracks to build initial default queue
 const ALL_TRACKS: QueueItem[] = ALBUMS.flatMap(album => 
@@ -75,13 +69,29 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
   const [isShuffle, setIsShuffle] = useState<boolean>(false);
   const [isRepeat, setIsRepeat] = useState<'none' | 'one' | 'all'>('all');
   const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [spotifyPanelActive, setSpotifyPanelActive] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [lyricsTrack, setLyricsTrack] = useState<Track | null>(null);
+  const openLyrics = (track: Track) => setLyricsTrack(track);
+  const closeLyrics = () => setLyricsTrack(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Initialize Audio element
   useEffect(() => {
     audioRef.current = new Audio();
+    // A track whose audio file is missing (dead path, deleted file)
+    // used to fail silently — the bar just sat there. Surface it.
+    const el = audioRef.current;
+    const onErr = () => {
+      setIsPlaying(false);
+      setPlaybackError('This track could not be played — its audio file is missing or unavailable.');
+    };
+    const onOk = () => setPlaybackError(null);
+    el.addEventListener('error', onErr);
+    el.addEventListener('playing', onOk);
+    el.addEventListener('canplay', onOk);
     
     // Attempt local storage volume recovery
     const savedVol = localStorage.getItem('bts_player_volume');
@@ -118,7 +128,7 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
                     title: album.title || 'Custom Album',
                     artist: album.artist || 'BTS',
                     year: album.year || '2026',
-                    coverUrl: album.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'
+                    coverUrl: album.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
                   }
                 }));
               })
@@ -138,7 +148,7 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
                   title: track.album || 'Digital Archive',
                   artist: track.artist || 'BTS',
                   year: track.genre || '2026',
-                  coverUrl: track.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'
+                  coverUrl: track.coverUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
                 }
               }))
             : [];
@@ -210,15 +220,19 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
     }
 
     const contextIsPlaying = isPlaying;
-    audioRef.current.src = audioUrl;
-    audioRef.current.load();
+    resolvePlayableMediaUrl(audioUrl).then((resolved) => {
+      if (!audioRef.current) return;
+      const finalSrc = resolved || audioUrl;
+      audioRef.current.src = finalSrc;
+      audioRef.current.load();
 
-    if (contextIsPlaying) {
-      audioRef.current.play().catch(err => {
-        console.log('Autoplay blocked initially or source changed', err);
-        setIsPlaying(false);
-      });
-    }
+      if (contextIsPlaying) {
+        audioRef.current.play().catch(err => {
+          console.log('Autoplay blocked initially or source changed', err);
+          setIsPlaying(false);
+        });
+      }
+    });
 
     // Set duration from track meta as fallback first
     const parts = (currentTrack?.duration || '').split(':');
@@ -281,18 +295,29 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
 
     if (startPlaying) {
       setIsPlaying(true);
-      setTimeout(() => {
-        if (audioRef.current) {
-          audioRef.current.play().catch(() => {
-            setIsPlaying(false);
-          });
-        }
-      }, 50);
+      // Spotify-only tracks play through the embed inside the bottom
+      // bar; the <audio> element has no source for them, so don't try.
+      if (track.audioUrl) {
+        setTimeout(() => {
+          if (audioRef.current) {
+            audioRef.current.play().catch(() => {
+              setIsPlaying(false);
+            });
+          }
+        }, 50);
+      }
     }
   };
 
   const togglePlay = () => {
     if (!audioRef.current) return;
+
+    // Spotify-only track: playback lives in the bar's Spotify embed,
+    // so the play/pause state simply shows or hides that embed.
+    if (currentTrack && !currentTrack.audioUrl && currentTrack.spotifyUrl) {
+      setIsPlaying(!isPlaying);
+      return;
+    }
     
     // If no track is currently loaded, pick the first track
     if (!currentTrack && queue.length > 0) {
@@ -530,6 +555,12 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
         clearQueue,
         startPlayingFirstTime,
         setWholeQueue,
+        spotifyPanelActive,
+        setSpotifyPanelActive,
+        playbackError,
+        lyricsTrack,
+        openLyrics,
+        closeLyrics,
       }}
     >
       {children}

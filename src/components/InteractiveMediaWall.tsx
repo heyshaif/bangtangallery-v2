@@ -15,91 +15,57 @@ interface WeversePost {
 
 interface InteractiveMediaWallProps {
   config?: any;
+  feed?: any[];
+  members?: any[];
   onTileClick?: (tab: string, payload?: any) => void;
 }
 
-export default function InteractiveMediaWall({ config, onTileClick }: InteractiveMediaWallProps) {
+const MEMBER_EMOJI: Record<string, string> = {
+  rm: '🐨', jin: '🐹', suga: '🐱', jhope: '🐿️', jimin: '🐥', v: '🐯', jungkook: '🐰', bts: '💜'
+};
+
+export default function InteractiveMediaWall({ config, feed, members, onTileClick }: InteractiveMediaWallProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [selectedPost, setSelectedPost] = useState<WeversePost | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<any | null>(null);
 
-  const defaultWeversePosts: WeversePost[] = [
-    {
-      id: 'rm',
-      name: 'RM',
-      profileImg: 'https://i.pinimg.com/736x/54/2c/1f/542c1f883a3bd13ec106c26648607235.jpg',
-      postText: " Update soonn.....",
-      postImg: 'https://i.pinimg.com/736x/dc/a4/a4/dca4a4ad7f703a8380788969d050c25a.jpg',
-      weverseLink: 'https://weverse.io/bts/artist/rm',
-      emoji: '🐨'
-    },
-    {
-      id: 'jin',
-      name: 'Jin',
-      profileImg: 'https://i.pinimg.com/736x/71/1d/ef/711def665b44d2a7cc6fb87c05c67d21.jpg',
-      postText: "Update soonn.....",
-      postImg: 'https://i.pinimg.com/736x/32/10/17/321017f47febbd9b6a2f268f2e65caee.jpg',
-      weverseLink: 'https://weverse.io/bts/artist/jin',
-      emoji: '🐹'
-    },
-    {
-      id: 'suga',
-      name: 'SUGA',
-      profileImg: 'https://i.pinimg.com/736x/8e/a1/97/8ea19755ac88dbb212fa0cd1a520b1ca.jpg',
-      postText: "Update soonn.....",
-      postImg: 'https://i.pinimg.com/736x/8e/a1/97/8ea19755ac88dbb212fa0cd1a520b1ca.jpg',
-      weverseLink: 'https://weverse.io/bts/artist/suga',
-      emoji: '🐱'
-    },
-    {
-      id: 'jhope',
-      name: 'j-hope',
-      profileImg: 'https://i.pinimg.com/736x/fa/64/15/fa6415c33f4e45d96d40178b26749ece.jpg',
-      postText: "Update soonn.....",
-      postImg: 'https://i.pinimg.com/736x/fa/64/15/fa6415c33f4e45d96d40178b26749ece.jpg',
-      weverseLink: 'https://weverse.io/bts/artist/j-hope',
-      emoji: '🐿️'
-    },
-    {
-      id: 'jimin',
-      name: 'Jimin',
-      profileImg: 'https://i.pinimg.com/736x/95/ae/24/95ae248bf13dcb912809e3a34e05210f.jpg',
-      postText: "Update soonn.....",
-      postImg: 'https://i.pinimg.com/736x/95/ae/24/95ae248bf13dcb912809e3a34e05210f.jpg',
-      weverseLink: 'https://weverse.io/bts/artist/jimin',
-      emoji: '🐥'
-    },
-    {
-      id: 'v',
-      name: 'V',
-      profileImg: 'https://i.pinimg.com/736x/c7/e4/22/c7e42240811e1cb8f07dd0f441da8c69.jpg',
-      postText: "",
-      postImg: 'https://i.pinimg.com/736x/9b/53/17/9b5317c9c0cb29b7ffac7b079012f0ab.jpg',
-      weverseLink: 'https://weverse.io/bts/artist/v',
-      emoji: '🐯'
-    },
-    {
-      id: 'jungkook',
-      name: 'Jung Kook',
-      profileImg: 'https://i.pinimg.com/736x/8d/c6/46/8dc64647c2f6fc97396735d3c19e4ee8.jpg',
-      postText: "Update soonn.....",
-      postImg: 'https://i.pinimg.com/1200x/6d/bc/fb/6dbcfb6318a367e5295818a308740a2a.jpg',
-      weverseLink: 'https://weverse.io/bts/artist/jungkook',
-      emoji: '🐰'
-    },
-    {
-      id: 'bts',
-      name: 'BTS Group',
-      profileImg: 'https://i.pinimg.com/1200x/01/c4/58/01c4582f586e3be1514f4875b2a2b944.jpg',
-      postText: "We had only seven. But we have you all now. Thank you for walking this bulletproof path with us! Borahae! ⟭⟬⁷",
-      postImg: 'https://i.pinimg.com/1200x/01/c4/58/01c4582f586e3be1514f4875b2a2b944.jpg',
-      weverseLink: 'https://weverse.io/bts/feed',
-      emoji: '💜'
-    }
-  ];
+  const memberList: any[] = Array.isArray(members) ? members : [];
+  const findMember = (memberId?: string) =>
+    memberList.find((mm: any) => (mm?.id || '').toLowerCase() === (memberId || '').toLowerCase());
 
-  const weversePosts: WeversePost[] = (config && Array.isArray(config) && config.length > 0)
-    ? config
-    : defaultWeversePosts;
+  // Owner cleanup: the template's built-in "default" Weverse posts used
+  // INVENTED quotes presented as the members' words — removed. The wall
+  // shows ONLY posts the owner actually published: the quick-add feed
+  // (Admin Panel -> Weverse Posts CMS) first, then any filled legacy
+  // slots. Empty slots are skipped.
+  const legacyPosts: WeversePost[] = (config && Array.isArray(config) ? config : [])
+    .filter((p: any) => p && typeof p.postText === 'string' && p.postText.trim().length > 0);
+
+  const feedPosts: WeversePost[] = (Array.isArray(feed) ? feed : [])
+    .filter((p: any) => p && typeof p.text === 'string' && p.text.trim().length > 0)
+    .slice()
+    .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0))
+    .map((p: any) => {
+      const m = findMember(p.memberId);
+      return {
+        id: p.id,
+        name: p.name || m?.name || m?.stageName || 'BTS',
+        profileImg: m?.weversePicUrl || m?.portraitUrl || '',
+        postText: p.text,
+        postImg: p.imageUrl || m?.bannerUrl || m?.weversePicUrl || '',
+        weverseLink: p.link || '',
+        emoji: p.emoji || MEMBER_EMOJI[(p.memberId || '').toLowerCase()] || '',
+        customDate: p.date || undefined
+      } as WeversePost;
+    });
+
+  const weversePosts: WeversePost[] = [...feedPosts, ...legacyPosts];
+
+  // Owner instruction (2026-11-06): while there are no posts yet, the
+  // wall shows the members' Weverse profiles as cover cards ("apatoto
+  // profile tai cover e thakbe"). As soon as the owner adds a post, the
+  // post cards above take over and tapping one opens the post.
+  const showProfiles = weversePosts.length === 0 && memberList.length > 0;
 
   const handleScroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
@@ -117,7 +83,15 @@ export default function InteractiveMediaWall({ config, onTileClick }: Interactiv
   };
 
   function getPostDate(post: WeversePost): string {
-    if (post.customDate) return post.customDate;
+    if (post.customDate) {
+      // Quick-add dates arrive as YYYY-MM-DD — show them readably.
+      const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(post.customDate);
+      if (iso) {
+        const d = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+      return post.customDate;
+    }
     const dates: Record<string, string> = {
       rm: 'Jul 05, 2026',
       jin: 'Jul 04, 2026',
@@ -158,7 +132,7 @@ export default function InteractiveMediaWall({ config, onTileClick }: Interactiv
             Latest Weverse Posts <Flame className="w-5 h-5 text-red-500 animate-pulse" />
           </h2>
           <p className="text-gray-400 text-xs mt-1 md:max-w-xl">
-            Real-time interactive fan portal streams directly from the official septet profiles and BTS group feed.
+            The members' Weverse profiles — plus their latest posts, shared here by the site owner from Weverse.
           </p>
         </div>
         
@@ -200,6 +174,59 @@ export default function InteractiveMediaWall({ config, onTileClick }: Interactiv
             scrollbarColor: 'rgba(168,85,247,0.3) transparent'
           }}
         >
+          {showProfiles && memberList.map((m: any, index: number) => (
+            <motion.div
+              key={`profile-${m.id}`}
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.05 }}
+              whileHover={{
+                scale: 1.03,
+                y: -6,
+                transition: { duration: 0.25, ease: 'easeOut' }
+              }}
+              onClick={() => setSelectedProfile(m)}
+              className="group relative rounded-2xl border border-white/10 overflow-hidden flex flex-col justify-end h-[280px] cursor-pointer w-[280px] sm:w-[320px] shrink-0 snap-start transition-all duration-300 hover:border-purple-500/50 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]"
+            >
+              {/* Member's own cover banner as the card cover */}
+              <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl pointer-events-none">
+                <img
+                  src={m.weversePicUrl || m.portraitUrl || m.bannerUrl}
+                  alt={`${m.name || m.stageName} Weverse profile cover`}
+                  loading="lazy"
+                  className="w-full h-full object-cover opacity-60 transition-transform duration-500 ease-in-out group-hover:scale-110"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+
+              <div className="relative z-10 p-5 flex flex-col items-start w-full bg-gradient-to-t from-black/85 via-black/30 to-transparent pt-10">
+                <div className="flex items-center gap-2 mb-1">
+                  {(m.weversePicUrl || m.portraitUrl) && (
+                    <img
+                      src={m.weversePicUrl || m.portraitUrl}
+                      alt={m.name || m.stageName}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-[#2ee6a8]/70 shrink-0 shadow-md"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                  <div className="flex items-center gap-1">
+                    <h4 className="font-sans font-black text-xs text-white tracking-wide flex items-center gap-1 leading-none">
+                      {m.name || m.stageName} <span className="text-xs shrink-0">{MEMBER_EMOJI[(m.id || '').toLowerCase()] || ''}</span>
+                    </h4>
+                    <span className="inline-flex items-center justify-center text-[#2ee6a8] shrink-0" title="Weverse Profile">
+                      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[11px] text-zinc-300/90 font-mono mt-1 block">
+                  Weverse Profile • Tap to open
+                </span>
+              </div>
+            </motion.div>
+          ))}
           {weversePosts.map((post, index) => (
             <motion.div
               key={post.id}
@@ -281,7 +308,9 @@ export default function InteractiveMediaWall({ config, onTileClick }: Interactiv
 
       <div className="text-center mt-6 relative z-10">
         <span className="text-[9px] font-mono text-purple-400 py-1 px-3 border border-purple-500/20 bg-purple-950/20 rounded-full tracking-wider uppercase">
-          🔮 Swipe or use controls above to navigate Weverse posts • Tap any card to open premium interactive view 🌠
+          {showProfiles
+            ? '💜 Tap a member card to open their Weverse profile • Posts added in the Admin Panel appear here automatically'
+            : '🔮 Swipe or use controls above to navigate Weverse posts • Tap any card to open premium interactive view 🌠'}
         </span>
       </div>
 
@@ -387,6 +416,105 @@ export default function InteractiveMediaWall({ config, onTileClick }: Interactiv
                     </a>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Weverse Profile Modal (shown while there are no posts yet) */}
+      <AnimatePresence>
+        {selectedProfile && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedProfile(null)}
+              className="absolute inset-0 bg-black/85 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg bg-[#120a2c] border border-white/10 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(168,85,247,0.3)] z-10 max-h-[90vh] overflow-y-auto"
+            >
+              <button
+                onClick={() => setSelectedProfile(null)}
+                className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 hover:bg-black/80 text-zinc-400 hover:text-white border border-white/10 transition-all duration-200 cursor-pointer hover:scale-110"
+                aria-label="Close profile"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Cover = the member's Weverse profile photo itself
+                  (owner rule: profile pic and cover pic are the same) */}
+              <div className="w-full h-[220px] relative overflow-hidden bg-black">
+                <img
+                  src={selectedProfile.weversePicUrl || selectedProfile.portraitUrl || selectedProfile.bannerUrl}
+                  alt={`${selectedProfile.name || selectedProfile.stageName} cover`}
+                  className="w-full h-full object-cover opacity-70"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#120a2c] via-transparent to-transparent" />
+              </div>
+
+              <div className="p-6 pt-0 -mt-10 relative">
+                <div className="flex items-end gap-3 mb-3">
+                  {(selectedProfile.weversePicUrl || selectedProfile.portraitUrl) && (
+                    <img
+                      src={selectedProfile.weversePicUrl || selectedProfile.portraitUrl}
+                      alt={selectedProfile.name || selectedProfile.stageName}
+                      className="w-20 h-20 rounded-full object-cover border-2 border-[#2ee6a8] shadow-lg shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                  <div className="pb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-sans font-black text-xl text-white tracking-wide">
+                        {selectedProfile.name || selectedProfile.stageName}
+                      </span>
+                      <span className="text-base">{MEMBER_EMOJI[(selectedProfile.id || '').toLowerCase()] || ''}</span>
+                      <span className="inline-flex items-center justify-center text-[#2ee6a8]" title="Weverse Profile">
+                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                        </svg>
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-[#2ee6a8] font-mono block leading-none mt-1 uppercase tracking-wider">
+                      Official Weverse Account
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  {selectedProfile.name || selectedProfile.stageName}'s Weverse profile. New posts the owner adds from the Admin Panel will appear on this wall and on the member's profile page.
+                </p>
+
+                <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                  {selectedProfile.weverseUrl && (
+                    <a
+                      href={selectedProfile.weverseUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 flex-1 py-3 px-4 bg-[#2ee6a8] hover:bg-[#5ff0bd] text-black text-xs md:text-sm font-bold rounded-xl transition-all duration-300 active:scale-95 text-center"
+                    >
+                      Open on Weverse
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedProfile(null);
+                      onTileClick?.('Members');
+                    }}
+                    className="inline-flex items-center justify-center gap-2 flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-500 text-white text-xs md:text-sm font-bold rounded-xl transition-all duration-300 active:scale-95 text-center cursor-pointer"
+                  >
+                    View Member Profile
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

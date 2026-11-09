@@ -4,9 +4,9 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, type Variants } from 'motion/react';
 
-const slideVariants = {
+const slideVariants: Variants = {
   enter: (direction: number) => ({
     x: direction > 0 ? 80 : -80,
     opacity: 0,
@@ -68,7 +68,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Madrid',
     country: 'Spain',
     venue: 'Riyadh Air Metropolitano',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
   },
   {
     id: 'brussels-1',
@@ -78,7 +78,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Brussels',
     country: 'Belgium',
     venue: 'King Baudouin Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_in_concert_at_Wembley_Stadium,_2_June_2019_01.jpg?width=1280'
   },
   {
     id: 'london-1',
@@ -88,7 +88,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'London',
     country: 'United Kingdom',
     venue: 'Tottenham Hotspur Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_Love_Yourself_-_Speak_Yourself_tour_at_Rose_Bowl,_Pasadena_(California),_4_May_2019_01.jpg?width=1280'
   },
   {
     id: 'munich-1',
@@ -98,7 +98,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Munich',
     country: 'Germany',
     venue: 'Allianz Arena',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/181201_BTS_at_the_MelOn_Music_Awards.jpg?width=1280'
   },
   {
     id: 'paris-1',
@@ -108,7 +108,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Paris',
     country: 'France',
     venue: 'Stade de France',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_win_first_Daesang_(Grand_Prize)_at_Melon_Music_Awards,_19_November_2016_02.png?width=1280'
   },
 
   // NORTH AMERICA
@@ -120,7 +120,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'East Rutherford, NJ',
     country: 'USA',
     venue: 'MetLife Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_and_ARMY_during_the_BTS_Live_Trilogy_Episode_III_The_Wings_Tour_in_Anaheim,_2_April_2017.jpg?width=1280'
   },
   {
     id: 'foxborough-1',
@@ -130,7 +130,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Foxborough, MA',
     country: 'USA',
     venue: 'Gillette Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/ARMY_at_BTS_Love_Yourself_Speak_Yourself_concert_at_Wembley_Stadium,_1_June_2019.jpg?width=1280'
   },
   {
     id: 'baltimore-1',
@@ -140,7 +140,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Baltimore, MD',
     country: 'USA',
     venue: 'M&T Bank Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_Fire_during_the_Speak_Yourself_tour_in_Brazil,_25_May_2019_01.jpg?width=1280'
   },
   {
     id: 'arlington-1',
@@ -150,7 +150,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Arlington, TX',
     country: 'USA',
     venue: 'AT&T Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22Not_Today%22_during_Speak_Yourself_tour_at_MetLife_Stadium,_18_May_2019_01.jpg?width=1280'
   },
   {
     id: 'toronto-1',
@@ -160,7 +160,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Toronto',
     country: 'Canada',
     venue: 'Rogers Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22DNA%22_during_Love_Yourself_tour_in_Los_Angeles,_8_September_2018_01.jpg?width=1280'
   },
   {
     id: 'chicago-1',
@@ -170,7 +170,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Chicago, IL',
     country: 'USA',
     venue: 'Soldier Field',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22DNA%22_during_the_Love_Yourself_concert_in_Nagoya,_13_January_2019_01.jpg?width=1280'
   },
 
   // ASIA & AUSTRALIA
@@ -182,7 +182,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Kaohsiung',
     country: 'Taiwan',
     venue: 'Kaohsiung National Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22Mic_Drop%22_during_Love_Yourself_concert_in_Hong_Kong,_24_March_2019_01.jpg?width=1280'
   },
   {
     id: 'bangkok-1',
@@ -192,7 +192,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Bangkok',
     country: 'Thailand',
     venue: 'Rajamangala National Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22Fake_Love%22_at_Speak_Yourself_at_Rose_Bowl,_Pasadena,_4-5_May_2019_02.jpg?width=1280'
   },
   {
     id: 'kl-1',
@@ -201,8 +201,8 @@ const CONCERT_DATES: ConcertSchedule[] = [
     targetDate: '2026-12-12T19:00:00',
     city: 'Kuala Lumpur',
     country: 'Malaysia',
-    venue: 'TM Stadium Nasional',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    venue: 'Bukit Jalil National Stadium',
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22Not_Today%22_during_Speak_Yourself_tour_at_MetLife_Stadium,_18_May_2019_03.jpg?width=1280'
   },
   {
     id: 'singapore-1',
@@ -212,7 +212,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Singapore',
     country: 'Singapore',
     venue: 'National Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22Run%22_during_the_BTS_Live_Trilogy_Episode_III_The_Wings_Tour_in_Anaheim,_2_April_2017.jpg?width=1280'
   },
   {
     id: 'jakarta-1',
@@ -221,18 +221,18 @@ const CONCERT_DATES: ConcertSchedule[] = [
     targetDate: '2026-12-26T19:00:00',
     city: 'Jakarta',
     country: 'Indonesia',
-    venue: 'Gelora Bung Karno Main Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    venue: 'GBK Stadium',
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22Lost%22_during_the_BTS_Live_Trilogy_Episode_III_The_Wings_Tour_in_Anaheim,_2_April_2017_01.jpg?width=1280'
   },
   {
     id: 'melbourne-1',
     region: 'ASIA & AUSTRALIA',
-    dateStr: 'Feb 10, 12 & 13, 2027',
-    targetDate: '2027-02-10T19:00:00',
+    dateStr: 'Feb 12 & 13, 2027',
+    targetDate: '2027-02-12T19:00:00',
     city: 'Melbourne',
     country: 'Australia',
     venue: 'Marvel Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22Spring_Day%22_during_the_BTS_Live_Trilogy_Episode_III_The_Wings_Tour_in_Anaheim,_2_April_2017_01.jpg?width=1280'
   },
   {
     id: 'sydney-1',
@@ -242,7 +242,7 @@ const CONCERT_DATES: ConcertSchedule[] = [
     city: 'Sydney',
     country: 'Australia',
     venue: 'Accor Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22Save_Me%22_during_the_BTS_Live_Trilogy_Episode_III_The_Wings_Tour_in_Anaheim,_2_April_2017.jpg?width=1280'
   },
   {
     id: 'hk-1',
@@ -251,18 +251,18 @@ const CONCERT_DATES: ConcertSchedule[] = [
     targetDate: '2027-03-04T19:00:00',
     city: 'Hong Kong',
     country: 'Hong Kong',
-    venue: 'Kai Tak Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    venue: 'Kai Tak Sports Park',
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22DNA%22_during_Love_Yourself_tour_in_Los_Angeles,_8_September_2018_02.jpg?width=1280'
   },
   {
-    id: 'bulacan-1',
+    id: 'manila-1',
     region: 'ASIA & AUSTRALIA',
     dateStr: 'March 13 & 14, 2027',
     targetDate: '2027-03-13T19:00:00',
-    city: 'Bulacan',
+    city: 'Manila',
     country: 'Philippines',
-    venue: 'Philippine Sports Stadium',
-    imageUrl: 'https://i.pinimg.com/1200x/5e/86/63/5e8663ffe9163ef9cff91116d6c5303b.jpg'
+    venue: 'Philippine Arena',
+    imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/BTS_performing_%22Mic_Drop%22_during_Love_Yourself_concert_in_Hong_Kong,_24_March_2019_03.jpg?width=1280'
   }
 ];
 
@@ -292,16 +292,36 @@ export default function TourCountdownCarousel({ config }: TourCountdownCarouselP
   const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number }>({ d: 0, h: 0, m: 0, s: 0 });
   const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
 
-  const activeEvents = config?.events && config.events.length > 0 ? config.events : CONCERT_DATES;
+  // MERGE, never replace (owner request): the built-in tour schedule
+  // always stays, and anything the owner adds or edits in Admin Panel
+  // -> Tour Countdown shows alongside it. An admin event with the
+  // same id as a built-in stop wins (that is how a built-in stop gets
+  // edited); built-in stops the admin never touched remain visible.
+  const activeEvents = (() => {
+    const adminEvents = config?.events && config.events.length > 0 ? config.events : [];
+    if (adminEvents.length === 0) return CONCERT_DATES;
+    const adminIds = new Set(adminEvents.map((e: any) => e.id));
+    return [...adminEvents, ...CONCERT_DATES.filter(d => !adminIds.has(d.id))];
+  })();
 
-  // Filter list by selected region
-  const filteredSchedules = activeEvents.filter(item => 
-    selectedRegion === 'ALL' ? true : item.region === selectedRegion
-  );
+  // Filter list by selected region, earliest date first — so the
+  // upcoming stops always lead the carousel (owner request).
+  const filteredSchedules = activeEvents
+    .filter(item =>
+      selectedRegion === 'ALL' ? true : item.region === selectedRegion
+    )
+    .slice()
+    .sort((a, b) => new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime());
 
-  // Safeguard index constraints on state switch
+  // Open on the NEXT UPCOMING stop (first date still in the future) so
+  // the countdown always targets a live upcoming concert instead of a
+  // finished one sitting at 00. Runs on mount and on region switch;
+  // past stops stay reachable with the prev/next arrows.
   useEffect(() => {
-    setCurrentIndex(0);
+    const now = Date.now();
+    const idx = filteredSchedules.findIndex(item => new Date(item.targetDate).getTime() > now);
+    setCurrentIndex(idx === -1 ? 0 : idx);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRegion]);
 
   const activeConcert = filteredSchedules[currentIndex] || null;

@@ -244,6 +244,120 @@ body {
   color: #5b21b6 !important;
 }
 
+/* ARIRANG Mode overrides: Dark mode's near-black glass look kept, with the
+   purple/pink accent family shifted to a SOFT red/rose (deliberately subtle),
+   deep panels tinted maroon, and white text left untouched. */
+.arirang {
+  color-scheme: dark;
+}
+
+.arirang .glass-panel {
+  background: rgba(26, 5, 11, 0.72) !important;
+  border-color: rgba(244, 63, 94, 0.16) !important;
+}
+
+.arirang .glow-purple {
+  box-shadow: 0 0 35px -5px rgba(244, 63, 94, 0.28) !important;
+}
+
+/* Accent text */
+.arirang .text-purple-200 { color: #fecdd3 !important; }
+.arirang .text-purple-300 { color: #fda4af !important; }
+.arirang .text-purple-400 { color: #fb7185 !important; }
+.arirang .text-purple-500 { color: #f43f5e !important; }
+.arirang .text-purple-600 { color: #dc2626 !important; }
+.arirang .text-pink-300 { color: #fda4af !important; }
+.arirang .text-pink-400 { color: #fb7185 !important; }
+.arirang .text-fuchsia-300 { color: #fda4af !important; }
+.arirang .text-fuchsia-400 { color: #fb7185 !important; }
+.arirang .hover\:text-purple-300:hover { color: #fda4af !important; }
+.arirang .hover\:text-purple-400:hover { color: #fb7185 !important; }
+.arirang .hover\:text-fuchsia-400:hover { color: #fb7185 !important; }
+
+/* Accent borders */
+.arirang .border-purple-400 { border-color: #fb7185 !important; }
+.arirang .border-purple-500 { border-color: #f43f5e !important; }
+.arirang .border-purple-500\/5 { border-color: rgb(244 63 94 / 0.05) !important; }
+.arirang .border-purple-500\/10 { border-color: rgb(244 63 94 / 0.1) !important; }
+.arirang .border-purple-500\/15 { border-color: rgb(244 63 94 / 0.15) !important; }
+.arirang .border-purple-500\/20 { border-color: rgb(244 63 94 / 0.2) !important; }
+.arirang .border-purple-500\/25 { border-color: rgb(244 63 94 / 0.25) !important; }
+.arirang .border-purple-500\/30 { border-color: rgb(244 63 94 / 0.3) !important; }
+.arirang .border-purple-500\/35 { border-color: rgb(244 63 94 / 0.35) !important; }
+.arirang .border-purple-500\/40 { border-color: rgb(244 63 94 / 0.4) !important; }
+.arirang .border-purple-500\/50 { border-color: rgb(244 63 94 / 0.5) !important; }
+.arirang .border-pink-400 { border-color: #fb7185 !important; }
+.arirang .hover\:border-purple-400:hover { border-color: #fb7185 !important; }
+.arirang .hover\:border-purple-500\/20:hover { border-color: rgb(244 63 94 / 0.2) !important; }
+.arirang .hover\:border-purple-500\/30:hover { border-color: rgb(244 63 94 / 0.3) !important; }
+.arirang .hover\:border-purple-500\/40:hover { border-color: rgb(244 63 94 / 0.4) !important; }
+.arirang .hover\:border-purple-500\/50:hover { border-color: rgb(244 63 94 / 0.5) !important; }
+
+/* Solid accent backgrounds */
+.arirang .bg-purple-400 { background-color: #fb7185 !important; }
+.arirang .bg-purple-500 { background-color: #f43f5e !important; }
+.arirang .bg-purple-600 { background-color: #dc2626 !important; }
+.arirang .bg-purple-800 { background-color: #991b1b !important; }
+.arirang .bg-purple-500\/5 { background-color: rgb(244 63 94 / 0.05) !important; }
+.arirang .bg-purple-500\/10 { background-color: rgb(244 63 94 / 0.1) !important; }
+.arirang .bg-purple-500\/20 { background-color: rgb(244 63 94 / 0.2) !important; }
+.arirang .bg-purple-600\/30 { background-color: rgb(220 38 38 / 0.3) !important; }
+.arirang .hover\:bg-purple-500:hover { background-color: #f43f5e !important; }
+.arirang .hover\:bg-purple-600:hover { background-color: #dc2626 !important; }
+.arirang .hover\:bg-purple-800:hover { background-color: #991b1b !important; }
+
+/* Deep tinted panels: purple-950/900 family becomes deep maroon */
+.arirang .bg-purple-950 { background-color: #450a0a !important; }
+.arirang .bg-purple-950\/5 { background-color: rgb(69 10 10 / 0.05) !important; }
+.arirang .bg-purple-950\/10 { background-color: rgb(69 10 10 / 0.1) !important; }
+.arirang .bg-purple-950\/20 { background-color: rgb(69 10 10 / 0.2) !important; }
+.arirang .bg-purple-950\/25 { background-color: rgb(69 10 10 / 0.25) !important; }
+.arirang .bg-purple-950\/30 { background-color: rgb(69 10 10 / 0.3) !important; }
+.arirang .bg-purple-950\/40 { background-color: rgb(69 10 10 / 0.4) !important; }
+.arirang .bg-purple-950\/50 { background-color: rgb(69 10 10 / 0.5) !important; }
+.arirang .bg-purple-950\/60 { background-color: rgb(69 10 10 / 0.6) !important; }
+.arirang .bg-purple-900\/30 { background-color: rgb(127 29 29 / 0.3) !important; }
+.arirang .bg-purple-900\/40 { background-color: rgb(127 29 29 / 0.4) !important; }
+.arirang .bg-purple-900\/60 { background-color: rgb(127 29 29 / 0.6) !important; }
+.arirang .bg-fuchsia-950\/20 { background-color: rgb(69 10 10 / 0.2) !important; }
+.arirang .hover\:bg-purple-900\/40:hover { background-color: rgb(127 29 29 / 0.4) !important; }
+.arirang .hover\:bg-purple-950\/40:hover { background-color: rgb(69 10 10 / 0.4) !important; }
+
+/* Near-black page panels take a faint warm red tint */
+.arirang .bg-\[\#05000a\] { background-color: #0a0206 !important; }
+.arirang .bg-\[\#05000a\]\/95 { background-color: rgb(10 2 6 / 0.95) !important; }
+.arirang .bg-\[\#0d071a\]\/40 { background-color: rgb(20 4 9 / 0.4) !important; }
+.arirang .bg-\[\#0c0617\]\/90 { background-color: rgb(16 3 8 / 0.9) !important; }
+
+/* Gradients: shift the stop colors to red/rose, keep positions and shapes */
+.arirang .from-purple-400 { --tw-gradient-from: #fb7185 !important; }
+.arirang .from-purple-500 { --tw-gradient-from: #f43f5e !important; }
+.arirang .from-purple-600 { --tw-gradient-from: #dc2626 !important; }
+.arirang .from-purple-700 { --tw-gradient-from: #b91c1c !important; }
+.arirang .from-purple-950 { --tw-gradient-from: #450a0a !important; }
+.arirang .from-pink-500 { --tw-gradient-from: #f43f5e !important; }
+.arirang .via-purple-500 { --tw-gradient-via: #f43f5e !important; }
+.arirang .via-purple-600 { --tw-gradient-via: #dc2626 !important; }
+.arirang .via-fuchsia-500 { --tw-gradient-via: #f43f5e !important; }
+.arirang .via-fuchsia-600 { --tw-gradient-via: #e11d48 !important; }
+.arirang .via-pink-500 { --tw-gradient-via: #f43f5e !important; }
+.arirang .to-purple-600 { --tw-gradient-to: #dc2626 !important; }
+.arirang .to-purple-600\/15 { --tw-gradient-to: rgb(220 38 38 / 0.15) !important; }
+.arirang .to-fuchsia-500 { --tw-gradient-to: #f43f5e !important; }
+.arirang .to-fuchsia-600 { --tw-gradient-to: #e11d48 !important; }
+.arirang .to-pink-500 { --tw-gradient-to: #f43f5e !important; }
+.arirang .to-pink-600 { --tw-gradient-to: #e11d48 !important; }
+.arirang .to-pink-700 { --tw-gradient-to: #be123c !important; }
+
+/* Accent shadows and rings */
+.arirang .shadow-purple-500\/20 { --tw-shadow-color: rgb(244 63 94 / 0.2) !important; }
+.arirang .shadow-purple-600\/30 { --tw-shadow-color: rgb(225 29 72 / 0.3) !important; }
+.arirang .ring-purple-500 { --tw-ring-color: #f43f5e !important; }
+
+/* Inner scrollbars */
+.arirang ::-webkit-scrollbar-thumb { background: rgba(225, 29, 72, 0.35); }
+.arirang ::-webkit-scrollbar-thumb:hover { background: rgba(225, 29, 72, 0.55); }
+
 /* ==========================================
    ULTRA-PREMIUM BTS PURPLE ADMIN Facelift
    ========================================== */
@@ -424,3 +538,159 @@ body {
   background: rgba(168, 85, 247, 0.4) !important;
 }
 
+
+/* =====================================================================
+   LIGHT ("WHITE") MODE — site-wide translation layer
+   The public app root carries the .light class when the visitor picks
+   the light theme, but the section components were built with
+   hardcoded dark-mode utility classes (dark panels, white text), so
+   the theme used to change only the page shell and leave sections
+   unreadable. These higher-specificity overrides translate the
+   recurring dark palette to a light one — white surfaces, black/dark
+   text — everywhere under .light at once. Solid brand buttons/badges
+   keep their white text, media players and image scrims stay dark.
+   ===================================================================== */
+body:has(.light) {
+  background-color: #faf8fd;
+}
+
+/* --- Text: white / pale text becomes dark --- */
+.light [class~="text-white"] { color: #211335; }
+.light [class~="text-slate-100"],
+.light [class~="text-slate-200"],
+.light [class~="text-gray-100"],
+.light [class~="text-gray-200"],
+.light [class~="text-purple-100"] { color: #2a1b45; }
+.light [class~="text-slate-300"],
+.light [class~="text-gray-300"],
+.light [class~="text-stone-300"] { color: #463a61; }
+.light [class~="text-slate-400"],
+.light [class~="text-gray-400"],
+.light [class~="text-stone-400"] { color: #5d5178; }
+.light [class~="text-slate-500"],
+.light [class~="text-gray-500"],
+.light [class~="text-stone-500"] { color: #6f6390; }
+.light [class~="text-purple-200"] { color: #7c3aed; }
+.light [class~="text-purple-300"] { color: #7e22ce; }
+.light [class~="text-pink-200"] { color: #be185d; }
+.light [class~="text-pink-300"] { color: #db2777; }
+
+/* --- Keep white text on solid / gradient brand elements --- */
+.light [class~="bg-purple-500"][class~="text-white"],
+.light [class~="bg-purple-600"][class~="text-white"],
+.light [class~="bg-purple-700"][class~="text-white"],
+.light [class~="bg-pink-500"][class~="text-white"],
+.light [class~="bg-pink-600"][class~="text-white"],
+.light [class~="bg-fuchsia-600"][class~="text-white"],
+.light [class~="bg-indigo-600"][class~="text-white"],
+.light [class~="bg-red-500"][class~="text-white"],
+.light [class~="bg-red-600"][class~="text-white"],
+.light [class~="bg-rose-500"][class~="text-white"],
+.light [class~="bg-rose-600"][class~="text-white"],
+.light [class~="bg-emerald-500"][class~="text-white"],
+.light [class~="bg-emerald-600"][class~="text-white"],
+.light [class~="bg-cyan-600"][class~="text-white"],
+.light [class~="bg-sky-500"][class~="text-white"],
+.light [class~="bg-sky-600"][class~="text-white"],
+.light [class~="bg-blue-600"][class~="text-white"],
+.light [class~="bg-amber-500"][class~="text-white"],
+.light [class*="from-purple-600"][class~="text-white"],
+.light [class*="from-purple-700"][class~="text-white"],
+.light [class*="from-pink-600"][class~="text-white"],
+.light [class*="from-fuchsia-600"][class~="text-white"] { color: #ffffff; }
+.light [class*="bg-purple-600"] [class~="text-white"],
+.light [class*="bg-purple-700"] [class~="text-white"],
+.light [class*="bg-pink-600"] [class~="text-white"],
+.light [class*="from-purple-"] [class~="text-white"],
+.light [class*="from-pink-"] [class~="text-white"],
+.light [class*="from-black"] [class~="text-white"],
+.light [class~="bg-black"] [class~="text-white"] { color: #ffffff; }
+
+/* --- Surfaces: near-black purple panels become white cards --- */
+.light [class*="bg-[#0"] { background-color: #ffffff; }
+.light [class*="bg-[#1"] { background-color: #ffffff; }
+.light [class*="bg-[#1db954"] { background-color: #1db954; } /* Spotify green stays */
+.light [class*="bg-slate-950"] { background-color: #ffffff; }
+.light [class*="bg-slate-900"] { background-color: #f6f2fc; }
+.light [class*="bg-purple-950"] { background-color: #f1eafd; }
+.light [class*="bg-purple-900"] { background-color: #e9defc; }
+.light [class*="bg-white/"] { background-color: rgba(109, 40, 217, 0.07); }
+.light [class*="bg-black/"] { background-color: #ffffff; }
+
+/* --- Borders & dividers: hairlines become soft dark lines --- */
+.light [class*="border-white/"] { border-color: rgba(43, 16, 84, 0.14); }
+.light [class*="divide-white/"] > :not([hidden]) ~ :not([hidden]) { border-color: rgba(43, 16, 84, 0.14); }
+
+/* --- Form hints --- */
+.light input::placeholder,
+.light textarea::placeholder { color: #8d7fb0; opacity: 1; }
+
+/* ---- Light mode, round 2 ---------------------------------------------
+   Dark GRADIENT surfaces (the voting header card, news hero cards) kept
+   their dark background-image in light mode while their text flipped
+   dark, making titles invisible. Flatten dark gradients on ordinary
+   block elements to a clean white surface. Absolutely-positioned
+   elements are image scrims and are left alone, and brand gradients
+   (purple-600 -> pink-600 buttons) use different stops, so they are
+   untouched. Text that sits over a photo keeps its light colors via
+   the .on-media marker. */
+.light [class*="from-[#0"]:not([class*="absolute"]),
+.light [class*="from-[#1"]:not([class*="absolute"]),
+.light [class*="from-[#2"]:not([class*="absolute"]),
+.light [class*="from-purple-950"]:not([class*="absolute"]),
+.light [class*="from-purple-900"]:not([class*="absolute"]),
+.light [class*="from-black"]:not([class*="absolute"]) {
+  background-image: none !important;
+  background-color: #ffffff !important;
+}
+.light .on-media [class~="text-white"],
+.light [class~="text-white"].on-media { color: #ffffff !important; }
+.light .on-media [class~="text-slate-300"] { color: #e2e8f0 !important; }
+.light .on-media [class~="text-slate-400"] { color: #cbd5e1 !important; }
+.light .on-media [class~="text-gray-300"] { color: #e5e7eb !important; }
+
+/* News article reading view (Batch 37): in light mode the article card
+   flattens to white but the body stayed zinc-300 / purple-100, so the
+   text was unreadable. Scope dark, readable colors to the article view
+   only — the rest of the site keeps the general light rules above. */
+.light .news-article-view { background: #ffffff !important; }
+.light .news-article-view h1 { color: #111827 !important; }
+.light .news-article-view p { color: #26262b !important; }
+.light .news-article-view [class~="text-purple-100"] { color: #4c1d95 !important; }
+.light .news-article-view [class~="text-purple-300"] { color: #6d28d9 !important; }
+.light .news-article-view [class~="text-zinc-500"],
+.light .news-article-view [class~="text-zinc-400"] { color: #52525b !important; }
+
+/* ARMY Bomb lightstick (owner feature): idle the orb is dim; while the
+   background song plays it lights up with a pulsing concert glow,
+   expanding light rings and a slow purple→pink shimmer. */
+@keyframes bombGlow {
+  0%, 100% { box-shadow: 0 0 18px 4px rgba(192, 132, 252, 0.55), 0 0 46px 12px rgba(168, 85, 247, 0.35), inset 0 0 14px rgba(255,255,255,0.65); }
+  50% { box-shadow: 0 0 30px 10px rgba(240, 171, 252, 0.8), 0 0 70px 22px rgba(217, 70, 239, 0.45), inset 0 0 20px rgba(255,255,255,0.9); }
+}
+@keyframes bombRing {
+  0% { transform: scale(0.85); opacity: 0.55; }
+  100% { transform: scale(2.1); opacity: 0; }
+}
+@keyframes bombShimmer {
+  0%, 100% { filter: hue-rotate(0deg) brightness(1.1); }
+  50% { filter: hue-rotate(28deg) brightness(1.3); }
+}
+.bomb-on {
+  animation: bombGlow 1.6s ease-in-out infinite, bombShimmer 3.2s ease-in-out infinite;
+}
+.bomb-ring {
+  animation: bombRing 1.8s ease-out infinite;
+}
+.bomb-ring-2 {
+  animation: bombRing 1.8s ease-out 0.9s infinite;
+}
+
+/* Real-photo ARMY Bomb: silhouette glow that follows the cut-out PNG. */
+@keyframes bombImgGlow {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(216, 180, 254, 0.75)) drop-shadow(0 0 30px rgba(168, 85, 247, 0.45)) brightness(1.05); }
+  50% { filter: drop-shadow(0 0 18px rgba(240, 171, 252, 0.95)) drop-shadow(0 0 52px rgba(217, 70, 239, 0.6)) brightness(1.15); }
+}
+.bomb-img-on {
+  animation: bombImgGlow 1.6s ease-in-out infinite;
+}

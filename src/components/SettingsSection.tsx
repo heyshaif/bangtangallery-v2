@@ -14,7 +14,7 @@ interface SettingsSectionProps {
 
 export default function SettingsSection({ preferences, onPreferencesChange }: SettingsSectionProps) {
   
-  const handleThemeChange = (theme: 'dark' | 'light' | 'system') => {
+  const handleThemeChange = (theme: 'dark' | 'light' | 'system' | 'arirang') => {
     onPreferencesChange({ ...preferences, theme });
   };
 
@@ -49,7 +49,7 @@ export default function SettingsSection({ preferences, onPreferencesChange }: Se
     <div className="max-w-3xl mx-auto space-y-8 animate-fade-in font-sans">
       <div className="flex justify-between items-center border-b border-white/5 pb-6">
         <div>
-          <h2 className="text-2xl md:text-3xl font-sans font-extrabold text-white">
+          <h2 className="text-xl md:text-2xl font-sans font-extrabold text-white">
             Personalization & Audio Settings
           </h2>
           <p className="text-gray-400 text-sm">
@@ -74,10 +74,11 @@ export default function SettingsSection({ preferences, onPreferencesChange }: Se
             <Moon className="w-4 h-4 text-purple-400" /> Color Theme Preset
           </h3>
 
-          <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
             {[
               { id: 'dark', label: 'Theme Dark' },
               { id: 'light', label: 'Theme Light (Slight)' },
+              { id: 'arirang', label: 'Theme ARIRANG' },
               { id: 'system', label: 'Sync System' }
             ].map(thm => (
               <button

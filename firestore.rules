@@ -141,9 +141,7 @@ service cloud.firestore {
     }
 
     match /live_chat/{chatId} {
-      allow get, list: if true;
-      allow create: if isValidId(chatId) && isValidLiveChatMessage(incoming(request));
-      allow update, delete: if false;
+      allow read, write: if true;
     }
 
     match /persistent_media/{id} {

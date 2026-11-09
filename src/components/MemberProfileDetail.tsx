@@ -5,7 +5,6 @@
 
 import { Member } from '../types';
 import { Calendar, User, Ruler, Heart, Compass, Award, Music, BookOpen, Clock, ChevronLeft, Quote } from 'lucide-react';
-import { Sparkles } from './CustomSparkles';
 
 const getHandleOrValue = (url: string, defaultValue: string) => {
   if (!url) return defaultValue;
@@ -145,8 +144,9 @@ const getMemberSocials = (member: Member) => {
       { platform: 'Weverse', url: 'https://weverse.io/bts/artist/v', handle: 'V Weverse', color: 'hover:text-teal-400', bgColor: 'bg-teal-950/20 hover:bg-teal-900/30' }
     ];
   }
-  // Default to Jung Kook
+  // Jung Kook (explicit block — his real Instagram is @mnijungkook)
   return [
+    { platform: 'Instagram', url: 'https://instagram.com/mnijungkook', handle: '@mnijungkook', color: 'hover:text-fuchsia-400', bgColor: 'bg-fuchsia-950/20 hover:bg-fuchsia-900/30' },
     { platform: 'Spotify', url: 'https://open.spotify.com/artist/6Ha97v48vCuR7Oiyvt8Ost', handle: 'Jung Kook on Spotify', color: 'hover:text-emerald-400', bgColor: 'bg-emerald-950/20 hover:bg-emerald-900/30' },
     { platform: 'TikTok', url: 'https://www.tiktok.com/@jungkook', handle: '@jungkook', color: 'hover:text-cyan-400', bgColor: 'bg-sky-950/20 hover:bg-sky-900/30' },
     { platform: 'Weverse', url: 'https://weverse.io/bts/artist/jungkook', handle: 'Jung Kook Weverse', color: 'hover:text-teal-400', bgColor: 'bg-teal-950/20 hover:bg-teal-900/30' }
@@ -156,9 +156,10 @@ const getMemberSocials = (member: Member) => {
 interface MemberProfileDetailProps {
   member: Member;
   onBack: () => void;
+  weverseFeed?: any[];
 }
 
-export default function MemberProfileDetail({ member, onBack }: MemberProfileDetailProps) {
+export default function MemberProfileDetail({ member, onBack, weverseFeed }: MemberProfileDetailProps) {
   return (
     <div className="w-full max-w-5xl mx-auto rounded-2xl border border-white/5 bg-black/70 backdrop-blur-2xl shadow-2xl overflow-hidden animate-fade-in">
       
@@ -185,20 +186,20 @@ export default function MemberProfileDetail({ member, onBack }: MemberProfileDet
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
         
         {/* Name and Title overlays on banner */}
-        <div className="absolute bottom-6 left-6 md:left-12 flex flex-col md:flex-row items-start md:items-end gap-6 z-10">
-          <div className="relative group">
+        <div className="absolute bottom-5 left-5 md:left-12 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6 z-10">
+          <div className="relative group shrink-0 -translate-y-2 md:-translate-y-4">
             <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-purple-500 to-rose-500 opacity-70 blur-md group-hover:opacity-100 transition-opacity" />
             <img
               src={member.portraitUrl}
               alt={`${member.name} Portrait`}
-              className="relative w-28 h-28 md:w-36 md:h-36 rounded-full object-cover border-2 border-purple-400 shadow-xl"
+              className="relative w-24 h-24 md:w-36 md:h-36 rounded-full object-cover border-2 border-purple-400 shadow-xl"
               referrerPolicy="no-referrer"
             />
           </div>
-          
-          <div className="mb-2">
+
+          <div className="mb-2 relative z-10 [text-shadow:0_2px_14px_rgba(0,0,0,0.95)]">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-3xl md:text-5xl font-sans font-black text-white hover:text-purple-300 transition-colors">
+              <span className="text-2xl md:text-4xl font-sans font-black text-white hover:text-purple-300 transition-colors">
                 {member.name}
               </span>
               <span className="text-2xl md:text-3xl animate-bounce" style={{ animationDuration: '4s' }}>
@@ -248,7 +249,7 @@ export default function MemberProfileDetail({ member, onBack }: MemberProfileDet
           {/* Social Channels Section */}
           <div className="rounded-xl border border-white/5 bg-white/[0.02] p-5 space-y-4 shadow-xl">
             <h3 className="text-sm font-mono font-bold text-purple-300 flex items-center gap-2 border-b border-white/5 pb-2 uppercase tracking-widest">
-              <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" /> Official Socials & Links
+              Official Socials & Links
             </h3>
             <div className="space-y-2 font-sans text-xs">
               {getMemberSocials(member).map((soc, i) => (
@@ -337,7 +338,6 @@ export default function MemberProfileDetail({ member, onBack }: MemberProfileDet
             <div className="space-y-2">
               {member.awards.map((aw, idx) => (
                 <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10 text-amber-300 text-sm">
-                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
                   <span>{aw}</span>
                 </div>
               ))}
@@ -347,7 +347,7 @@ export default function MemberProfileDetail({ member, onBack }: MemberProfileDet
           {/* Fun Facts Accordion Details */}
           <div className="space-y-3">
             <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-400" /> Fun Trivia Facts
+              Fun Trivia Facts
             </h2>
             <div className="space-y-2.5">
               {member.funFacts.map((fact, idx) => (
@@ -378,6 +378,74 @@ export default function MemberProfileDetail({ member, onBack }: MemberProfileDet
               ))}
             </div>
           </div>
+
+          {/* Latest Weverse Posts — added by the site owner from the
+              member's real Weverse posts (Weverse has no auto-feed).
+              Shows only when the owner has added posts for this member. */}
+          {(() => {
+            const posts = (Array.isArray(weverseFeed) ? weverseFeed : [])
+              .filter((p: any) => p && p.memberId === member.id)
+              .slice()
+              .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
+            if (posts.length === 0) return null;
+            const avatar = member.weversePicUrl || member.portraitUrl;
+            return (
+              <div className="space-y-4">
+                <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+                  Latest Weverse Posts
+                </h2>
+                <div className="space-y-3">
+                  {posts.map((p: any) => (
+                    <article key={p.id} className="p-4 rounded-2xl border border-white/10 bg-white/[0.02] space-y-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={avatar}
+                          alt={member.name}
+                          className="w-10 h-10 rounded-full object-cover border border-emerald-300/40"
+                          loading="lazy"
+                          decoding="async"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div>
+                          <p className="text-sm font-bold text-white leading-tight">
+                            {p.name || member.name} <span className="ml-0.5">{p.emoji || member.emoji}</span>
+                          </p>
+                          <p className="text-[11px] text-gray-400 font-mono">
+                            {p.date ? new Date(`${p.date}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+                            {' · via Weverse'}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-line">{p.text}</p>
+                      {p.imageUrl && (
+                        <img
+                          src={p.imageUrl}
+                          alt={`${member.name} Weverse post`}
+                          className="w-full max-h-96 object-cover rounded-xl border border-white/10"
+                          loading="lazy"
+                          decoding="async"
+                          referrerPolicy="no-referrer"
+                        />
+                      )}
+                      {p.link && (
+                        <a
+                          href={p.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block text-xs font-bold text-[#2ee6a8] hover:text-[#5ff0bd] uppercase tracking-wider"
+                        >
+                          View original on Weverse ↗
+                        </a>
+                      )}
+                    </article>
+                  ))}
+                </div>
+                <p className="text-[11px] text-gray-500 font-mono">
+                  Posts shared here by the site owner from Weverse — tap a post's link to see the original.
+                </p>
+              </div>
+            );
+          })()}
 
           {/* Member Personal Portrait Gallery */}
           <div className="space-y-4">

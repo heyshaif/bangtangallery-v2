@@ -14,8 +14,32 @@ export default function EventsSection({ items }: { items?: BTSEvent[] }) {
   const [activeTab, setActiveTab] = useState<'Upcoming' | 'Past'>('Upcoming');
   const [countdowns, setCountdowns] = useState<{ [key: string]: string }>({});
 
-  // Tab filtering
-  const filteredEvents = displayEvents.filter(evt => evt.type === activeTab);
+  // Owner rule: Upcoming vs Past is decided by the event's real DATE,
+  // not by the stored label — an event whose date has passed moves
+  // itself to Past Milestones, and a future event is Upcoming even if
+  // it was saved with the wrong label. Events are sorted soonest-first
+  // in Upcoming and most-recent-first in Past.
+  const eventTime = (evt: BTSEvent): number => {
+    const raw = evt.countdownTarget || (evt as any).dDayTarget || evt.date;
+    const t = raw ? new Date(raw).getTime() : NaN;
+    return isNaN(t) ? NaN : t;
+  };
+  const effectiveType = (evt: BTSEvent): 'Upcoming' | 'Past' => {
+    const t = eventTime(evt);
+    if (!isNaN(t)) return t >= Date.now() ? 'Upcoming' : 'Past';
+    return evt.type === 'Past' ? 'Past' : 'Upcoming';
+  };
+  const filteredEvents = displayEvents
+    .filter(evt => effectiveType(evt) === activeTab)
+    .slice()
+    .sort((a, b) => {
+      const ta = eventTime(a);
+      const tb = eventTime(b);
+      if (isNaN(ta) && isNaN(tb)) return 0;
+      if (isNaN(ta)) return 1;
+      if (isNaN(tb)) return -1;
+      return activeTab === 'Upcoming' ? ta - tb : tb - ta;
+    });
 
   // Countdown clock calculations for upcoming events
   useEffect(() => {
@@ -23,7 +47,7 @@ export default function EventsSection({ items }: { items?: BTSEvent[] }) {
       const newClocks: { [key: string]: string } = {};
       displayEvents.forEach(evt => {
         const targetStr = evt.countdownTarget || (evt as any).dDayTarget;
-        if (evt.type === 'Upcoming' && targetStr) {
+        if (effectiveType(evt) === 'Upcoming' && targetStr) {
           const target = new Date(targetStr).getTime();
           const now = new Date().getTime();
           const difference = target - now;
@@ -51,7 +75,7 @@ export default function EventsSection({ items }: { items?: BTSEvent[] }) {
     <div className="space-y-8 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-6">
         <div>
-          <h2 className="text-2xl md:text-3xl font-sans font-extrabold text-white">
+          <h2 className="text-xl md:text-2xl font-sans font-extrabold text-white">
             ARMY Event Coordinates
           </h2>
           <p className="text-gray-400 text-sm font-sans">
@@ -105,9 +129,9 @@ export default function EventsSection({ items }: { items?: BTSEvent[] }) {
                 <div className="flex flex-wrap items-center justify-between gap-2.5">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-mono px-2 py-0.5 border border-purple-400/30 bg-purple-950/40 text-purple-300 rounded uppercase">
-                      {evt.type}
+                      {effectiveType(evt)}
                     </span>
-                    {evt.type === 'Upcoming' && countdowns[evt.id] && (
+                    {effectiveType(evt) === 'Upcoming' && countdowns[evt.id] && (
                       <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-950/20 px-2 py-0.5 rounded border border-amber-500/20 animate-pulse">
                         ⌛ {countdowns[evt.id]}
                       </span>

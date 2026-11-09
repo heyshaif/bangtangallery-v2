@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useBackend, MediaItem, Comment } from '../context/BackendContext';
 import { GALLERY_ITEMS } from '../data/btsData';
+import MemberEmojiPicker, { loadBiasEmoji } from './MemberEmojiPicker';
+import { useRef } from 'react';
 import { 
   Search, Download, Share2, ZoomIn, ChevronLeft, ChevronRight, X, 
   Sparkles, CheckCircle2, Heart, MessageSquare, Plus, UploadCloud, 
@@ -29,17 +31,49 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
   
   // Viewer and feedback states
   const [activeViewerId, setActiveViewerId] = useState<string | null>(null);
+  // Photos whose URL is dead (expired hotlinks etc.) hide themselves
+  // instead of showing a big black card.
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
+  const markBroken = (id: string) => setBrokenImages(prev => {
+    if (prev.has(id)) return prev;
+    const next = new Set(prev);
+    next.add(id);
+    return next;
+  });
   const [copiedNotification, setCopiedNotification] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [biasEmoji, setBiasEmoji] = useState<string>(() => loadBiasEmoji());
+  const deepLinkDone = useRef(false);
   const [replyingToCommentId, setReplyingToCommentId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+
+  // Gallery downloads are ON by default (owner request: every gallery
+  // picture carries its own download icon). The admin can still turn them
+  // off in the Admin Panel (Gallery tab -> "Gallery Image Downloads") and
+  // publish; only an explicit OFF in the published config hides the icons.
+  const [downloadsEnabled, setDownloadsEnabled] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/config/published')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setDownloadsEnabled(data.galleryDownloadsEnabled !== false);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   // Robust Direct Image Download Helper
   const triggerDownload = async (e: React.MouseEvent, url: string, title: string) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    const filename = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_') || 'artwork'}.png`;
+    if (!downloadsEnabled) return; // Hidden only when the admin explicitly turned downloads off
+
+    // Keep the picture's real file type (jpg/png/webp) instead of forcing .png
+    const urlPath = (url.split('?')[0] || '').toLowerCase();
+    const extMatch = urlPath.match(/\.(jpe?g|png|webp|gif)$/);
+    const ext = url.startsWith('data:') ? 'png' : (extMatch ? extMatch[1].replace('jpeg', 'jpg') : 'jpg');
+    const filename = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_') || 'artwork'}.${ext}`;
     
     // 1. If it's base64 data
     if (url.startsWith('data:')) {
@@ -107,7 +141,7 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
 
   // Categories list
   const categoriesList = [
-    'All', 'BTS', 'RM', 'Jin', 'SUGA', 'j-hope', 'Jimin', 'V', 'Jung Kook', 'Concert', 'Festa', 'Fan Art'
+    'All', 'Memes', 'BTS', 'RM', 'Jin', 'SUGA', 'j-hope', 'Jimin', 'V', 'Jung Kook', 'Concert', 'Festa', 'Fan Art'
   ];
 
   // Map static default images (GALLERY_ITEMS) into the uniform MediaItem schema so interaction fits cleanly
@@ -141,7 +175,7 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
     const baseList = (items && items.length > 0) ? items : GALLERY_ITEMS;
     const staticImages = baseList.map((item, idx) => {
       // If code in btsData.ts GALLERY_ITEMS was modified directly with custom BTS photo URLs, reflect it immediately!
-      const codeMatch = GALLERY_ITEMS.find(g => g.id === item.id) || GALLERY_ITEMS[idx];
+      const codeMatch = GALLERY_ITEMS.find(g => g.id === item.id);
       const customCodeUrl = (codeMatch && !codeMatch.url.includes('unsplash.com')) ? codeMatch.url : null;
       const finalUrl = customCodeUrl || item.url;
       const finalTitle = codeMatch?.title || item.title;
@@ -152,15 +186,15 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
         id: item.id,
         url: finalUrl,
         title: finalTitle,
-        description: `Official concept shoot and visual frame of ${finalCategory} anthology.`,
+        description: `Fan-shared photo from the ${finalCategory} collection.`,
         category: finalCategory,
         tags: ['BTS', finalCategory, 'ConceptCard', 'HD'],
-        username: 'arirang_army7',
-        displayName: 'HYBE official',
+        username: 'bangtan_gallery',
+        displayName: 'Bangtan Gallery',
         uploadedAt: new Date(2025, 5, 13).toISOString(),
         likes: interaction.likes,
         comments: interaction.comments,
-        sharesCount: 154 + idx,
+        sharesCount: 0,
         saves: [],
         bookmarks: [],
         reports: 0,
@@ -175,15 +209,15 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
         id: g.id,
         url: g.url,
         title: g.title,
-        description: `Official concept shoot and visual frame of ${g.category} anthology.`,
+        description: `Fan-shared photo from the ${g.category} collection.`,
         category: g.category,
         tags: ['BTS', g.category, 'ConceptCard', 'HD'],
-        username: 'arirang_army7',
-        displayName: 'HYBE official',
+        username: 'bangtan_gallery',
+        displayName: 'Bangtan Gallery',
         uploadedAt: new Date(2025, 5, 13).toISOString(),
         likes: interaction.likes,
         comments: interaction.comments,
-        sharesCount: 200 + idx,
+        sharesCount: 0,
         saves: [],
         bookmarks: [],
         reports: 0,
@@ -191,7 +225,16 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
       };
     });
 
-    const combined = [...dbImages, ...staticImages, ...extraCodeItems];
+    // Drop entries with no usable image URL, then de-duplicate by
+    // photo URL: the same picture used to surface twice (once via
+    // the config list and once via the code defaults).
+    const seenUrls = new Set<string>();
+    const combined = [...dbImages, ...staticImages, ...extraCodeItems].filter((it: any) => {
+      if (!it || typeof it.url !== 'string' || it.url.trim() === '') return false;
+      if (seenUrls.has(it.url)) return false;
+      seenUrls.add(it.url);
+      return true;
+    });
 
     // Sort: Newly uploaded pictures (user or admin) should always be at the very top.
     // We sort strictly by uploadedAt in descending order (newest first).
@@ -206,6 +249,7 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
 
   // Filter items matching layout criteria
   const filteredItems = unifiedItems.filter(item => {
+    if (brokenImages.has(item.id)) return false;
     const q = searchTerm.toLowerCase();
     const matchesSearch = 
       item.title.toLowerCase().includes(q) || 
@@ -219,6 +263,25 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
   });
 
   // Active viewing item finder
+  // Deep link: a shared gallery link (/gallery/<id> or ?photo=<id>)
+  // opens that exact photo in the viewer.
+  useEffect(() => {
+    if (deepLinkDone.current) return;
+    let wanted = '';
+    try {
+      const params = new URLSearchParams(window.location.search);
+      wanted = params.get('photo') || '';
+      if (!wanted) {
+        const parts = window.location.pathname.split('/').filter(Boolean);
+        if (parts[0] === 'gallery' && parts[1]) wanted = parts[1];
+      }
+    } catch {}
+    if (wanted && unifiedItems.some(item => item.id === wanted)) {
+      setActiveViewerId(wanted);
+      deepLinkDone.current = true;
+    }
+  }, [unifiedItems]);
+
   const currentItemIndex = unifiedItems.findIndex(item => item.id === activeViewerId);
   const currentItem = currentItemIndex !== -1 ? unifiedItems[currentItemIndex] : null;
 
@@ -360,17 +423,21 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
         }
       }
 
-      // Upload payload
-      const ok = await uploadMedia({
+      // Upload payload (bounded: if the network stalls, the spinner
+      // must end with a message instead of loading forever)
+      const ok = await Promise.race([
+        uploadMedia({
         type: 'image',
         url: imageFileBase64,
         title: finalTitle,
         description: finalDesc,
         category: imageCategory,
         tags: tagsArray.length > 0 ? tagsArray : ['ARMY', imageCategory, 'BTS'],
-        username: activeUsername,
-        displayName: activeDisplayName
-      });
+          username: activeUsername,
+          displayName: activeDisplayName
+        }),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 45000))
+      ]);
 
       if (ok) {
         setUploadSuccess(true);
@@ -388,7 +455,7 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
           setUploadSuccess(false);
         }, 1500);
       } else {
-        setUploadError('Upload failed. Please try again or use a smaller image file.');
+        setUploadError('Upload did not finish — it may still appear in a moment if the connection recovers. Otherwise please try again, or use a smaller image file.');
       }
     } catch (err: any) {
       setUploadError(`Upload failed: ${err?.message || 'Network error'}`);
@@ -434,12 +501,13 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
     if (!commentText.trim() || !activeViewerId) return;
 
     if (currentItem?.isCustom) {
-      await submitComment(activeViewerId, commentText.trim());
+      await submitComment(activeViewerId, commentText.trim(), undefined, biasEmoji || undefined);
       setCommentText('');
     } else {
       // Static image comment simulate
       const commentObj: Comment = {
         id: 'static-cmt-' + Date.now(),
+        ...(biasEmoji ? { memberEmoji: biasEmoji } : {}),
         username: currentUser?.username || 'guest_army',
         displayName: currentUser?.displayName || 'ARMY 💜',
         content: commentText.trim(),
@@ -521,7 +589,7 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
           <span className="text-[10px] font-mono text-purple-400 tracking-wider uppercase flex items-center gap-1 mb-1">
             🖼️ HD CONCEPT SPACE <Sparkles className="w-3.5 h-3.5 text-purple-400 fill-purple-400/20" />
           </span>
-          <h2 className="text-2xl md:text-3xl font-sans font-black text-white uppercase tracking-wider">
+          <h2 className="text-xl md:text-2xl font-sans font-black text-white uppercase tracking-wider">
             Bangtan Photo Sandbox
           </h2>
           <p className="text-gray-400 text-xs max-w-xl">
@@ -579,23 +647,25 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
           <p className="text-gray-400 font-mono text-xs">No conceptual photo matches for your query. Try resetting filters.</p>
         </div>
       ) : (
-        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-5 space-y-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
           {filteredItems.map(item => {
             const userLiked = item.likes.includes(sessionId);
             return (
               <div
                 key={item.id}
                 onClick={() => setActiveViewerId(item.id)}
-                className="break-inside-avoid relative rounded-2xl overflow-hidden border border-white/5 bg-black hover:border-purple-500/40 transition-all duration-300 group cursor-pointer shadow-lg hover:shadow-purple-500/5 flex flex-col"
+                className="relative rounded-2xl overflow-hidden border border-white/5 bg-black hover:border-purple-500/40 transition-all duration-300 group cursor-pointer shadow-lg hover:shadow-purple-500/5 flex flex-col"
               >
-                {/* Wallpaper wrapper with Hover Actions */}
-                <div className="relative overflow-hidden w-full h-auto">
+                {/* Wallpaper wrapper with Hover Actions — fixed aspect so
+                    every card is the same height (no giant empty gaps) */}
+                <div className="relative overflow-hidden w-full aspect-[4/5]">
                   <img
                     src={item.url}
                     alt={item.title}
-                    className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                     referrerPolicy="no-referrer"
                     loading="lazy"
+                    onError={() => markBroken(item.id)}
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
                     <button
@@ -608,23 +678,33 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
                     >
                       <Eye className="w-4 h-4" />
                     </button>
+                  </div>
+                  {/* Always-visible download icon: downloads THIS picture.
+                      (On phones there is no hover, so a hover-only button
+                      was effectively invisible.) */}
+                  {downloadsEnabled && (
                     <button
                       onClick={(e) => {
                         triggerDownload(e, item.url, item.title);
                       }}
-                      className="p-2 rounded-full bg-slate-850 hover:bg-slate-750 text-white transition-all transform hover:scale-110 shadow-lg cursor-pointer"
-                      title="Download Image"
+                      className="absolute top-2 right-2 z-10 p-2 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white hover:bg-purple-600 active:scale-95 transition-all shadow-lg cursor-pointer"
+                      title={`Download ${item.title}`}
+                      aria-label={`Download ${item.title}`}
                     >
                       <Download className="w-4 h-4" />
                     </button>
-                  </div>
+                  )}
                 </div>
 
                 {/* Info Card margin element */}
-                <div className="p-4 bg-gradient-to-b from-[#0c0517] to-[#040108] border-t border-white/5 flex flex-col gap-2">
+                <div className="p-2.5 sm:p-4 bg-gradient-to-b from-[#0c0517] to-[#040108] border-t border-white/5 flex flex-col gap-1.5 sm:gap-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-mono font-bold px-2 py-0.5 border border-purple-400/20 bg-purple-950/40 text-purple-300 rounded uppercase">
-                      {item.category}
+                    <span className={`text-[9px] font-mono font-bold px-2 py-0.5 border rounded uppercase ${
+                      item.category === 'Memes'
+                        ? 'border-emerald-500/30 bg-emerald-950/40 text-emerald-300'
+                        : 'border-purple-400/20 bg-purple-950/40 text-purple-300'
+                    }`}>
+                      {item.category === 'Memes' ? '😆 MEME' : item.category}
                     </span>
                     <span className="text-[9px] text-slate-500 font-mono">
                       @{item.username}
@@ -651,17 +731,25 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
       )}
 
       {/* ================= GORGEOUS MAGNIFIER LIGHTBOX VIEWPORT ================= */}
-      <AnimatePresence>
-        {activeViewerId && currentItem && createPortal(
+      {activeViewerId && currentItem && createPortal(
           <div 
             id="gallery-magnifier-container"
             className="fixed inset-0 z-[9999] bg-[#04000a]/98 backdrop-blur-md flex flex-col lg:flex-row justify-between animate-fade-in"
           >
+            {/* Always-reachable close button (the side-panel close sits below the fold on phones) */}
+            <button
+              onClick={() => setActiveViewerId(null)}
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-40 p-2.5 rounded-full bg-black/70 hover:bg-black border border-white/20 text-white cursor-pointer shadow-lg"
+              aria-label="Close preview"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
             {/* LEFT / CENTRAL COLUMN: LARGE VISUAL AND RELATED CARDS */}
-            <div className="flex-1 flex flex-col justify-between h-[50vh] lg:h-full relative overflow-y-auto border-r border-white/5">
-              
+            <div className="flex-1 flex flex-col justify-between h-[62vh] lg:h-full relative overflow-y-auto border-r border-white/5">
+
               {/* Image viewport - Raised/positioned higher on mobile and desktop */}
-              <div className="flex-1 flex items-start justify-center p-4 pt-6 sm:pt-10 lg:pt-16 relative min-h-[280px]">
+              <div className="flex-1 flex items-start justify-center p-3 pt-5 sm:p-4 sm:pt-10 lg:pt-16 relative min-h-[240px]">
                 {/* Slide controllers */}
                 <button
                   onClick={() => navigateViewer('prev')}
@@ -670,12 +758,19 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
                   <ChevronLeft className="w-5 h-5" />
                 </button>
 
-                <img
-                  src={currentItem.url}
-                  alt={currentItem.title}
-                  className="max-w-full max-h-[42vh] lg:max-h-[70vh] rounded-xl object-contain shadow-[0_0_80px_rgba(168,85,247,0.25)] animate-zoom-in"
-                  referrerPolicy="no-referrer"
-                />
+                {brokenImages.has(currentItem.id) ? (
+                  <div className="flex items-center justify-center w-full max-h-[54vh] lg:max-h-[70vh] px-8 py-16 rounded-xl border border-white/10 bg-white/[0.03]">
+                    <p className="text-gray-400 font-mono text-xs text-center">This photo could not be loaded — its source link is no longer available.</p>
+                  </div>
+                ) : (
+                  <img
+                    src={currentItem.url}
+                    alt={currentItem.title}
+                    className="max-w-full max-h-[54vh] lg:max-h-[70vh] rounded-xl object-contain shadow-[0_0_80px_rgba(168,85,247,0.25)] animate-zoom-in"
+                    referrerPolicy="no-referrer"
+                    onError={() => markBroken(currentItem.id)}
+                  />
+                )}
 
                 <button
                   onClick={() => navigateViewer('next')}
@@ -686,7 +781,7 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
               </div>
 
               {/* Related Uploaded Images displayed right next/below of active magnifier (Strict user spec) */}
-              <div className="p-4 bg-black/40 border-t border-white/5 z-10">
+              <div className="p-3 sm:p-4 bg-black/40 border-t border-white/5 z-10">
                 <span className="text-[10px] font-mono font-bold text-purple-400 uppercase tracking-widest block mb-2.5">
                   📁 Related Conceptual Frames in category "{currentItem.category}"
                 </span>
@@ -701,7 +796,7 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
                           setActiveViewerId(item.id);
                           setReplyingToCommentId(null);
                         }}
-                        className="h-14 rounded-lg overflow-hidden border border-white/5 hover:border-purple-500/50 transition-all cursor-pointer bg-black/85 relative group"
+                        className="h-11 sm:h-14 rounded-lg overflow-hidden border border-white/5 hover:border-purple-500/50 transition-all cursor-pointer bg-black/85 relative group"
                       >
                         <img src={item.url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -715,10 +810,10 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
             </div>
 
             {/* RIGHT SIDEBAR COLUMN: PROFILE BIO, DETAILED COMMENTS AND NESTED REPLIES */}
-            <div className="w-full lg:w-[480px] h-[50vh] lg:h-full bg-[#080214] flex flex-col justify-between overflow-hidden relative z-20">
+            <div className="w-full lg:w-[480px] h-[38vh] lg:h-full bg-[#080214] flex flex-col justify-between overflow-hidden relative z-20">
               
               {/* Header Profile Title section */}
-              <div className="p-5 border-b border-white/5 flex items-center justify-between bg-black/40">
+              <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-black/40">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-purple-900/30 border border-purple-500/35 flex items-center justify-center font-sans font-bold text-white text-xs select-none shadow">
                     {currentItem.displayName.slice(0, 2)}
@@ -740,8 +835,8 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
               </div>
 
               {/* Description & Engagement Actions */}
-              <div className="p-5 border-b border-white/5 bg-black/10 flex flex-col gap-3 shrink-0">
-                <p className="text-xs text-gray-300 leading-relaxed max-h-20 overflow-y-auto">
+              <div className="px-4 py-3 border-b border-white/5 bg-black/10 flex flex-col gap-2 shrink-0">
+                <p className="text-xs text-gray-300 leading-relaxed max-h-12 overflow-y-auto">
                   {currentItem.description}
                 </p>
 
@@ -754,27 +849,30 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
                   ))}
                 </div>
 
-                {/* Instant Actions Row */}
-                <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/5 mt-1">
+                {/* Instant Actions Row — one line, compact, so the
+                    comments below stay visible */}
+                <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-white/5 mt-0.5 flex-nowrap">
                   <button
-                    onClick={() => handleShareCopy(currentItem.url, currentItem.id, currentItem.isCustom)}
-                    className="p-2 px-3 rounded-xl bg-white/5 text-xs font-bold text-gray-300 hover:bg-white/10 flex items-center gap-1.5 transition-all cursor-pointer relative"
+                    onClick={() => handleShareCopy(`${window.location.origin}/gallery/${currentItem.id}`, currentItem.id, currentItem.isCustom)}
+                    className="px-2.5 py-1.5 rounded-lg bg-white/5 text-[11px] font-bold text-gray-300 hover:bg-white/10 flex items-center gap-1 transition-all cursor-pointer relative whitespace-nowrap"
                   >
-                    <Share2 className="w-3.5 h-3.5" /> 
+                    <Share2 className="w-3 h-3" />
                     {copiedNotification ? 'Copied' : 'Copy Link'}
                   </button>
 
-                  <button
-                    onClick={(e) => triggerDownload(e, currentItem.url, currentItem.title)}
-                    className="p-2 px-3 rounded-xl bg-purple-950/30 text-purple-300 border border-purple-500/20 text-xs font-bold hover:bg-purple-900/35 flex items-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Download
-                  </button>
+                  {downloadsEnabled && (
+                    <button
+                      onClick={(e) => triggerDownload(e, currentItem.url, currentItem.title)}
+                      className="px-2.5 py-1.5 rounded-lg bg-purple-950/30 text-purple-300 border border-purple-500/20 text-[11px] font-bold hover:bg-purple-900/35 flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      <Download className="w-3 h-3" /> Download
+                    </button>
+                  )}
                 </div>
               </div>
 
               {/* COMMENTS AND REPLIES FEED CONTAINER */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
                 <span className="text-[10px] font-mono tracking-widest text-slate-400 block uppercase border-b border-white/5 pb-2">
                   💬 Public Engagement Guestbook ({currentItem.comments.length} primary chats)
                 </span>
@@ -790,7 +888,7 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
                         {/* Parent comment */}
                         <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 flex gap-3">
                           <div className="w-7 h-7 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-[10px] font-bold text-purple-300 uppercase select-none shrink-0">
-                            {comment.displayName.slice(0, 1)}
+                            {comment.memberEmoji ? <span className="text-[15px] leading-none">{comment.memberEmoji}</span> : comment.displayName.slice(0, 1)}
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between">
@@ -872,8 +970,13 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
                 )}
               </div>
 
+              {/* Bias emoji picker — shows beside the commenter's name */}
+              <div className="px-4 pt-3 bg-black/40 border-t border-white/5">
+                <MemberEmojiPicker value={biasEmoji} onChange={setBiasEmoji} />
+              </div>
+
               {/* Input primary message bar */}
-              <form onSubmit={handleCommentSubmit} className="p-4 bg-black/40 border-t border-white/5 flex gap-2">
+              <form onSubmit={handleCommentSubmit} className="p-4 bg-black/40 flex gap-2">
                 <input
                   type="text"
                   value={commentText}
@@ -893,7 +996,6 @@ export default function GallerySection({ items, initialCategory = 'All' }: { ite
           </div>,
           document.body
         )}
-      </AnimatePresence>
 
       {/* ================= GORGEOUS STRICT VALIDATION UPLOAD ARTWORK DIALOG ================= */}
       <AnimatePresence>

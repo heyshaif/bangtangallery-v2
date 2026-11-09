@@ -71,7 +71,7 @@ export const DisclaimerPopup: React.FC<DisclaimerPopupProps> = ({
           {/* Background backdrop blur for centered popup */}
           {isCenter && (
             <motion.div
-              initial={{ anonymity: 0, opacity: 0 }}
+              initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9998] transition-all"

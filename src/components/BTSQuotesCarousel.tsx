@@ -27,7 +27,7 @@ const QUOTES_DATA: QuoteItem[] = [
     type: 'Quote',
     song: 'Love Yourself Tour Epilogue',
     bgColor: 'from-amber-500/10 to-purple-600/15 border-amber-500/20 hover:border-amber-500/40',
-    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=250&q=80' // stylized representation node
+    avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg' // stylized representation node
   },
   {
     id: 'q2',
@@ -37,7 +37,7 @@ const QUOTES_DATA: QuoteItem[] = [
     type: 'Quote',
     song: 'Epiphany Wisdom Recital',
     bgColor: 'from-pink-500/10 to-purple-600/15 border-pink-500/20 hover:border-pink-500/40',
-    avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=250&q=80'
+    avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
   },
   {
     id: 'q3',
@@ -47,7 +47,7 @@ const QUOTES_DATA: QuoteItem[] = [
     type: 'Quote',
     song: 'Agust D Live Diary',
     bgColor: 'from-blue-500/10 to-purple-600/15 border-blue-500/20 hover:border-blue-500/40',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&q=80'
+    avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
   },
   {
     id: 'q4',
@@ -57,7 +57,7 @@ const QUOTES_DATA: QuoteItem[] = [
     type: 'Quote',
     song: 'Hope World Memoirs',
     bgColor: 'from-emerald-500/10 to-purple-600/15 border-emerald-500/20 hover:border-emerald-500/40',
-    avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=250&q=80'
+    avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
   },
   {
     id: 'q5',
@@ -67,7 +67,7 @@ const QUOTES_DATA: QuoteItem[] = [
     type: 'Quote',
     song: 'Live Reflection Series',
     bgColor: 'from-cyan-500/10 to-purple-600/15 border-cyan-500/20 hover:border-cyan-500/40',
-    avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=250&q=80'
+    avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
   },
   {
     id: 'q6',
@@ -77,7 +77,7 @@ const QUOTES_DATA: QuoteItem[] = [
     type: 'Quote',
     song: 'Inner Child Reflections',
     bgColor: 'from-indigo-500/10 to-purple-600/15 border-indigo-500/20 hover:border-indigo-500/40',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80'
+    avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
   },
   {
     id: 'q7',
@@ -87,7 +87,7 @@ const QUOTES_DATA: QuoteItem[] = [
     type: 'Quote',
     song: 'My Time Philosophy',
     bgColor: 'from-rose-500/10 to-purple-600/15 border-rose-500/20 hover:border-rose-500/40',
-    avatarUrl: 'https://images.unsplash.com/photo-1500048993953-d23a436266cf?auto=format&fit=crop&w=250&q=80'
+    avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
   },
   {
     id: 'l1',
@@ -97,7 +97,7 @@ const QUOTES_DATA: QuoteItem[] = [
     type: 'Lyric',
     song: 'Tomorrow (Album: Skool Luv Affair)',
     bgColor: 'from-purple-500/10 to-pink-600/15 border-purple-500/25 hover:border-purple-400/40',
-    avatarUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=250&q=80'
+    avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
   },
   {
     id: 'l2',
@@ -107,7 +107,7 @@ const QUOTES_DATA: QuoteItem[] = [
     type: 'Lyric',
     song: 'We Are Bulletproof: The Eternal',
     bgColor: 'from-fuchsia-500/10 to-violet-600/15 border-fuchsia-500/25 hover:border-fuchsia-400/40',
-    avatarUrl: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=250&q=80'
+    avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
   },
   {
     id: 'l3',
@@ -117,7 +117,7 @@ const QUOTES_DATA: QuoteItem[] = [
     type: 'Quote',
     song: 'Do You Solo Release',
     bgColor: 'from-amber-500/10 to-purple-600/15 border-amber-500/20 hover:border-amber-500/40',
-    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=250&q=80'
+    avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
   },
   {
     id: 'l4',
@@ -127,11 +127,15 @@ const QUOTES_DATA: QuoteItem[] = [
     type: 'Lyric',
     song: 'So Far Away (First Mixtape)',
     bgColor: 'from-blue-500/10 to-purple-600/15 border-blue-500/20 hover:border-blue-500/40',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&q=80'
+    avatarUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg'
   }
 ];
 
-export default function BTSQuotesCarousel() {
+export default function BTSQuotesCarousel({ items }: { items?: QuoteItem[] }) {
+  // Admin-editable (Quotes CMS): the published config's homeQuotes
+  // win; the built-in set is only a fallback for configs without it.
+  // An explicitly emptied list hides the section.
+  const quotesData: QuoteItem[] = Array.isArray(items) ? items : QUOTES_DATA;
   const [isPlaying, setIsPlaying] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -195,7 +199,9 @@ export default function BTSQuotesCarousel() {
   };
 
   // Double data to enable smooth looping/infinite layout feel
-  const doubledQuotes = [...QUOTES_DATA, ...QUOTES_DATA];
+  const doubledQuotes = [...quotesData, ...quotesData];
+
+  if (quotesData.length === 0) return null;
 
   return (
     <div className="w-full bg-[#070110]/95 border border-white/5 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-[0_15px_40px_rgba(236,72,153,0.05)]">

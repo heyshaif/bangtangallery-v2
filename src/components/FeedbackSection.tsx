@@ -117,7 +117,7 @@ export default function FeedbackSection() {
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="border-b border-white/5 pb-6">
-        <h2 className="text-2xl md:text-3xl font-sans font-extrabold text-white">
+        <h2 className="text-xl md:text-2xl font-sans font-extrabold text-white">
           FESTA Feedback & Reviews
         </h2>
         <p className="text-gray-400 text-sm">

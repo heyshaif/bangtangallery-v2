@@ -909,7 +909,7 @@ export default function FestaCountdown({ onFeedbackTrigger }: FestaCountdownProp
               </div>
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-purple-300 to-rose-400 tracking-tighter mb-2 font-sans uppercase">
+            <h1 className="text-2xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-purple-300 to-rose-400 tracking-tighter mb-2 font-sans uppercase">
               💜 THANK YOU ARMY!
             </h1>
             <p className="text-lg md:text-xl text-purple-200 font-bold max-w-xl mb-3 font-sans">

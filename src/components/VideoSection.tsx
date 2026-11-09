@@ -44,12 +44,12 @@ export default function VideoSection() {
       return `https://img.youtube.com/vi/${ytid || videoId}/hqdefault.jpg`;
     }
     if (type === 'twitter') {
-      return 'https://images.unsplash.com/photo-1611605698335-8b15d27e03f9?w=300';
+      return 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg';
     }
     if (type === 'telegram') {
-      return 'https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=300';
+      return 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg';
     }
-    return 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300';
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg';
   };
 
   // Convert url coordinates to a playable iframe embed URL
@@ -116,13 +116,16 @@ export default function VideoSection() {
     const saved = localStorage.getItem('bts_videos_board');
     if (saved) {
       try {
-        setVideos(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        const filtered = Array.isArray(parsed) ? parsed.filter((v: any) => v.videoId !== 'gdZLi9oWNZg' && v.id !== 'vid1') : [];
+        setVideos(filtered);
+        localStorage.setItem('bts_videos_board', JSON.stringify(filtered));
       } catch (e) {
-        setVideos(INITIAL_VIDEOS);
+        setVideos([]);
       }
     } else {
-      setVideos(INITIAL_VIDEOS);
-      localStorage.setItem('bts_videos_board', JSON.stringify(INITIAL_VIDEOS));
+      setVideos([]);
+      localStorage.setItem('bts_videos_board', JSON.stringify([]));
     }
   }, []);
 
@@ -442,7 +445,7 @@ export default function VideoSection() {
                     className="w-full h-full object-cover animate-fade-in"
                     referrerPolicy="no-referrer"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300';
+                      (e.target as HTMLImageElement).src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg';
                     }}
                   />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -592,7 +595,7 @@ export default function VideoSection() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         referrerPolicy="no-referrer"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300';
+                          (e.target as HTMLImageElement).src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg/1280px-BTS_during_a_White_House_press_conference_May_31%2C_2022_%28cropped%29.jpg';
                         }}
                       />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/40">

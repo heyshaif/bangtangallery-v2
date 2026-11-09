@@ -1,0 +1,874 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Hardware-accelerated smooth momentum scrolling */
+html {
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-top: 80px;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom premium visual animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0px); }
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.95); opacity: 0; filter: blur(6px); }
+  to { transform: scale(1); opacity: 1; filter: blur(0px); }
+}
+
+@keyframes float-idle {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(0.5deg); }
+}
+
+@keyframes slow-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.15); }
+  50% { box-shadow: 0 0 35px rgba(168, 85, 247, 0.35); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-zoom-in {
+  animation: zoomIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float-idle {
+  animation: float-idle 6s ease-in-out infinite;
+}
+
+.animate-slow-glow {
+  animation: slow-glow 4s ease-in-out infinite;
+}
+
+/* iOS Spring Interactive Presets */
+.card-ios {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.4s ease, 
+              background-color 0.4s ease,
+              filter 0.5s ease;
+  will-change: transform, box-shadow;
+}
+
+.card-ios:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 22px 40px -10px rgba(147, 51, 234, 0.25);
+  border-color: rgba(168, 85, 247, 0.35);
+}
+
+.button-ios {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+              background-color 0.3s ease, 
+              box-shadow 0.3s ease, 
+              border-color 0.3s ease;
+  will-change: transform;
+}
+
+.button-ios:active {
+  transform: scale(0.96);
+}
+
+.img-ios-zoom {
+  transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
+  will-change: transform;
+}
+
+.img-ios-zoom:hover {
+  transform: scale(1.05);
+}
+
+/* Glassmorphism utility presets */
+.glass-panel {
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Global utility overrides to map the Immersive UI design theme specs seamlessly */
+.border-white\/5 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.bg-black\/60,
+.bg-black\/50,
+.bg-black\/45,
+.bg-black\/40 {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+}
+
+.bg-white\/\[0\.02\],
+.bg-white\/\[0\.03\],
+.bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.glow-purple {
+  box-shadow: 0 0 35px -5px rgba(168, 85, 247, 0.25);
+}
+
+/* Scrollbar styling for playlist lists */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(147, 51, 234, 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(147, 51, 234, 0.5);
+}
+
+/* Light Mode overrides to translate dark glassmorphism into a premium high-contrast white lilac theme */
+.light {
+  color-scheme: light;
+}
+
+.light .glass-panel {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border-color: rgba(147, 51, 234, 0.15) !important;
+  color: #1a0f30 !important;
+}
+
+.light .border-white\/10,
+.light .border-white\/5,
+.light .border-purple-500\/20 {
+  border-color: rgba(147, 51, 234, 0.15) !important;
+}
+
+.light .bg-black\/60,
+.light .bg-black\/50,
+.light .bg-black\/45,
+.light .bg-black\/40 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  color: #1a0f30 !important;
+}
+
+.light .bg-white\/\[0\.01\],
+.light .bg-white\/\[0\.02\],
+.light .bg-white\/\[0\.03\],
+.light .bg-white\/5,
+.light .bg-white\/10 {
+  background-color: rgba(147, 51, 234, 0.05) !important;
+}
+
+.light .text-white,
+.light h1,
+.light h2,
+.light h3,
+.light h4,
+.light h5,
+.light h6 {
+  color: #11052c !important;
+}
+
+.light .text-gray-400,
+.light .text-slate-400,
+.light .text-gray-300,
+.light .text-slate-300 {
+  color: #3b2b4e !important;
+}
+
+.light .text-gray-500,
+.light .text-slate-500 {
+  color: #5d4d6e !important;
+}
+
+.light .text-purple-300 {
+  color: #7c3aed !important;
+}
+
+.light .text-purple-400 {
+  color: #6d28d9 !important;
+}
+
+/* Stone text family (Batch 98): the general light rules never
+   flipped text-stone-*, so stone-100/200 titles and lyrics
+   stayed near-white on white panels in light mode. */
+.light .text-stone-100,
+.light .text-stone-200 {
+  color: #1c0b33 !important;
+}
+
+.light .text-stone-300 {
+  color: #3b2b4e !important;
+}
+
+.light .text-stone-400 {
+  color: #57496b !important;
+}
+
+/* Live chat strips + lyrics sheet (Batch 98): the bg-black/20
+   strips are not in the general flatten list, so in light mode
+   the chat writing area and the lyrics language bar stayed
+   dark and their text was unreadable. Scoped to their markers. */
+.light .chat-strip {
+  background-color: #f4effc !important;
+}
+
+.light .lyrics-sheet {
+  background-color: #ffffff !important;
+}
+
+.light .lyrics-sheet .lyrics-bar {
+  background-color: #f4effc !important;
+}
+
+/* Batch 107 — News sidebar widgets (Trending / Popular Tags):
+   their purple-950/10 tint is translucent, so in light mode
+   whatever sits behind shows through and the panel reads as a
+   dark slab with unreadable titles. Force them solid. */
+/* Batch 111 — cute player progress bar: an animated
+   purple-pink-orange gradient that slowly slides, a soft
+   pink glow, and a gently pulsing heart knob. */
+.cute-progress-fill {
+  background-image: linear-gradient(90deg, #a855f7, #ec4899, #fb7185, #f59e0b, #a855f7) !important;
+  background-size: 200% 100%;
+  animation: cute-slide 3.2s linear infinite;
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.55);
+}
+@keyframes cute-slide {
+  from { background-position: 0% 0; }
+  to { background-position: 200% 0; }
+}
+.cute-knob {
+  animation: cute-knob-pulse 1.6s ease-in-out infinite;
+}
+@keyframes cute-knob-pulse {
+  0%, 100% { transform: translateY(-50%) scale(1); }
+  50% { transform: translateY(-50%) scale(1.18); }
+}
+
+.light .side-widget {
+  background-color: #ffffff !important;
+}
+.light .side-widget .tag-chip {
+  background-color: #f1eafd !important;
+  border-color: rgba(147, 51, 234, 0.25) !important;
+}
+
+.light .lyrics-sheet .bg-clip-text {
+  color: #7c3aed !important;
+  background-image: none !important;
+}
+
+.light .bg-purple-950\/10,
+.light .bg-purple-950\/25,
+.light .bg-purple-950\/40,
+.light .bg-[#0d071a]\/40,
+.light .bg-[#0c0617]\/90,
+.light .bg-[#05000a]\/95 {
+  background-color: rgba(250, 245, 255, 0.96) !important;
+}
+
+.light .bg-purple-950\/20 {
+  background-color: rgba(147, 51, 234, 0.12) !important;
+}
+
+.light .bg-[#05000a] {
+  background-color: #faf8fd !important;
+}
+
+.light input,
+.light select,
+.light textarea {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(147, 51, 234, 0.2) !important;
+  color: #11052c !important;
+}
+
+.light input::placeholder,
+.light textarea::placeholder {
+  color: #8c7d9a !important;
+}
+
+.light button:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600) {
+  background-color: rgba(147, 51, 234, 0.08) !important;
+  color: #6d28d9 !important;
+  border-color: rgba(147, 51, 234, 0.2) !important;
+}
+
+.light button:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600):hover {
+  background-color: rgba(147, 51, 234, 0.15) !important;
+  color: #5b21b6 !important;
+}
+
+/* ARIRANG Mode overrides: Dark mode's near-black glass look kept, with the
+   purple/pink accent family shifted to a SOFT red/rose (deliberately subtle),
+   deep panels tinted maroon, and white text left untouched. */
+.arirang {
+  color-scheme: dark;
+}
+
+.arirang .glass-panel {
+  background: rgba(26, 5, 11, 0.72) !important;
+  border-color: rgba(244, 63, 94, 0.16) !important;
+}
+
+.arirang .glow-purple {
+  box-shadow: 0 0 35px -5px rgba(244, 63, 94, 0.28) !important;
+}
+
+/* Accent text */
+.arirang .text-purple-200 { color: #fecdd3 !important; }
+.arirang .text-purple-300 { color: #fda4af !important; }
+.arirang .text-purple-400 { color: #fb7185 !important; }
+.arirang .text-purple-500 { color: #f43f5e !important; }
+.arirang .text-purple-600 { color: #dc2626 !important; }
+.arirang .text-pink-300 { color: #fda4af !important; }
+.arirang .text-pink-400 { color: #fb7185 !important; }
+.arirang .text-fuchsia-300 { color: #fda4af !important; }
+.arirang .text-fuchsia-400 { color: #fb7185 !important; }
+.arirang .hover\:text-purple-300:hover { color: #fda4af !important; }
+.arirang .hover\:text-purple-400:hover { color: #fb7185 !important; }
+.arirang .hover\:text-fuchsia-400:hover { color: #fb7185 !important; }
+
+/* Accent borders */
+.arirang .border-purple-400 { border-color: #fb7185 !important; }
+.arirang .border-purple-500 { border-color: #f43f5e !important; }
+.arirang .border-purple-500\/5 { border-color: rgb(244 63 94 / 0.05) !important; }
+.arirang .border-purple-500\/10 { border-color: rgb(244 63 94 / 0.1) !important; }
+.arirang .border-purple-500\/15 { border-color: rgb(244 63 94 / 0.15) !important; }
+.arirang .border-purple-500\/20 { border-color: rgb(244 63 94 / 0.2) !important; }
+.arirang .border-purple-500\/25 { border-color: rgb(244 63 94 / 0.25) !important; }
+.arirang .border-purple-500\/30 { border-color: rgb(244 63 94 / 0.3) !important; }
+.arirang .border-purple-500\/35 { border-color: rgb(244 63 94 / 0.35) !important; }
+.arirang .border-purple-500\/40 { border-color: rgb(244 63 94 / 0.4) !important; }
+.arirang .border-purple-500\/50 { border-color: rgb(244 63 94 / 0.5) !important; }
+.arirang .border-pink-400 { border-color: #fb7185 !important; }
+.arirang .hover\:border-purple-400:hover { border-color: #fb7185 !important; }
+.arirang .hover\:border-purple-500\/20:hover { border-color: rgb(244 63 94 / 0.2) !important; }
+.arirang .hover\:border-purple-500\/30:hover { border-color: rgb(244 63 94 / 0.3) !important; }
+.arirang .hover\:border-purple-500\/40:hover { border-color: rgb(244 63 94 / 0.4) !important; }
+.arirang .hover\:border-purple-500\/50:hover { border-color: rgb(244 63 94 / 0.5) !important; }
+
+/* Solid accent backgrounds */
+.arirang .bg-purple-400 { background-color: #fb7185 !important; }
+.arirang .bg-purple-500 { background-color: #f43f5e !important; }
+.arirang .bg-purple-600 { background-color: #dc2626 !important; }
+.arirang .bg-purple-800 { background-color: #991b1b !important; }
+.arirang .bg-purple-500\/5 { background-color: rgb(244 63 94 / 0.05) !important; }
+.arirang .bg-purple-500\/10 { background-color: rgb(244 63 94 / 0.1) !important; }
+.arirang .bg-purple-500\/20 { background-color: rgb(244 63 94 / 0.2) !important; }
+.arirang .bg-purple-600\/30 { background-color: rgb(220 38 38 / 0.3) !important; }
+.arirang .hover\:bg-purple-500:hover { background-color: #f43f5e !important; }
+.arirang .hover\:bg-purple-600:hover { background-color: #dc2626 !important; }
+.arirang .hover\:bg-purple-800:hover { background-color: #991b1b !important; }
+
+/* Deep tinted panels: purple-950/900 family becomes deep maroon */
+.arirang .bg-purple-950 { background-color: #450a0a !important; }
+.arirang .bg-purple-950\/5 { background-color: rgb(69 10 10 / 0.05) !important; }
+.arirang .bg-purple-950\/10 { background-color: rgb(69 10 10 / 0.1) !important; }
+.arirang .bg-purple-950\/20 { background-color: rgb(69 10 10 / 0.2) !important; }
+.arirang .bg-purple-950\/25 { background-color: rgb(69 10 10 / 0.25) !important; }
+.arirang .bg-purple-950\/30 { background-color: rgb(69 10 10 / 0.3) !important; }
+.arirang .bg-purple-950\/40 { background-color: rgb(69 10 10 / 0.4) !important; }
+.arirang .bg-purple-950\/50 { background-color: rgb(69 10 10 / 0.5) !important; }
+.arirang .bg-purple-950\/60 { background-color: rgb(69 10 10 / 0.6) !important; }
+.arirang .bg-purple-900\/30 { background-color: rgb(127 29 29 / 0.3) !important; }
+.arirang .bg-purple-900\/40 { background-color: rgb(127 29 29 / 0.4) !important; }
+.arirang .bg-purple-900\/60 { background-color: rgb(127 29 29 / 0.6) !important; }
+.arirang .bg-fuchsia-950\/20 { background-color: rgb(69 10 10 / 0.2) !important; }
+.arirang .hover\:bg-purple-900\/40:hover { background-color: rgb(127 29 29 / 0.4) !important; }
+.arirang .hover\:bg-purple-950\/40:hover { background-color: rgb(69 10 10 / 0.4) !important; }
+
+/* Near-black page panels take a faint warm red tint */
+.arirang .bg-\[\#05000a\] { background-color: #0a0206 !important; }
+.arirang .bg-\[\#05000a\]\/95 { background-color: rgb(10 2 6 / 0.95) !important; }
+.arirang .bg-\[\#0d071a\]\/40 { background-color: rgb(20 4 9 / 0.4) !important; }
+.arirang .bg-\[\#0c0617\]\/90 { background-color: rgb(16 3 8 / 0.9) !important; }
+
+/* Gradients: shift the stop colors to red/rose, keep positions and shapes */
+.arirang .from-purple-400 { --tw-gradient-from: #fb7185 !important; }
+.arirang .from-purple-500 { --tw-gradient-from: #f43f5e !important; }
+.arirang .from-purple-600 { --tw-gradient-from: #dc2626 !important; }
+.arirang .from-purple-700 { --tw-gradient-from: #b91c1c !important; }
+.arirang .from-purple-950 { --tw-gradient-from: #450a0a !important; }
+.arirang .from-pink-500 { --tw-gradient-from: #f43f5e !important; }
+.arirang .via-purple-500 { --tw-gradient-via: #f43f5e !important; }
+.arirang .via-purple-600 { --tw-gradient-via: #dc2626 !important; }
+.arirang .via-fuchsia-500 { --tw-gradient-via: #f43f5e !important; }
+.arirang .via-fuchsia-600 { --tw-gradient-via: #e11d48 !important; }
+.arirang .via-pink-500 { --tw-gradient-via: #f43f5e !important; }
+.arirang .to-purple-600 { --tw-gradient-to: #dc2626 !important; }
+.arirang .to-purple-600\/15 { --tw-gradient-to: rgb(220 38 38 / 0.15) !important; }
+.arirang .to-fuchsia-500 { --tw-gradient-to: #f43f5e !important; }
+.arirang .to-fuchsia-600 { --tw-gradient-to: #e11d48 !important; }
+.arirang .to-pink-500 { --tw-gradient-to: #f43f5e !important; }
+.arirang .to-pink-600 { --tw-gradient-to: #e11d48 !important; }
+.arirang .to-pink-700 { --tw-gradient-to: #be123c !important; }
+
+/* Accent shadows and rings */
+.arirang .shadow-purple-500\/20 { --tw-shadow-color: rgb(244 63 94 / 0.2) !important; }
+.arirang .shadow-purple-600\/30 { --tw-shadow-color: rgb(225 29 72 / 0.3) !important; }
+.arirang .ring-purple-500 { --tw-ring-color: #f43f5e !important; }
+
+/* Inner scrollbars */
+.arirang ::-webkit-scrollbar-thumb { background: rgba(225, 29, 72, 0.35); }
+.arirang ::-webkit-scrollbar-thumb:hover { background: rgba(225, 29, 72, 0.55); }
+
+/* ==========================================
+   ULTRA-PREMIUM BTS PURPLE ADMIN Facelift
+   ========================================== */
+
+/* Main layout cosmic background */
+.bts-admin-dashboard {
+  background: radial-gradient(circle at 10% 20%, rgba(13, 6, 28, 1) 0%, rgba(4, 1, 10, 1) 100%) !important;
+  color: #f1f5f9 !important;
+}
+
+/* Premium Glassmorphic Header & Sidebar */
+.bts-admin-dashboard header {
+  background: rgba(11, 4, 24, 0.5) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.1) !important;
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+}
+
+.bts-admin-dashboard aside {
+  background: rgba(8, 3, 18, 0.6) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  border-right: 1px solid rgba(168, 85, 247, 0.08) !important;
+}
+
+/* Redesigned Sidebar Items */
+.bts-admin-dashboard aside button {
+  border-radius: 12px !important;
+  margin-top: 2px !important;
+  margin-bottom: 2px !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  font-weight: 600 !important;
+  font-family: inherit !important;
+}
+
+.bts-admin-dashboard aside button:hover {
+  background: rgba(168, 85, 247, 0.06) !important;
+  color: #fff !important;
+  transform: translateX(4px) !important;
+}
+
+/* Premium Cards, Panels and List Items */
+.bts-admin-dashboard main .bg-purple-950\/10,
+.bts-admin-dashboard main .bg-purple-950\/15,
+.bts-admin-dashboard main .bg-purple-950\/20,
+.bts-admin-dashboard main .bg-purple-950\/25,
+.bts-admin-dashboard main .bg-black\/40,
+.bts-admin-dashboard main .border-purple-500\/10,
+.bts-admin-dashboard main .border-purple-500\/15,
+.bts-admin-dashboard main .border-purple-500\/20 {
+  background-color: rgba(255, 255, 255, 0.015) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(168, 85, 247, 0.08) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.bts-admin-dashboard main .bg-purple-950\/10:hover,
+.bts-admin-dashboard main .bg-purple-950\/15:hover,
+.bts-admin-dashboard main .bg-purple-950\/20:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(168, 85, 247, 0.22) !important;
+  box-shadow: 0 10px 40px -10px rgba(147, 51, 234, 0.12) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Crisp & Sleek Typography and Spacing */
+.bts-admin-dashboard main h3 {
+  font-family: "Inter", sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em !important;
+  text-transform: none !important;
+  font-size: 1.25rem !important;
+}
+
+.bts-admin-dashboard main h4 {
+  font-family: "Inter", sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  text-transform: none !important;
+}
+
+/* Redesigned High-Quality Form Controls */
+.bts-admin-dashboard main input[type="text"],
+.bts-admin-dashboard main input[type="password"],
+.bts-admin-dashboard main input[type="date"],
+.bts-admin-dashboard main input[type="number"],
+.bts-admin-dashboard main select,
+.bts-admin-dashboard main textarea {
+  background: rgba(4, 1, 10, 0.6) !important;
+  border: 1px solid rgba(168, 85, 247, 0.15) !important;
+  border-radius: 12px !important;
+  color: #f8fafc !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.8125rem !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  outline: none !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.bts-admin-dashboard main input[type="text"]:focus,
+.bts-admin-dashboard main input[type="password"]:focus,
+.bts-admin-dashboard main input[type="date"]:focus,
+.bts-admin-dashboard main select:focus,
+.bts-admin-dashboard main textarea:focus {
+  border-color: rgba(168, 85, 247, 0.5) !important;
+  background: rgba(4, 1, 10, 0.8) !important;
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.15), inset 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Beautiful Interactive Buttons */
+.bts-admin-dashboard button {
+  border-radius: 10px !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer !important;
+}
+
+.bts-admin-dashboard main button:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.15) !important;
+}
+
+.bts-admin-dashboard main button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97) !important;
+}
+
+/* Table Design Overhaul */
+.bts-admin-dashboard main table {
+  border-collapse: separate !important;
+  border-spacing: 0 6px !important;
+}
+
+.bts-admin-dashboard main tr {
+  background-color: rgba(255, 255, 255, 0.01) !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.bts-admin-dashboard main tr:hover {
+  background-color: rgba(255, 255, 255, 0.025) !important;
+}
+
+.bts-admin-dashboard main td,
+.bts-admin-dashboard main th {
+  padding: 1rem 1.25rem !important;
+  border: none !important;
+}
+
+.bts-admin-dashboard main th {
+  font-family: var(--font-mono) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  font-size: 0.65rem !important;
+  color: #a855f7 !important;
+}
+
+/* Slick Custom Glass Scrollbar for Admin Area */
+.bts-admin-dashboard ::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.bts-admin-dashboard ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+
+.bts-admin-dashboard ::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.2) !important;
+  border-radius: 99px !important;
+  border: 2px solid transparent !important;
+}
+
+.bts-admin-dashboard ::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.4) !important;
+}
+
+
+/* =====================================================================
+   LIGHT ("WHITE") MODE — site-wide translation layer
+   The public app root carries the .light class when the visitor picks
+   the light theme, but the section components were built with
+   hardcoded dark-mode utility classes (dark panels, white text), so
+   the theme used to change only the page shell and leave sections
+   unreadable. These higher-specificity overrides translate the
+   recurring dark palette to a light one — white surfaces, black/dark
+   text — everywhere under .light at once. Solid brand buttons/badges
+   keep their white text, media players and image scrims stay dark.
+   ===================================================================== */
+body:has(.light) {
+  background-color: #faf8fd;
+}
+
+/* --- Text: white / pale text becomes dark --- */
+.light [class~="text-white"] { color: #211335; }
+.light [class~="text-slate-100"],
+.light [class~="text-slate-200"],
+.light [class~="text-gray-100"],
+.light [class~="text-gray-200"],
+.light [class~="text-purple-100"] { color: #2a1b45; }
+.light [class~="text-slate-300"],
+.light [class~="text-gray-300"],
+.light [class~="text-stone-300"] { color: #463a61; }
+.light [class~="text-slate-400"],
+.light [class~="text-gray-400"],
+.light [class~="text-stone-400"] { color: #5d5178; }
+.light [class~="text-slate-500"],
+.light [class~="text-gray-500"],
+.light [class~="text-stone-500"] { color: #6f6390; }
+.light [class~="text-purple-200"] { color: #7c3aed; }
+.light [class~="text-purple-300"] { color: #7e22ce; }
+.light [class~="text-pink-200"] { color: #be185d; }
+.light [class~="text-pink-300"] { color: #db2777; }
+
+/* --- Keep white text on solid / gradient brand elements --- */
+.light [class~="bg-purple-500"][class~="text-white"],
+.light [class~="bg-purple-600"][class~="text-white"],
+.light [class~="bg-purple-700"][class~="text-white"],
+.light [class~="bg-pink-500"][class~="text-white"],
+.light [class~="bg-pink-600"][class~="text-white"],
+.light [class~="bg-fuchsia-600"][class~="text-white"],
+.light [class~="bg-indigo-600"][class~="text-white"],
+.light [class~="bg-red-500"][class~="text-white"],
+.light [class~="bg-red-600"][class~="text-white"],
+.light [class~="bg-rose-500"][class~="text-white"],
+.light [class~="bg-rose-600"][class~="text-white"],
+.light [class~="bg-emerald-500"][class~="text-white"],
+.light [class~="bg-emerald-600"][class~="text-white"],
+.light [class~="bg-cyan-600"][class~="text-white"],
+.light [class~="bg-sky-500"][class~="text-white"],
+.light [class~="bg-sky-600"][class~="text-white"],
+.light [class~="bg-blue-600"][class~="text-white"],
+.light [class~="bg-amber-500"][class~="text-white"],
+.light [class*="from-purple-600"][class~="text-white"],
+.light [class*="from-purple-700"][class~="text-white"],
+.light [class*="from-pink-600"][class~="text-white"],
+.light [class*="from-fuchsia-600"][class~="text-white"] { color: #ffffff; }
+.light [class*="bg-purple-600"] [class~="text-white"],
+.light [class*="bg-purple-700"] [class~="text-white"],
+.light [class*="bg-pink-600"] [class~="text-white"],
+.light [class*="from-purple-"] [class~="text-white"],
+.light [class*="from-pink-"] [class~="text-white"],
+.light [class*="from-black"] [class~="text-white"],
+.light [class~="bg-black"] [class~="text-white"] { color: #ffffff; }
+
+/* --- Surfaces: near-black purple panels become white cards --- */
+.light [class*="bg-[#0"] { background-color: #ffffff; }
+.light [class*="bg-[#1"] { background-color: #ffffff; }
+.light [class*="bg-[#1db954"] { background-color: #1db954; } /* Spotify green stays */
+.light [class*="bg-slate-950"] { background-color: #ffffff; }
+.light [class*="bg-slate-900"] { background-color: #f6f2fc; }
+.light [class*="bg-purple-950"] { background-color: #f1eafd; }
+.light [class*="bg-purple-900"] { background-color: #e9defc; }
+.light [class*="bg-white/"] { background-color: rgba(109, 40, 217, 0.07); }
+.light [class*="bg-black/"] { background-color: #ffffff; }
+
+/* --- Borders & dividers: hairlines become soft dark lines --- */
+.light [class*="border-white/"] { border-color: rgba(43, 16, 84, 0.14); }
+.light [class*="divide-white/"] > :not([hidden]) ~ :not([hidden]) { border-color: rgba(43, 16, 84, 0.14); }
+
+/* --- Form hints --- */
+.light input::placeholder,
+.light textarea::placeholder { color: #8d7fb0; opacity: 1; }
+
+/* ---- Light mode, round 2 ---------------------------------------------
+   Dark GRADIENT surfaces (the voting header card, news hero cards) kept
+   their dark background-image in light mode while their text flipped
+   dark, making titles invisible. Flatten dark gradients on ordinary
+   block elements to a clean white surface. Absolutely-positioned
+   elements are image scrims and are left alone, and brand gradients
+   (purple-600 -> pink-600 buttons) use different stops, so they are
+   untouched. Text that sits over a photo keeps its light colors via
+   the .on-media marker. */
+.light [class*="from-[#0"]:not([class*="absolute"]),
+.light [class*="from-[#1"]:not([class*="absolute"]),
+.light [class*="from-[#2"]:not([class*="absolute"]),
+.light [class*="from-purple-950"]:not([class*="absolute"]),
+.light [class*="from-purple-900"]:not([class*="absolute"]),
+.light [class*="from-black"]:not([class*="absolute"]) {
+  background-image: none !important;
+  background-color: #ffffff !important;
+}
+.light .on-media [class~="text-white"],
+.light [class~="text-white"].on-media { color: #ffffff !important; }
+.light .on-media [class~="text-slate-300"] { color: #e2e8f0 !important; }
+.light .on-media [class~="text-slate-400"] { color: #cbd5e1 !important; }
+.light .on-media [class~="text-gray-300"] { color: #e5e7eb !important; }
+.light .on-media [class~="text-gray-400"] { color: #d1d5db !important; }
+.light .on-media [class~="text-stone-100"] { color: #f5f5f4 !important; }
+.light .on-media [class~="text-stone-200"] { color: #e7e5e4 !important; }
+.light .on-media [class~="text-stone-300"] { color: #d6d3d1 !important; }
+.light .on-media [class~="text-stone-400"] { color: #a8a29e !important; }
+
+/* News article reading view (Batch 37): in light mode the article card
+   flattens to white but the body stayed zinc-300 / purple-100, so the
+   text was unreadable. Scope dark, readable colors to the article view
+   only — the rest of the site keeps the general light rules above. */
+.light .news-article-view { background: #ffffff !important; }
+.light .news-article-view h1 { color: #111827 !important; }
+.light .news-article-view p { color: #26262b !important; }
+.light .news-article-view [class~="text-purple-100"] { color: #4c1d95 !important; }
+.light .news-article-view [class~="text-purple-300"] { color: #6d28d9 !important; }
+.light .news-article-view [class~="text-zinc-500"],
+.light .news-article-view [class~="text-zinc-400"] { color: #52525b !important; }
+
+/* ARMY Bomb lightstick (owner feature): idle the orb is dim; while the
+   background song plays it lights up with a pulsing concert glow,
+   expanding light rings and a slow purple→pink shimmer. */
+@keyframes bombGlow {
+  0%, 100% { box-shadow: 0 0 18px 4px rgba(192, 132, 252, 0.55), 0 0 46px 12px rgba(168, 85, 247, 0.35), inset 0 0 14px rgba(255,255,255,0.65); }
+  50% { box-shadow: 0 0 30px 10px rgba(240, 171, 252, 0.8), 0 0 70px 22px rgba(217, 70, 239, 0.45), inset 0 0 20px rgba(255,255,255,0.9); }
+}
+@keyframes bombRing {
+  0% { transform: scale(0.85); opacity: 0.55; }
+  100% { transform: scale(2.1); opacity: 0; }
+}
+@keyframes bombShimmer {
+  0%, 100% { filter: hue-rotate(0deg) brightness(1.1); }
+  50% { filter: hue-rotate(28deg) brightness(1.3); }
+}
+.bomb-on {
+  animation: bombGlow 1.6s ease-in-out infinite, bombShimmer 3.2s ease-in-out infinite;
+}
+.bomb-ring {
+  animation: bombRing 1.8s ease-out infinite;
+}
+.bomb-ring-2 {
+  animation: bombRing 1.8s ease-out 0.9s infinite;
+}
+
+/* Real-photo ARMY Bomb: silhouette glow that follows the cut-out PNG. */
+@keyframes bombImgGlow {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(216, 180, 254, 0.75)) drop-shadow(0 0 30px rgba(168, 85, 247, 0.45)) brightness(1.05); }
+  50% { filter: drop-shadow(0 0 18px rgba(240, 171, 252, 0.95)) drop-shadow(0 0 52px rgba(217, 70, 239, 0.6)) brightness(1.15); }
+}
+.bomb-img-on {
+  animation: bombImgGlow 1.6s ease-in-out infinite;
+}
+
+/* Batch 74 — Birthday wish foam-3D text + animations */
+.font-foam {
+  font-family: 'Baloo 2', 'Arial Rounded MT Bold', system-ui, sans-serif;
+  font-weight: 800;
+}
+.foam-text {
+  background: linear-gradient(180deg, #fae8ff 0%, #f0abfc 30%, #e879f9 52%, #a855f7 78%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter:
+    drop-shadow(0 2px 0 rgba(109, 40, 217, 0.9))
+    drop-shadow(0 4px 0 rgba(88, 28, 135, 0.85))
+    drop-shadow(0 10px 18px rgba(88, 28, 135, 0.55));
+}
+.foam-text-soft {
+  background: linear-gradient(180deg, #fdf4ff 0%, #f5d0fe 45%, #d8b4fe 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter:
+    drop-shadow(0 1.5px 0 rgba(109, 40, 217, 0.8))
+    drop-shadow(0 5px 10px rgba(88, 28, 135, 0.5));
+}
+@keyframes bday-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-14px) scale(1.06); }
+  60% { transform: translateY(2px) scale(0.97); }
+}
+@keyframes bday-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+@keyframes bday-fall {
+  0% { transform: translateY(-6vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(55vh) rotate(320deg); opacity: 0; }
+}
+@keyframes bday-pop {
+  0% { transform: scale(0.7); opacity: 0; }
+  60% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.bday-bounce { animation: bday-bounce 1.6s ease-in-out infinite; }
+.bday-float { animation: bday-float 2.4s ease-in-out infinite; display: inline-block; }
+.bday-pop { animation: bday-pop 0.45s ease-out both; }
+.bday-confetti {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 13px;
+  border-radius: 2px;
+  animation: bday-fall 3.2s linear infinite;
+}
+
+/* Concert Mode (Batch 76) — lightstick screen animations */
+@keyframes cmPulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.13); opacity: 1; }
+}
+.cm-pulse { animation: cmPulse 2.6s ease-in-out infinite; }
+@keyframes cmBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.cm-bob { animation: cmBob 3.2s ease-in-out infinite; }
+@keyframes cmDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(6vmin, 4vmin) scale(1.15); }
+}
+.cm-drift { animation: cmDrift 11s ease-in-out infinite; }
+.cm-drift-rev { animation: cmDrift 13s ease-in-out infinite reverse; }
+@keyframes cmHue {
+  from { filter: hue-rotate(0deg); }
+  to { filter: hue-rotate(360deg); }
+}
+.cm-hue { animation: cmHue 9s linear infinite; }
+/* Batch 87 — hand-held lightstick sway (crowd bombs + the floating
+   ARMY Bomb while it plays) and a concert-style glow pulse. */
+@keyframes cmSway {
+  0%, 100% { transform: rotate(-6deg) translateY(0); }
+  50% { transform: rotate(6deg) translateY(-6px); }
+}
+.cm-sway { animation: cmSway 2.4s ease-in-out infinite; transform-origin: 50% 92%; }
+@keyframes bombGlowPulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(217, 70, 239, 0.55)) drop-shadow(0 0 16px rgba(168, 85, 247, 0.35)); }
+  50% { filter: drop-shadow(0 0 13px rgba(217, 70, 239, 0.95)) drop-shadow(0 0 28px rgba(168, 85, 247, 0.6)); }
+}
+.bomb-glow { animation: bombGlowPulse 1.1s ease-in-out infinite; }
+/* Batch 88 — the next upcoming event card glows in the Events list. */
+@keyframes evtGlow {
+  0%, 100% { box-shadow: 0 0 18px rgba(168, 85, 247, 0.35), 0 0 42px rgba(217, 70, 239, 0.18); }
+  50% { box-shadow: 0 0 30px rgba(217, 70, 239, 0.6), 0 0 68px rgba(236, 72, 153, 0.32); }
+}
+.evt-glow { animation: evtGlow 1.8s ease-in-out infinite; }
+/* Batch 89 — Concert Mode tap wave: a flash of light that travels
+   bomb to bomb from the tap point (per-bomb animation delay). */
+@keyframes cmWaveFlash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.55); }
+  35% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3); }
+}
+.cm-wave-flash { opacity: 0; animation: cmWaveFlash 0.9s ease-out both; }
