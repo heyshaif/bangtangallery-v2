@@ -266,6 +266,36 @@ export function AppContent() {
   React.useEffect(() => {
     if (activeTab !== 'Privacy Policy') prevTabRef.current = activeTab;
   }, [activeTab]);
+  // Monetag Vignette (owner, 2026-11-11): the tag is deliberately
+  // NOT in index.html — it loads ONLY on the pages the owner chose
+  // (the list below), the first time the visitor opens one of them,
+  // and never loads at all on any other page. To move the Vignette
+  // to different pages, change this one list. Zone 12239753, loaded
+  // exactly the way Monetag's own snippet loads it (a script element
+  // carrying data-zone + src, appended to the body).
+  React.useEffect(() => {
+    const VIGNETTE_PAGES = ['News', 'Concert'];
+    if (!VIGNETTE_PAGES.includes(activeTab)) return;
+    if (document.querySelector('script[data-zone="12239753"]')) return;
+    const s = document.createElement('script');
+    s.dataset.zone = '12239753';
+    s.src = 'https://n6wxm.com/vignette.min.js';
+    document.body.appendChild(s);
+  }, [activeTab]);
+  // Monetag In-Page Push (owner change, 2026-11-11): the owner did
+  // not like the floating card on the Home page, so the tag was
+  // REMOVED from index.html and loads here instead — on every page
+  // EXCEPT Home (Dictionary included), the first time the visitor
+  // opens an inner page. A visit that stays on Home never loads it.
+  // Zone 12239605, loaded the same way as Monetag's own snippet.
+  React.useEffect(() => {
+    if (activeTab === 'Home') return;
+    if (document.querySelector('script[data-zone="12239605"]')) return;
+    const s = document.createElement('script');
+    s.dataset.zone = '12239605';
+    s.src = 'https://nap5k.com/tag.min.js';
+    document.body.appendChild(s);
+  }, [activeTab]);
   // Visitor profile (Batch 94): header button + panel; the tick
   // re-renders the header avatar whenever the profile changes.
   const [profileOpen, setProfileOpen] = useState(false);
