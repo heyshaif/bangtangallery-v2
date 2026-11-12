@@ -4,6 +4,9 @@ Allow: /news/
 Allow: /public/
 Allow: /images/
 Allow: /image/
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /admin/
 
 # Explicit Bot Allow for Link Previews
 User-agent: TelegramBot

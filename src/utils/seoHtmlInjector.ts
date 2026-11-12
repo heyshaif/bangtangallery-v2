@@ -145,6 +145,31 @@ export function injectNewsMetadata(baseHtml: string, meta: MetaTagsConfig): stri
   return html;
 }
 
+export function injectJsonLd(html: string, jsonLd: Record<string, unknown> | Record<string, unknown>[]): string {
+  const blocks = Array.isArray(jsonLd) ? jsonLd : [jsonLd];
+  const script = blocks
+    .map((b) => `    <script type="application/ld+json">\n${JSON.stringify(b, null, 2)}\n    </script>`)
+    .join('\n');
+  return html.replace('</head>', `${script}\n  </head>`);
+}
+
+/**
+ * Batch 151 — generic version of injectNewsMetadata: the same
+ * title/canonical/description/OG/Twitter handling, plus optional extra
+ * JSON-LD blocks (BreadcrumbList, WebPage, Person, ImageObject).
+ * News articles keep using injectNewsMetadata (unchanged) so their
+ * NewsArticle JSON-LD is still added by that function.
+ */
+export function injectRouteMetadata(
+  baseHtml: string,
+  meta: MetaTagsConfig,
+  extraJsonLd?: Record<string, unknown>[],
+): string {
+  const html = injectNewsMetadata(baseHtml, meta);
+  if (!extraJsonLd || extraJsonLd.length === 0) return html;
+  return injectJsonLd(html, extraJsonLd);
+}
+
 export function findArticleByUrlPath(pathname: string, customArticles?: NewsArticle[]): NewsArticle | null {
   const articles = customArticles && customArticles.length > 0 ? customArticles : NEWS_ARTICLES;
   const cleanPath = pathname.split('?')[0].split('#')[0];

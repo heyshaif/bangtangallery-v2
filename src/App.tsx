@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef, Component, type ReactNode } from 'react';
 import { UserPreferences, Member, Album, Video, GalleryItem, TimelineEvent, NewsArticle } from './types';
 import { MEMBERS, ALBUMS, VIDEOS, GALLERY_ITEMS, TIMELINE_EVENTS, NEWS_ARTICLES, DOWNLOADS, FAN_ARTS, EVENTS, FAQS } from './data/btsData';
+import { getSeoForTab, applyRouteSeo } from './utils/seo';
 
 // Component imports
 import AuroraBackground from './components/AuroraBackground';
@@ -266,36 +267,18 @@ export function AppContent() {
   React.useEffect(() => {
     if (activeTab !== 'Privacy Policy') prevTabRef.current = activeTab;
   }, [activeTab]);
-  // Monetag Vignette (owner, 2026-11-11): the tag is deliberately
-  // NOT in index.html — it loads ONLY on the pages the owner chose
-  // (the list below), the first time the visitor opens one of them,
-  // and never loads at all on any other page. To move the Vignette
-  // to different pages, change this one list. Zone 12239753, loaded
-  // exactly the way Monetag's own snippet loads it (a script element
-  // carrying data-zone + src, appended to the body).
-  React.useEffect(() => {
-    const VIGNETTE_PAGES = ['News', 'Concert'];
-    if (!VIGNETTE_PAGES.includes(activeTab)) return;
-    if (document.querySelector('script[data-zone="12239753"]')) return;
-    const s = document.createElement('script');
-    s.dataset.zone = '12239753';
-    s.src = 'https://n6wxm.com/vignette.min.js';
-    document.body.appendChild(s);
-  }, [activeTab]);
-  // Monetag In-Page Push (owner change, 2026-11-11): the owner did
-  // not like the floating card on the Home page, so the tag was
-  // REMOVED from index.html and loads here instead — on every page
-  // EXCEPT Home (Dictionary included), the first time the visitor
-  // opens an inner page. A visit that stays on Home never loads it.
-  // Zone 12239605, loaded the same way as Monetag's own snippet.
-  React.useEffect(() => {
-    if (activeTab === 'Home') return;
-    if (document.querySelector('script[data-zone="12239605"]')) return;
-    const s = document.createElement('script');
-    s.dataset.zone = '12239605';
-    s.src = 'https://nap5k.com/tag.min.js';
-    document.body.appendChild(s);
-  }, [activeTab]);
+  // (Batch 153, 2026-11-12: the Monetag Vignette loader that used
+  // to live here — zone 12239753, n6wxm — was REMOVED at the
+  // owner's order, along with the In-Page Push removed in Batch
+  // 152. No Monetag ad format loads on the site any more. The
+  // Monetag verification meta tag stays in index.html so the site
+  // remains Verified on Monetag; it shows no ads and is invisible
+  // to visitors.)
+  // (Batch 152, 2026-11-12: the Monetag In-Page Push loader that
+  // used to live here — zone 12239605, nap5k — was REMOVED at the
+  // owner's order. The Vignette loader above is untouched, and the
+  // Monetag verification meta tag stays in index.html so the site
+  // remains Verified on Monetag.)
   // Visitor profile (Batch 94): header button + panel; the tick
   // re-renders the header avatar whenever the profile changes.
   const [profileOpen, setProfileOpen] = useState(false);
@@ -312,6 +295,27 @@ export function AppContent() {
   const [selectedNewsSlug, setSelectedNewsSlug] = useState<string | null>(null);
   const [initialGalleryCategory, setInitialGalleryCategory] = useState<string>('All');
   const [targetUsername, setTargetUsername] = useState<string | null>(null);
+
+  // Batch 151 — invisible-only SEO: update title + meta description +
+  // canonical + OG/Twitter tags when the visitor changes tab, opens a
+  // member profile or a news article. Home keeps the Admin Panel's
+  // publishedConfig metaTitle when one is set; every other tab uses the
+  // shared ROUTE_SEO map. Nothing visible changes.
+  useEffect(() => {
+    const article = selectedNewsSlug
+      ? (publishedConfig?.news || NEWS_ARTICLES).find((a: any) => {
+          const slug = (a.slug || a.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || a.id).toLowerCase();
+          return slug === selectedNewsSlug.toLowerCase() || a.id.toLowerCase() === selectedNewsSlug.toLowerCase();
+        })
+      : null;
+    const seo = getSeoForTab(activeTab, { member: selectedMember, article: article || null });
+    if (activeTab === 'Home' && publishedConfig?.seo?.metaTitle) {
+      applyRouteSeo({ ...seo, title: publishedConfig.seo.metaTitle });
+    } else {
+      applyRouteSeo(seo);
+    }
+  }, [activeTab, selectedMember, selectedNewsSlug, publishedConfig]);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isThemeOpen, setIsThemeOpen] = useState(false);
   // Batch 77: the intro (flash) screen shows only ONCE PER DAY per
@@ -1498,9 +1502,9 @@ export function AppContent() {
               animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
               exit={{ opacity: 0, x: '100%', filter: 'blur(8px)' }}
               transition={{ duration: 0.42, ease: [0.19, 1, 0.22, 1] }}
-              className={`fixed inset-0 z-50 ${
+              className={`fixed inset-0 z-50 nav-drawer ${
                 preferences.theme === 'light'
-                  ? 'bg-white/95 text-slate-850 border-slate-200/50'
+                  ? 'bg-white/95 text-slate-900 border-slate-200/50'
                   : 'bg-[#05000a]/98 text-white border-white/10'
               } backdrop-blur-xl flex flex-col p-6 block lg:hidden border-l shadow-2xl`}
             >
@@ -1595,7 +1599,7 @@ export function AppContent() {
                       isActive 
                         ? `${getAccentBgClass()} text-white font-bold shadow-lg` 
                         : preferences.theme === 'light'
-                          ? 'text-slate-650 hover:text-slate-900 hover:bg-slate-100'
+                          ? 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >

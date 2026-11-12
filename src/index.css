@@ -397,6 +397,38 @@ body {
   color: #ffffff !important;
 }
 
+/* Batch 155 — the mobile nav drawer (BANGTAN PORTAL) in the light
+   theme: the blanket .light button rule washed every menu item to
+   pale lavender + light violet text ("color dekha jaina"), and the
+   drawer's own text-slate-650 / text-slate-850 classes are not real
+   Tailwind colours, so nothing overrode it. Scoped overrides (same
+   technique as .player-dark above) restore dark, readable text.
+   The active item keeps its purple accent background + white text. */
+.light .nav-drawer {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+  color: #1e293b !important;
+}
+.light .nav-drawer button:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600) {
+  background-color: transparent !important;
+  color: #334155 !important;
+  border-color: transparent !important;
+}
+.light .nav-drawer button:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600):hover {
+  background-color: rgba(15, 23, 42, 0.06) !important;
+  color: #0f172a !important;
+}
+.light .nav-drawer .text-slate-500 {
+  color: #64748b !important;
+}
+.light .nav-drawer .border-white\/10,
+.light .nav-drawer .border-white\/5 {
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+.light .nav-drawer a.bg-white\/5 {
+  background-color: rgba(15, 23, 42, 0.05) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
 /* ARIRANG Mode overrides: Dark mode's near-black glass look kept, with the
    purple/pink accent family shifted to a SOFT red/rose (deliberately subtle),
    deep panels tinted maroon, and white text left untouched. */

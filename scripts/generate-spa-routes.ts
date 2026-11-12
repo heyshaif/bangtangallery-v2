@@ -1,137 +1,75 @@
+// Batch 151 — pre-rendered SEO route files + sitemap.
+// Every pre-rendered route HTML now gets its OWN title, description,
+// canonical URL, Open Graph / Twitter tags and BreadcrumbList + WebPage
+// JSON-LD from the single source of truth in src/utils/seo.ts
+// (previously every main route copied the homepage HTML verbatim, so
+// Google saw the same title/description on all of them).
+// No visible change: the app shell served is byte-identical apart
+// from <head> meta + JSON-LD.
 import fs from 'fs';
 import path from 'path';
-import { NEWS_ARTICLES, GALLERY_ITEMS } from '../src/data/btsData.js';
+import { MEMBERS, NEWS_ARTICLES, GALLERY_ITEMS } from '../src/data/btsData.js';
+import {
+  injectRouteMetadata,
+  resolveFullImageUrl,
+  SITE_DOMAIN,
+  DEFAULT_OG_IMAGE,
+  escapeHtml,
+  type MetaTagsConfig,
+} from '../src/utils/seoHtmlInjector.js';
+import {
+  ROUTE_SEO,
+  routeSeoForPath,
+  memberSeo,
+  memberSlug,
+  articleSeo,
+  galleryPhotoSeo,
+  buildBreadcrumbJsonLd,
+  buildWebPageJsonLd,
+  buildPersonJsonLd,
+  buildImageObjectJsonLd,
+  type RouteSeo,
+} from '../src/utils/seo.js';
 
 const distDir = path.resolve('dist');
 const indexHtmlPath = path.join(distDir, 'index.html');
 
-const DEFAULT_COVER_IMAGE = 'https://bangtangallery.online/images/og-cover-2.jpg';
-const SITE_DOMAIN = 'https://bangtangallery.online';
+// Batch 151 sitemap date: update this when the sitemap content changes.
+const SITEMAP_LASTMOD = '2026-11-12';
 
-function escapeHtml(str = '') {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+function toMeta(seo: RouteSeo, article?: any): MetaTagsConfig {
+  return {
+    title: seo.title,
+    description: seo.description,
+    canonicalUrl: seo.canonical,
+    ogTitle: seo.title,
+    ogDescription: seo.description,
+    ogImage: seo.ogImage,
+    ogUrl: seo.canonical,
+    ogType: seo.ogType || 'website',
+    twitterTitle: seo.title,
+    twitterDescription: seo.description,
+    twitterImage: seo.ogImage,
+    article,
+  };
 }
 
-function resolveFullImageUrl(imgUrl = '') {
-  if (!imgUrl) return DEFAULT_COVER_IMAGE;
-  if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
-    return imgUrl;
+/** Write both /dist/<rel>.html and /dist/<rel>/index.html with the same HTML. */
+function writePage(rel: string, html: string): void {
+  fs.writeFileSync(path.join(distDir, `${rel}.html`), html);
+  const dir = path.join(distDir, rel);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
-  const cleanPath = imgUrl.startsWith('/') ? imgUrl : `/${imgUrl}`;
-  return `${SITE_DOMAIN}${cleanPath}`;
+  fs.writeFileSync(path.join(dir, 'index.html'), html);
 }
 
-function injectMetadata(baseHtml, meta) {
-  let html = baseHtml;
-
-  // Replace <title>
-  if (meta.title) {
-    html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(meta.title)}</title>`);
-  }
-
-  // Replace or inject canonical link
-  if (meta.canonicalUrl) {
-    if (html.includes('rel="canonical"')) {
-      html = html.replace(/<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/i, `<link rel="canonical" href="${meta.canonicalUrl}" />`);
-    } else {
-      html = html.replace('</head>', `    <link rel="canonical" href="${meta.canonicalUrl}" />\n  </head>`);
-    }
-  }
-
-  // Replace standard description
-  if (meta.description) {
-    html = html.replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?>/i, `<meta name="description" content="${escapeHtml(meta.description)}" />`);
-  }
-
-  // Replace Open Graph tags
-  const ogTags = [
-    { prop: 'og:title', content: meta.ogTitle || meta.title },
-    { prop: 'og:description', content: meta.ogDescription || meta.description },
-    { prop: 'og:image', content: meta.ogImage },
-    { prop: 'og:image:secure_url', content: meta.ogImage },
-    { prop: 'og:image:width', content: '1200' },
-    { prop: 'og:image:height', content: '630' },
-    { prop: 'og:image:alt', content: meta.ogTitle || meta.title },
-    { prop: 'og:url', content: meta.ogUrl || meta.canonicalUrl },
-    { prop: 'og:type', content: meta.ogType || 'article' },
-    { prop: 'og:site_name', content: 'BANGTAN GALLERY' }
-  ];
-
-  ogTags.forEach(({ prop, content }) => {
-    if (!content) return;
-    const regex = new RegExp(`<meta\\s+property="${prop}"\\s+content="[^"]*"\\s*\\/?>`, 'i');
-    if (regex.test(html)) {
-      html = html.replace(regex, `<meta property="${prop}" content="${escapeHtml(content)}" />`);
-    } else {
-      html = html.replace('</head>', `    <meta property="${prop}" content="${escapeHtml(content)}" />\n  </head>`);
-    }
-  });
-
-  // Replace Twitter card tags
-  const twitterTags = [
-    { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: meta.twitterTitle || meta.ogTitle || meta.title },
-    { name: 'twitter:description', content: meta.twitterDescription || meta.ogDescription || meta.description },
-    { name: 'twitter:image', content: meta.twitterImage || meta.ogImage },
-    { name: 'twitter:image:alt', content: meta.twitterTitle || meta.title }
-  ];
-
-  twitterTags.forEach(({ name, content }) => {
-    if (!content) return;
-    const regex = new RegExp(`<meta\\s+name="${name}"\\s+content="[^"]*"\\s*\\/?>`, 'i');
-    if (regex.test(html)) {
-      html = html.replace(regex, `<meta name="${name}" content="${escapeHtml(content)}" />`);
-    } else {
-      html = html.replace('</head>', `    <meta name="${name}" content="${escapeHtml(content)}" />\n  </head>`);
-    }
-  });
-
-  // Replace image_src link
-  if (meta.ogImage) {
-    if (html.includes('rel="image_src"')) {
-      html = html.replace(/<link\s+rel="image_src"\s+href="[^"]*"\s*\/?>/i, `<link rel="image_src" href="${meta.ogImage}" />`);
-    } else {
-      html = html.replace('</head>', `    <link rel="image_src" href="${meta.ogImage}" />\n  </head>`);
-    }
-  }
-
-  // Inject Rich JSON-LD if article
-  if (meta.article) {
-    const jsonLd = {
-      "@context": "https://schema.org",
-      "@type": "NewsArticle",
-      "headline": meta.article.title,
-      "description": meta.article.summary,
-      "image": [meta.ogImage],
-      "datePublished": meta.article.date || "2026-03-11",
-      "articleSection": meta.article.category || "General",
-      "author": {
-        "@type": "Organization",
-        "name": "BANGTAN GALLERY Editorial"
-      },
-      "publisher": {
-        "@type": "Organization",
-        "name": "BANGTAN GALLERY",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://bangtangallery.online/favicon-512.png"
-        }
-      },
-      "mainEntityOfPage": {
-        "@type": "WebPage",
-        "@id": meta.canonicalUrl
-      }
-    };
-
-    html = html.replace('</head>', `    <script type="application/ld+json">\n${JSON.stringify(jsonLd, null, 2)}\n    </script>\n  </head>`);
-  }
-
-  return html;
+interface SitemapEntry {
+  loc: string;
+  lastmod: string;
+  changefreq: 'daily' | 'weekly' | 'monthly';
+  priority: string;
+  images?: string[];
 }
 
 (async () => {
@@ -141,7 +79,9 @@ if (fs.existsSync(indexHtmlPath)) {
   // 1. Generate 404.html (fallback for GitHub Pages, Render, etc.)
   fs.writeFileSync(path.join(distDir, '404.html'), indexHtmlContent);
 
-  // 2. Pre-generate static route files for general SPA tabs
+  // 2. Pre-generate static route files for general SPA tabs — each with
+  // its OWN title/description/canonical/OG + BreadcrumbList + WebPage
+  // JSON-LD (Batch 151; previously all of these were the homepage HTML).
   const routes = [
     'livestream',
     'live-stream',
@@ -167,57 +107,91 @@ if (fs.existsSync(indexHtmlPath)) {
     'GeneratePic',
     'generatepic',
     'game',
-    'profile'
+    'profile',
   ];
 
   routes.forEach((route) => {
-    fs.writeFileSync(path.join(distDir, `${route}.html`), indexHtmlContent);
-
-    const routeDir = path.join(distDir, route);
-    if (!fs.existsSync(routeDir)) {
-      fs.mkdirSync(routeDir, { recursive: true });
-    }
-    fs.writeFileSync(path.join(routeDir, 'index.html'), indexHtmlContent);
+    const lookup = routeSeoForPath(`/${route}`, {
+      members: MEMBERS as any,
+      galleryItems: GALLERY_ITEMS as any,
+      articles: NEWS_ARTICLES as any,
+    });
+    const html = injectRouteMetadata(indexHtmlContent, toMeta(lookup.seo), [
+      buildBreadcrumbJsonLd(lookup.breadcrumb),
+      buildWebPageJsonLd(lookup.seo),
+    ]);
+    writePage(route, html);
+    console.log(`   [SSG Route] Pre-rendered: /${route} → ${lookup.seo.canonical}`);
   });
 
-  // 3. Generate Main News Portal Page with News OG Tags
-  const newsLandingMeta = {
-    title: 'BTS News, Breaking Updates & Comeback Articles — BANGTAN GALLERY',
-    description: 'Explore the latest BTS breaking news, 2026 World Tour announcements, FESTA updates, member awards, and exclusive ARMY features.',
-    canonicalUrl: `${SITE_DOMAIN}/news`,
-    ogTitle: 'BTS News, Breaking Updates & Comeback Articles — BANGTAN GALLERY',
-    ogDescription: 'Explore breaking BTS announcements, 2026 tour schedules, member awards, and high-resolution photo archives.',
-    ogImage: 'https://bangtangallery.online/images/og-cover-2.jpg',
-    ogType: 'website'
-  };
+  // 2b. /wallpapers + /wallpaper alias: new URL only, serves the Gallery
+  // app with BTS-wallpaper meta (Batch 151; no visible change).
+  const wallpaperLookup = routeSeoForPath('/wallpapers', {
+    members: MEMBERS as any,
+    galleryItems: GALLERY_ITEMS as any,
+    articles: NEWS_ARTICLES as any,
+  });
+  const wallpaperHtml = injectRouteMetadata(indexHtmlContent, toMeta(wallpaperLookup.seo), [
+    buildBreadcrumbJsonLd(wallpaperLookup.breadcrumb),
+    buildWebPageJsonLd(wallpaperLookup.seo),
+  ]);
+  writePage('wallpapers', wallpaperHtml);
+  writePage('wallpaper', wallpaperHtml);
+  console.log(`   [SSG Route] Pre-rendered: /wallpapers + /wallpaper → ${wallpaperLookup.seo.canonical}`);
 
-  const newsLandingHtml = injectMetadata(indexHtmlContent, newsLandingMeta);
-  const newsBaseDir = path.join(distDir, 'news');
-  if (!fs.existsSync(newsBaseDir)) {
-    fs.mkdirSync(newsBaseDir, { recursive: true });
-  }
-  fs.writeFileSync(path.join(distDir, 'news.html'), newsLandingHtml);
-  fs.writeFileSync(path.join(newsBaseDir, 'index.html'), newsLandingHtml);
+  // 3. Generate Main News Portal Page with News OG Tags
+  const newsLanding = routeSeoForPath('/news', {
+    members: MEMBERS as any,
+    galleryItems: GALLERY_ITEMS as any,
+    articles: NEWS_ARTICLES as any,
+  });
+  const newsLandingHtml = injectRouteMetadata(indexHtmlContent, toMeta(newsLanding.seo), [
+    buildBreadcrumbJsonLd(newsLanding.breadcrumb),
+    buildWebPageJsonLd(newsLanding.seo),
+  ]);
+  writePage('news', newsLandingHtml);
 
   // 3b. Concert Replay landing page with its own share metadata
   // (share link: https://bangtangallery.online/arirang_concert_reply)
-  const concertMeta = {
-    title: 'BTS Concert Replay — Full Concerts | BANGTAN GALLERY',
-    description: 'Watch full BTS concert replays — world tour stages, FESTA performances and exclusive stage archives, free for ARMY.',
-    canonicalUrl: `${SITE_DOMAIN}/arirang_concert_reply`,
-    ogTitle: 'BTS Concert Replay — Full Concerts | BANGTAN GALLERY',
-    ogDescription: 'Relive your favorite BTS concert moments — full concert replays and exclusive stage archives.',
-    ogImage: 'https://bangtangallery.online/images/og-cover-2.jpg',
-    ogType: 'website'
-  };
+  const concertLanding = routeSeoForPath('/arirang_concert_reply', {
+    members: MEMBERS as any,
+    galleryItems: GALLERY_ITEMS as any,
+    articles: NEWS_ARTICLES as any,
+  });
+  const concertHtml = injectRouteMetadata(indexHtmlContent, toMeta(concertLanding.seo), [
+    buildBreadcrumbJsonLd(concertLanding.breadcrumb),
+    buildWebPageJsonLd(concertLanding.seo),
+  ]);
+  writePage('arirang_concert_reply', concertHtml);
 
-  const concertHtml = injectMetadata(indexHtmlContent, concertMeta);
-  const concertDir = path.join(distDir, 'arirang_concert_reply');
-  if (!fs.existsSync(concertDir)) {
-    fs.mkdirSync(concertDir, { recursive: true });
-  }
-  fs.writeFileSync(path.join(distDir, 'arirang_concert_reply.html'), concertHtml);
-  fs.writeFileSync(path.join(concertDir, 'index.html'), concertHtml);
+  // 3c. Member profile pages (Batch 151): /members/<slug> for all 7
+  // members, each with its own title/description/OG (that member's
+  // portrait) + Person JSON-LD. Aliases j-hope / jung-kook are also
+  // pre-rendered with the same HTML (canonical stays the app slug:
+  // /members/jhope and /members/jungkook).
+  const memberAliases: Record<string, string[]> = {
+    jhope: ['j-hope'],
+    jungkook: ['jung-kook'],
+  };
+  MEMBERS.forEach((member: any) => {
+    const slug = memberSlug(member);
+    const seo = memberSeo(member);
+    const html = injectRouteMetadata(indexHtmlContent, toMeta(seo), [
+      buildBreadcrumbJsonLd([
+        { name: 'Home', url: `${SITE_DOMAIN}/` },
+        { name: 'Members', url: `${SITE_DOMAIN}/members` },
+        { name: member.name, url: seo.canonical },
+      ]),
+      buildWebPageJsonLd(seo),
+      buildPersonJsonLd(member, seo.canonical),
+    ]);
+    writePage(`members/${slug}`, html);
+    console.log(`   [SSG Member] Pre-rendered: /members/${slug}`);
+    for (const alias of memberAliases[slug] || []) {
+      writePage(`members/${alias}`, html);
+      console.log(`   [SSG Member] Pre-rendered alias: /members/${alias} → ${seo.canonical}`);
+    }
+  });
 
   // 4. Pre-generate EVERY single News Article with Dedicated Dynamic Open Graph Metadata
   // Articles the owner publishes from the Admin Panel live only in
@@ -276,38 +250,27 @@ if (fs.existsSync(indexHtmlPath)) {
 
   allArticles.forEach((article) => {
     const slug = article.slug || article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || article.id;
-    const coverPhoto = resolveFullImageUrl(article.featuredImage || article.imageUrl);
-    const summary = article.seoDescription || article.summary || 'Read the full story on BANGTAN GALLERY.';
-    const canonical = `${SITE_DOMAIN}/news/${slug}`;
-
-    const articleMeta = {
-      title: `${article.title} — BANGTAN GALLERY`,
-      description: summary,
-      canonicalUrl: canonical,
-      ogTitle: article.title,
-      ogDescription: summary,
-      ogImage: coverPhoto,
-      ogUrl: canonical,
-      ogType: 'article',
-      twitterTitle: article.title,
-      twitterDescription: summary,
-      twitterImage: coverPhoto,
-      article
-    };
-
-    const articleHtml = injectMetadata(indexHtmlContent, articleMeta);
+    const seo = articleSeo(article);
+    const articleHtml = injectRouteMetadata(indexHtmlContent, toMeta(seo, article), [
+      buildBreadcrumbJsonLd([
+        { name: 'Home', url: `${SITE_DOMAIN}/` },
+        { name: 'News', url: `${SITE_DOMAIN}/news` },
+        { name: article.title, url: seo.canonical },
+      ]),
+      buildWebPageJsonLd(seo),
+    ]);
 
     // Write to /dist/news/<slug>/index.html (standard directory structure)
-    const articleDir = path.join(newsBaseDir, slug);
+    const articleDir = path.join(distDir, 'news', slug);
     if (!fs.existsSync(articleDir)) {
       fs.mkdirSync(articleDir, { recursive: true });
     }
     fs.writeFileSync(path.join(articleDir, 'index.html'), articleHtml);
 
     // Also write /dist/news/<slug>.html (support static servers that map /news/<slug> to <slug>.html)
-    fs.writeFileSync(path.join(newsBaseDir, `${slug}.html`), articleHtml);
+    fs.writeFileSync(path.join(distDir, 'news', `${slug}.html`), articleHtml);
 
-    console.log(`   [SSG News] Pre-rendered: /news/${slug} (Cover: ${coverPhoto.slice(0, 50)}...)`);
+    console.log(`   [SSG News] Pre-rendered: /news/${slug} (Cover: ${seo.ogImage.slice(0, 50)}...)`);
   });
 
   // 5. Pre-generate Gallery photo pages so a shared photo link shows
@@ -315,75 +278,108 @@ if (fs.existsSync(indexHtmlPath)) {
   // the gallery viewer when the link is visited). Covers the built-in
   // gallery items; photos uploaded later share the same link format
   // and open in the viewer, with the site cover as their preview.
+  // Batch 151: titles now target "BTS wallpaper" and each page carries
+  // ImageObject JSON-LD so Google can index the photo itself.
   console.log(` Generating Open Graph preview HTML for ${GALLERY_ITEMS.length} gallery photos...`);
-  const galleryBaseDir = path.join(distDir, 'gallery');
-  if (!fs.existsSync(galleryBaseDir)) {
-    fs.mkdirSync(galleryBaseDir, { recursive: true });
-  }
   GALLERY_ITEMS.forEach((item) => {
-    const photo = resolveFullImageUrl(item.url);
-    const canonical = `${SITE_DOMAIN}/gallery/${item.id}`;
-    const meta = {
-      title: `${item.title} — BANGTAN GALLERY`,
-      description: item.title,
-      canonicalUrl: canonical,
-      ogTitle: item.title,
-      ogDescription: `${item.category} • BANGTAN GALLERY`,
-      ogImage: photo,
-      ogUrl: canonical,
-      ogType: 'website',
-      twitterTitle: item.title,
-      twitterDescription: `${item.category} • BANGTAN GALLERY`,
-      twitterImage: photo
-    };
-    const html = injectMetadata(indexHtmlContent, meta);
-    const dir = path.join(galleryBaseDir, item.id);
+    const seo = galleryPhotoSeo(item);
+    const html = injectRouteMetadata(indexHtmlContent, toMeta(seo), [
+      buildBreadcrumbJsonLd([
+        { name: 'Home', url: `${SITE_DOMAIN}/` },
+        { name: 'Gallery', url: `${SITE_DOMAIN}/gallery` },
+        { name: item.title, url: seo.canonical },
+      ]),
+      buildWebPageJsonLd(seo),
+      buildImageObjectJsonLd(item, seo.canonical),
+    ]);
+    const dir = path.join(distDir, 'gallery', item.id);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(path.join(dir, 'index.html'), html);
-    fs.writeFileSync(path.join(galleryBaseDir, `${item.id}.html`), html);
+    fs.writeFileSync(path.join(distDir, 'gallery', `${item.id}.html`), html);
     console.log(`   [SSG Gallery] Pre-rendered: /gallery/${item.id}`);
   });
 
-  // Full sitemap.xml for Google: every main page + each news article +
-  // each gallery photo page, regenerated on every build so Google can
-  // discover and index the whole site (and its real photos) instead of
-  // only the homepage. Build-script only — the site itself is unchanged.
-  const sitemapUrls: string[] = [
-    `${SITE_DOMAIN}/`,
-    `${SITE_DOMAIN}/members`,
-    `${SITE_DOMAIN}/music`,
-    `${SITE_DOMAIN}/videos`,
-    `${SITE_DOMAIN}/arirang_concert_reply`,
-    `${SITE_DOMAIN}/gallery`,
-    `${SITE_DOMAIN}/news`,
-    `${SITE_DOMAIN}/events`,
-    `${SITE_DOMAIN}/timeline`,
-    `${SITE_DOMAIN}/live`,
-    `${SITE_DOMAIN}/voting`,
-    `${SITE_DOMAIN}/downloads`,
-    `${SITE_DOMAIN}/faq`,
-    `${SITE_DOMAIN}/dictionary`,
-    `${SITE_DOMAIN}/privacy`,
-    `${SITE_DOMAIN}/contact`,
-    `${SITE_DOMAIN}/feedback`,
-    `${SITE_DOMAIN}/community`
+  // 6. Full sitemap.xml for Google (Batch 151): every main page + each
+  // member page + each news article + each gallery photo page, with
+  // lastmod / changefreq / priority and image entries for photos and
+  // news covers. Regenerated on every build. Canonical URLs only —
+  // the app's own URLs (e.g. /livestream, /community, /download), not
+  // the old /live /voting /downloads aliases. Utility pages
+  // (/setting, /game, /GeneratePic, /profile/…) are intentionally
+  // left out of the sitemap; they still get route meta above.
+  const galleryImageUrls = GALLERY_ITEMS.map((i: any) => resolveFullImageUrl(i.url));
+  const sitemapEntries: SitemapEntry[] = [
+    { loc: `${SITE_DOMAIN}/`, lastmod: SITEMAP_LASTMOD, changefreq: 'daily', priority: '1.0', images: [DEFAULT_OG_IMAGE] },
+    { loc: `${SITE_DOMAIN}/members`, lastmod: SITEMAP_LASTMOD, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${SITE_DOMAIN}/music`, lastmod: SITEMAP_LASTMOD, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${SITE_DOMAIN}/videos`, lastmod: SITEMAP_LASTMOD, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${SITE_DOMAIN}/arirang_concert_reply`, lastmod: SITEMAP_LASTMOD, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${SITE_DOMAIN}/gallery`, lastmod: SITEMAP_LASTMOD, changefreq: 'weekly', priority: '0.7', images: galleryImageUrls },
+    { loc: `${SITE_DOMAIN}/wallpapers`, lastmod: SITEMAP_LASTMOD, changefreq: 'weekly', priority: '0.7', images: galleryImageUrls },
+    { loc: `${SITE_DOMAIN}/news`, lastmod: SITEMAP_LASTMOD, changefreq: 'daily', priority: '0.7' },
+    { loc: `${SITE_DOMAIN}/events`, lastmod: SITEMAP_LASTMOD, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${SITE_DOMAIN}/timeline`, lastmod: SITEMAP_LASTMOD, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${SITE_DOMAIN}/livestream`, lastmod: SITEMAP_LASTMOD, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${SITE_DOMAIN}/community`, lastmod: SITEMAP_LASTMOD, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${SITE_DOMAIN}/download`, lastmod: SITEMAP_LASTMOD, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${SITE_DOMAIN}/faq`, lastmod: SITEMAP_LASTMOD, changefreq: 'monthly', priority: '0.8' },
+    { loc: `${SITE_DOMAIN}/dictionary`, lastmod: SITEMAP_LASTMOD, changefreq: 'monthly', priority: '0.8' },
+    { loc: `${SITE_DOMAIN}/privacy`, lastmod: SITEMAP_LASTMOD, changefreq: 'monthly', priority: '0.5' },
+    { loc: `${SITE_DOMAIN}/contact`, lastmod: SITEMAP_LASTMOD, changefreq: 'monthly', priority: '0.5' },
+    { loc: `${SITE_DOMAIN}/feedback`, lastmod: SITEMAP_LASTMOD, changefreq: 'monthly', priority: '0.5' },
   ];
-  allArticles.forEach((article) => {
-    const slug = article.slug || article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || article.id;
-    sitemapUrls.push(`${SITE_DOMAIN}/news/${slug}`);
+  MEMBERS.forEach((member: any) => {
+    const seo = memberSeo(member);
+    sitemapEntries.push({
+      loc: seo.canonical,
+      lastmod: SITEMAP_LASTMOD,
+      changefreq: 'weekly',
+      priority: '0.8',
+      images: [seo.ogImage],
+    });
   });
-  GALLERY_ITEMS.forEach((item) => {
-    sitemapUrls.push(`${SITE_DOMAIN}/gallery/${item.id}`);
+  allArticles.forEach((article) => {
+    const seo = articleSeo(article);
+    sitemapEntries.push({
+      loc: seo.canonical,
+      lastmod: SITEMAP_LASTMOD,
+      changefreq: 'weekly',
+      priority: '0.7',
+      images: [seo.ogImage],
+    });
+  });
+  GALLERY_ITEMS.forEach((item: any) => {
+    const seo = galleryPhotoSeo(item);
+    sitemapEntries.push({
+      loc: seo.canonical,
+      lastmod: SITEMAP_LASTMOD,
+      changefreq: 'monthly',
+      priority: '0.7',
+      images: [seo.ogImage],
+    });
   });
   const sitemapXml =
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-    sitemapUrls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n') +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n' +
+    '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n' +
+    sitemapEntries
+      .map((e) => {
+        const imgs = (e.images || [])
+          .map((img) => `    <image:image><image:loc>${escapeHtml(img)}</image:loc></image:image>`)
+          .join('\n');
+        return (
+          `  <url>\n    <loc>${escapeHtml(e.loc)}</loc>\n    <lastmod>${e.lastmod}</lastmod>\n` +
+          `    <changefreq>${e.changefreq}</changefreq>\n    <priority>${e.priority}</priority>\n` +
+          (imgs ? imgs + '\n' : '') +
+          `  </url>`
+        );
+      })
+      .join('\n') +
     '\n</urlset>\n';
   fs.writeFileSync(path.join(distDir, 'sitemap.xml'), sitemapXml);
-  console.log(`🗺️  Sitemap written with ${sitemapUrls.length} URLs.`);
+  console.log(`🗺️  Sitemap written with ${sitemapEntries.length} URLs.`);
 
   console.log('✅ Successfully pre-generated all static SPA and dynamic News Open Graph route files!');
 } else {

@@ -1106,6 +1106,26 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
     }
   };
 
+  // Batch 154: ARMY World Map country counts are admin-only now —
+  // the public map shows country names without numbers, so this
+  // Dashboard card is the one place the owner sees the real counts.
+  const [armyMapCounts, setArmyMapCounts] = useState<Record<string, number> | null>(null);
+  const fetchArmyMapCounts = async () => {
+    try {
+      const res = await fetch('/api/army-map');
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.success && data.counts) setArmyMapCounts(data.counts);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (isLoggedIn && activeAdminTab === 'Dashboard') {
+      fetchArmyMapCounts();
+    }
+  }, [isLoggedIn, activeAdminTab]);
+
   useEffect(() => {
     if (isLoggedIn && (activeAdminTab === 'VotingCenter' || activeAdminTab === 'Dashboard')) {
       fetchProposalsList();
@@ -3895,6 +3915,43 @@ export default function AdminPanel({ onClose, publicThemeConfig, onThemeConfigCh
                       <div className="text-3xl font-black text-white font-sans tracking-tight">{stat.value}</div>
                     </div>
                   ))}
+                </div>
+
+                {/* ARMY World Map — Countries (Batch 154): the ONLY
+                    place the per-country counts are shown. The public
+                    map shows country names without numbers. */}
+                <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-4 shadow-xl">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-purple-500/10">
+                    <span className="text-xs font-mono font-extrabold text-purple-300 uppercase tracking-widest">
+                      🌍 ARMY World Map — Countries (admin only)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={fetchArmyMapCounts}
+                      className="px-3 py-1.5 text-xs font-bold font-mono rounded-xl border border-white/15 bg-white/5 text-slate-300 hover:bg-white/10 cursor-pointer"
+                    >
+                      ↻ Refresh
+                    </button>
+                  </div>
+                  {armyMapCounts === null ? (
+                    <p className="text-xs text-slate-500">Loading map counts…</p>
+                  ) : Object.keys(armyMapCounts).length === 0 ? (
+                    <p className="text-xs text-slate-500">No pins yet — the map is empty.</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(armyMapCounts)
+                        .filter(([, n]) => n > 0)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([name, n]) => (
+                          <span key={name} className="px-3 py-1.5 rounded-full bg-purple-950/50 border border-purple-500/25 text-xs text-purple-200 font-mono">
+                            {name} · {n.toLocaleString()}
+                          </span>
+                        ))}
+                    </div>
+                  )}
+                  <p className="text-[11px] text-slate-500">
+                    Visitors see the country names on the public map without numbers; only this panel shows the counts.
+                  </p>
                 </div>
 
                 {/* Announcement Bar (Batch 79) */}

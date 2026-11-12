@@ -135,10 +135,10 @@ export default function ArmyWorldMap() {
           ctx.font = '600 11px system-ui, sans-serif';
           ctx.textAlign = 'center';
           ctx.fillStyle = isLight ? 'rgba(76,29,149,0.95)' : 'rgba(255,255,255,0.95)';
+          // Batch 154: the country NAME shows on the map, but the
+          // count number under it is gone (the count is admin-only
+          // now — see the Dashboard card in AdminPanel).
           ctx.fillText(name, x, y - glowR - 8);
-          ctx.font = '500 10px system-ui, sans-serif';
-          ctx.fillStyle = isLight ? 'rgba(190,24,93,0.95)' : 'rgba(240,171,252,0.95)';
-          ctx.fillText(String(n), x, y - glowR + 4);
         }
       }
     };
@@ -240,14 +240,16 @@ export default function ArmyWorldMap() {
         )}
         {error && <p className="mt-2 text-center text-xs text-rose-300">{error}</p>}
 
+        {/* Batch 154: country names only — the count number after
+            each name is gone from the public site (admin-only now). */}
         {top.length > 0 && (
           <div className="mt-5 flex flex-wrap justify-center gap-2">
-            {top.map(([name, n]) => (
+            {top.map(([name]) => (
               <span
                 key={name}
                 className="px-3 py-1.5 rounded-full bg-purple-950/50 border border-purple-500/25 text-xs text-purple-200 font-mono"
               >
-                {name} · {n.toLocaleString()}
+                {name}
               </span>
             ))}
           </div>

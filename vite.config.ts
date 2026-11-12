@@ -3,8 +3,9 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import fs from 'fs';
 import { defineConfig, type Plugin } from 'vite';
-import { NEWS_ARTICLES } from './src/data/btsData';
-import { injectNewsMetadata, resolveFullImageUrl, findArticleByUrlPath, SITE_DOMAIN } from './src/utils/seoHtmlInjector';
+import { MEMBERS, GALLERY_ITEMS, NEWS_ARTICLES } from './src/data/btsData';
+import { injectNewsMetadata, injectRouteMetadata, resolveFullImageUrl, findArticleByUrlPath, SITE_DOMAIN } from './src/utils/seoHtmlInjector';
+import { routeSeoForPath, isKnownRoutePath, buildBreadcrumbJsonLd, buildWebPageJsonLd } from './src/utils/seo';
 
 function newsSeoPlugin(): Plugin {
   return {
@@ -13,41 +14,39 @@ function newsSeoPlugin(): Plugin {
       order: 'post',
       handler(html, ctx) {
         const reqUrl = ctx.originalUrl || ctx.path || '';
-        const article = findArticleByUrlPath(reqUrl, NEWS_ARTICLES);
-
-        if (article) {
-          const slug = article.slug || article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || article.id;
-          const coverPhoto = resolveFullImageUrl(article.featuredImage || article.imageUrl);
-          const summary = article.seoDescription || article.summary || 'Read the full story on BANGTAN GALLERY.';
-          const canonical = `${SITE_DOMAIN}/news/${slug}`;
-
-          return injectNewsMetadata(html, {
-            title: `${article.title} — BANGTAN GALLERY`,
-            description: summary,
-            canonicalUrl: canonical,
-            ogTitle: article.title,
-            ogDescription: summary,
-            ogImage: coverPhoto,
-            ogUrl: canonical,
-            ogType: 'article',
-            twitterTitle: article.title,
-            twitterDescription: summary,
-            twitterImage: coverPhoto,
-            article
-          });
-        }
-
         const cleanPath = reqUrl.split('?')[0].split('#')[0];
-        if (cleanPath === '/news' || cleanPath === '/news/') {
-          return injectNewsMetadata(html, {
-            title: 'BTS News, Breaking Updates & Comeback Articles — BANGTAN GALLERY',
-            description: 'Explore the latest BTS breaking news, 2026 World Tour announcements, FESTA updates, member awards, and exclusive ARMY features.',
-            canonicalUrl: `${SITE_DOMAIN}/news`,
-            ogTitle: 'BTS News, Breaking Updates & Comeback Articles — BANGTAN GALLERY',
-            ogDescription: 'Explore breaking BTS announcements, 2026 tour schedules, member awards, and high-resolution photo archives.',
-            ogImage: 'https://bangtangallery.online/images/og-cover-2.jpg',
-            ogType: 'website'
+
+        // Batch 151: every known route (sections, member pages, gallery
+        // photos, news landing + articles) gets its own title /
+        // description / canonical / OG / Twitter + BreadcrumbList and
+        // WebPage JSON-LD from the shared ROUTE_SEO map. The homepage
+        // ('/') keeps the base index.html meta untouched.
+        if (cleanPath !== '/' && cleanPath !== '') {
+          const lookup = routeSeoForPath(cleanPath, {
+            members: MEMBERS,
+            galleryItems: GALLERY_ITEMS,
+            articles: NEWS_ARTICLES,
           });
+          if (lookup.member || lookup.photo || lookup.article || isKnownRoutePath(cleanPath)) {
+            const seo = lookup.seo;
+            return injectRouteMetadata(html, {
+              title: seo.title,
+              description: seo.description,
+              canonicalUrl: seo.canonical,
+              ogTitle: seo.title,
+              ogDescription: seo.description,
+              ogImage: seo.ogImage,
+              ogUrl: seo.canonical,
+              ogType: seo.ogType || 'website',
+              twitterTitle: seo.title,
+              twitterDescription: seo.description,
+              twitterImage: seo.ogImage,
+              article: lookup.article,
+            }, [
+              buildBreadcrumbJsonLd(lookup.breadcrumb),
+              buildWebPageJsonLd(seo),
+            ]);
+          }
         }
 
         return html;
@@ -106,21 +105,19 @@ function newsSeoPlugin(): Plugin {
         const url = req.url || '';
         const cleanPath = url.split('?')[0].split('#')[0];
 
-        // Check if request is directly for a news route
-        if (cleanPath.startsWith('/news/') || cleanPath === '/news') {
-          const article = findArticleByUrlPath(cleanPath, NEWS_ARTICLES);
-          if (article || cleanPath === '/news') {
-            try {
-              const indexPath = path.resolve(__dirname, 'index.html');
-              let rawHtml = fs.readFileSync(indexPath, 'utf-8');
-              rawHtml = await server.transformIndexHtml(url, rawHtml);
-              res.setHeader('Content-Type', 'text/html; charset=utf-8');
-              res.statusCode = 200;
-              res.end(rawHtml);
-              return;
-            } catch (err) {
-              console.error('Error serving news preview HTML:', err);
-            }
+        // Batch 151: serve the transformed (per-route SEO) HTML for any
+        // known route in dev, not just /news.
+        if (isKnownRoutePath(cleanPath, { members: MEMBERS, galleryItems: GALLERY_ITEMS, articles: NEWS_ARTICLES })) {
+          try {
+            const indexPath = path.resolve(__dirname, 'index.html');
+            let rawHtml = fs.readFileSync(indexPath, 'utf-8');
+            rawHtml = await server.transformIndexHtml(url, rawHtml);
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.statusCode = 200;
+            res.end(rawHtml);
+            return;
+          } catch (err) {
+            console.error('Error serving route preview HTML:', err);
           }
         }
         next();
@@ -131,42 +128,44 @@ function newsSeoPlugin(): Plugin {
         const url = req.url || '';
         const cleanPath = url.split('?')[0].split('#')[0];
 
-        if (cleanPath.startsWith('/news/') || cleanPath === '/news') {
-          const article = findArticleByUrlPath(cleanPath, NEWS_ARTICLES);
-          if (article || cleanPath === '/news') {
-            try {
-              const indexPath = path.resolve(__dirname, 'dist', 'index.html');
-              if (fs.existsSync(indexPath)) {
-                let rawHtml = fs.readFileSync(indexPath, 'utf-8');
-                if (article) {
-                  const slug = article.slug || article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || article.id;
-                  const coverPhoto = resolveFullImageUrl(article.featuredImage || article.imageUrl);
-                  const summary = article.seoDescription || article.summary || 'Read the full story on BANGTAN GALLERY.';
-                  const canonical = `${SITE_DOMAIN}/news/${slug}`;
-
-                  rawHtml = injectNewsMetadata(rawHtml, {
-                    title: `${article.title} — BANGTAN GALLERY`,
-                    description: summary,
-                    canonicalUrl: canonical,
-                    ogTitle: article.title,
-                    ogDescription: summary,
-                    ogImage: coverPhoto,
-                    ogUrl: canonical,
-                    ogType: 'article',
-                    twitterTitle: article.title,
-                    twitterDescription: summary,
-                    twitterImage: coverPhoto,
-                    article
-                  });
-                }
-                res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                res.statusCode = 200;
-                res.end(rawHtml);
-                return;
-              }
-            } catch (err) {
-              console.error('Error serving preview HTML:', err);
+        // Batch 151: same per-route SEO injection for preview as for dev.
+        // (The built dist/ files are already pre-rendered; this covers
+        // direct hits that fall through to the base index.html.)
+        if (isKnownRoutePath(cleanPath, { members: MEMBERS, galleryItems: GALLERY_ITEMS, articles: NEWS_ARTICLES })) {
+          try {
+            const indexPath = path.resolve(__dirname, 'dist', 'index.html');
+            if (fs.existsSync(indexPath)) {
+              let rawHtml = fs.readFileSync(indexPath, 'utf-8');
+              const lookup = routeSeoForPath(cleanPath, {
+                members: MEMBERS,
+                galleryItems: GALLERY_ITEMS,
+                articles: NEWS_ARTICLES,
+              });
+              const seo = lookup.seo;
+              rawHtml = injectRouteMetadata(rawHtml, {
+                title: seo.title,
+                description: seo.description,
+                canonicalUrl: seo.canonical,
+                ogTitle: seo.title,
+                ogDescription: seo.description,
+                ogImage: seo.ogImage,
+                ogUrl: seo.canonical,
+                ogType: seo.ogType || 'website',
+                twitterTitle: seo.title,
+                twitterDescription: seo.description,
+                twitterImage: seo.ogImage,
+                article: lookup.article,
+              }, [
+                buildBreadcrumbJsonLd(lookup.breadcrumb),
+                buildWebPageJsonLd(seo),
+              ]);
+              res.setHeader('Content-Type', 'text/html; charset=utf-8');
+              res.statusCode = 200;
+              res.end(rawHtml);
+              return;
             }
+          } catch (err) {
+            console.error('Error serving preview HTML:', err);
           }
         }
         next();
