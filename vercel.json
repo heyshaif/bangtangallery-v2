@@ -1,0 +1,1 @@
+{"buildCommand":"npm run build","framework":"vite","outputDirectory":"dist","rewrites":[{"destination":"https://api.bangtangallery.online/api/:path*","source":"/api/:path*"},{"destination":"/admin.html","source":"/admin"},{"destination":"/index.html","source":"/:path*"}]}
