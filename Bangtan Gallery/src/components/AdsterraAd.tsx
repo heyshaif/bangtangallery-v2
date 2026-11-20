@@ -28,9 +28,12 @@ export default function AdsterraAd({ type, className = '', width, height }: Adst
         script.async = true;
         ref.current.appendChild(script);
       } else if (type === 3) {
+        // Batch 177 (owner-supplied Adsterra update 2026-11-19): the
+        // NativeBanner code moved to Adsterra's new bauval.org domain
+        // (path /21/<key>); the container id is unchanged.
         const script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'https://beavercolourfuldelinquent.com/1cd1da2ef14f3430dc78f359d3b2aef7/invoke.js';
+        script.src = 'https://bauval.org/21/1cd1da2ef14f3430dc78f359d3b2aef7';
         script.async = true;
         script.setAttribute('data-cfasync', 'false');
         const adDiv = document.createElement('div');
@@ -45,11 +48,14 @@ export default function AdsterraAd({ type, className = '', width, height }: Adst
   const getBannerConfig = (t: number) => {
     switch (t) {
       case 5:
+        // Batch 177 (owner-supplied Adsterra update 2026-11-19): the
+        // 468x60 banner moved to Adsterra's new bauval.org domain
+        // (path /22/<key>), same as the Type 4/8 banner; key unchanged.
         return { 
           key: '57b1778a18bfab0b89f9329f8afd2f94', 
           width: 468, 
           height: 60,
-          scriptUrl: 'https://beavercolourfuldelinquent.com/57b1778a18bfab0b89f9329f8afd2f94/invoke.js'
+          scriptUrl: 'https://bauval.org/22/57b1778a18bfab0b89f9329f8afd2f94'
         };
       case 6:
         return { 

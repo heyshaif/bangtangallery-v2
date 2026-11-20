@@ -105,6 +105,9 @@ export const DISCOGRAPHY_ERAS: string[] = [
 // Best K-Pop/Best Group 2019–2021, EMAs, People's Choice, iHeartRadio,
 // Seoul Music Awards Grand Prize years) are deliberately omitted.
 export const AWARD_ENTRIES: AwardEntry[] = [
+  // ---- MAMA Awards 2026 (Batch 178): Artist of the Year (Daesang); 28th MAMA Awards, Chapter 1, Kyocera Dome Osaka, Nov 20, 2026 ----
+  { id: 'aw-mama-2026-aoty', show: 'MAMA Awards', category: 'Artist of the Year', year: 2026, result: 'Won', note: 'Daesang' },
+
   // ---- ARIA Awards 2026 (Batch 173): Most Popular International Artist, fan-voted, for ARIRANG; 40th ARIA Awards, Hordern Pavilion, Sydney, Nov 18, 2026 ----
   { id: 'aw-aria-2026-intl', show: 'ARIA Awards', category: 'Most Popular International Artist', year: 2026, work: 'ARIRANG', result: 'Won', note: 'Fan-voted' },
 
@@ -200,10 +203,10 @@ export const AWARD_ENTRIES: AwardEntry[] = [
   { id: 'aw-grammy-2021-bpdgp', show: 'Grammy Awards', category: 'Best Pop Duo/Group Performance', year: 2021, work: 'Dynamite', result: 'Nominated', note: 'First Grammy nomination' },
 ];
 
-// Trophy-cabinet headline numbers (verified 2026-11-15).
+// Trophy-cabinet headline numbers (verified 2026-11-20).
 export const AWARD_STATS = [
-  { value: '69', label: 'Daesangs', sub: 'Most-awarded artist in South Korean history' },
-  { value: '21', label: 'MAMA Daesangs', sub: 'Most in MAMA history' },
+  { value: '70', label: 'Daesangs', sub: 'Most-awarded artist in South Korean history' },
+  { value: '22', label: 'MAMA Daesangs', sub: 'Most in MAMA history' },
   { value: '15', label: 'MMA Daesangs', sub: 'Melon Music Awards' },
   { value: '12', label: 'Billboard Music Awards', sub: 'Including 5× Top Social Artist' },
 ];

@@ -3804,14 +3804,20 @@ export async function handleApiRequest(urlStr: string, method: string, body: any
     const liveSnap = await getDoc(doc(db, 'config', 'liveStream'));
     const raw = liveSnap.exists() ? liveSnap.data() : {};
     const main = normalizeLiveStreamData(raw);
-    // Batch 175: during a main-DB read outage the wrapper getDoc above
-    // returns the visitor's stale local cache (usually the old OFFLINE
-    // state), and the section's 3.5s poll would keep hiding a live
-    // stream. If the main data is not live, check the DB2 mirror's
-    // published liveStream — kept fresh by publish and by the live
-    // update handler — and serve it when it says the stream is live.
-    // The mirror result is cached 60s (see DB2_LIVE_FALLBACK_TTL_MS)
-    // so the 3.5s poll cannot burn DB2's own read quota.
+    // Batch 175 + Batch 176: during a main-DB read outage the wrapper
+    // getDoc above returns the visitor's stale local cache (usually the
+    // old OFFLINE state), and the section's 3.5s poll would keep hiding
+    // a live stream — and would clobber the admin's real caption with
+    // the stale cached title (or the placeholder defaults). If the main
+    // data is not live, check the DB2 mirror's published liveStream —
+    // kept fresh by publish and by the live update handler — and serve
+    // it whenever it exists, live or offline: the mirror is the best
+    // available public truth, it carries the real caption even when the
+    // stream is offline, and serving an offline mirror cannot resurrect
+    // a player. (The live case keeps its staleness caveat: the mirror is
+    // only as fresh as the last publish or live update.) The mirror
+    // result is cached 60s (see DB2_LIVE_FALLBACK_TTL_MS) so the 3.5s
+    // poll cannot burn DB2's own read quota.
     if (!main.isLive) {
       let mirrorLive: any = null;
       if (db2LiveFallbackCache && Date.now() - db2LiveFallbackCache.at < DB2_LIVE_FALLBACK_TTL_MS) {
@@ -3825,7 +3831,7 @@ export async function handleApiRequest(urlStr: string, method: string, body: any
         }
         db2LiveFallbackCache = { data: mirrorLive, at: Date.now() };
       }
-      if (mirrorLive?.isLive) {
+      if (mirrorLive) {
         return normalizeLiveStreamData(mirrorLive);
       }
     }

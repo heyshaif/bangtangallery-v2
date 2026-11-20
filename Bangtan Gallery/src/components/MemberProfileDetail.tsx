@@ -502,16 +502,40 @@ export default function MemberProfileDetail({ member, onBack, weverseFeed }: Mem
                         </div>
                       </div>
                       <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-line">{p.text}</p>
-                      {p.imageUrl && (
-                        <img
-                          src={p.imageUrl}
-                          alt={`${member.name} Weverse post`}
-                          className="w-full max-h-96 object-cover rounded-xl border border-white/10"
-                          loading="lazy"
-                          decoding="async"
-                          referrerPolicy="no-referrer"
-                        />
-                      )}
+                      {(() => {
+                        // Batch 179: multi-photo posts show every photo as a
+                        // sideways-scroll strip; single-photo posts unchanged.
+                        const imgs: string[] = Array.isArray((p as any).images)
+                          ? (p as any).images.filter((u: any) => typeof u === 'string' && u.length > 0)
+                          : [];
+                        if (imgs.length > 1) {
+                          return (
+                            <div className="flex gap-2 overflow-x-auto pb-1 snap-x">
+                              {imgs.map((u: string, i: number) => (
+                                <img
+                                  key={i}
+                                  src={u}
+                                  alt={`${member.name} Weverse post photo ${i + 1}`}
+                                  className="h-56 w-auto shrink-0 snap-start rounded-xl border border-white/10 object-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ))}
+                            </div>
+                          );
+                        }
+                        return p.imageUrl ? (
+                          <img
+                            src={p.imageUrl}
+                            alt={`${member.name} Weverse post`}
+                            className="w-full max-h-96 object-cover rounded-xl border border-white/10"
+                            loading="lazy"
+                            decoding="async"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : null;
+                      })()}
                       {p.link && (
                         <a
                           href={p.link}

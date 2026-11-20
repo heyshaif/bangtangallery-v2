@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Flame, ExternalLink, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Flame, ExternalLink, ChevronLeft, ChevronRight, X, Images } from 'lucide-react';
 
 interface WeversePost {
   id: string;
@@ -8,6 +8,9 @@ interface WeversePost {
   profileImg: string;
   postText: string;
   postImg: string;
+  // Batch 179: multi-photo posts carry every photo here; postImg stays
+  // the cover (first photo) so single-photo posts behave as before.
+  postImgs?: string[];
   weverseLink: string;
   emoji: string;
   customDate?: string;
@@ -23,6 +26,75 @@ interface InteractiveMediaWallProps {
 const MEMBER_EMOJI: Record<string, string> = {
   rm: '🐨', jin: '🐹', suga: '🐱', jhope: '🐿️', jimin: '🐥', v: '🐯', jungkook: '🐰', bts: '💜'
 };
+
+// Batch 179: carousel for multi-photo Weverse posts (one card, all photos
+// inside; tapping the card opens this). Arrows + dots + counter +
+// keyboard arrows + swipe. Keyed by post id by the caller, so the index
+// resets for each post.
+function PostCarousel({ images, alt }: { images: string[]; alt: string }) {
+  const [index, setIndex] = useState(0);
+  const touchX = useRef<number | null>(null);
+  const total = images.length;
+  const go = (dir: 1 | -1) => setIndex((i) => (i + dir + total) % total);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') go(1);
+      if (e.key === 'ArrowLeft') go(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [total]);
+
+  return (
+    <div
+      className="relative w-full h-full bg-black"
+      onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
+      onTouchEnd={(e) => {
+        if (touchX.current === null) return;
+        const dx = e.changedTouches[0].clientX - touchX.current;
+        if (dx < -40) go(1);
+        else if (dx > 40) go(-1);
+        touchX.current = null;
+      }}
+    >
+      <img
+        key={images[index]}
+        src={images[index]}
+        alt={`${alt} (${index + 1} of ${total})`}
+        className="w-full h-full object-cover"
+        referrerPolicy="no-referrer"
+      />
+      <span className="absolute top-3 right-3 px-2 py-1 rounded-full bg-black/60 border border-white/20 text-white text-[11px] font-mono font-bold backdrop-blur-sm">
+        {index + 1} / {total}
+      </span>
+      <button
+        onClick={(e) => { e.stopPropagation(); go(-1); }}
+        className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/85 text-white border border-white/20 transition-all cursor-pointer hover:scale-110"
+        aria-label="Previous photo"
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </button>
+      <button
+        onClick={(e) => { e.stopPropagation(); go(1); }}
+        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/85 text-white border border-white/20 transition-all cursor-pointer hover:scale-110"
+        aria-label="Next photo"
+      >
+        <ChevronRight className="w-5 h-5" />
+      </button>
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+        {images.map((_, i) => (
+          <button
+            key={i}
+            onClick={(e) => { e.stopPropagation(); setIndex(i); }}
+            className={`rounded-full transition-all cursor-pointer ${i === index ? 'w-2.5 h-2.5 bg-white' : 'w-2 h-2 bg-white/40 hover:bg-white/70'}`}
+            aria-label={`Photo ${i + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function InteractiveMediaWall({ config, feed, members, onTileClick }: InteractiveMediaWallProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -47,12 +119,19 @@ export default function InteractiveMediaWall({ config, feed, members, onTileClic
     .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0))
     .map((p: any) => {
       const m = findMember(p.memberId);
+      // Batch 179: multi-photo posts carry every photo in `images`;
+      // postImg stays the cover (first photo) so single-photo posts
+      // and older readers behave exactly as before.
+      const imgs: string[] = Array.isArray(p.images)
+        ? p.images.filter((u: any) => typeof u === 'string' && u.length > 0)
+        : [];
       return {
         id: p.id,
         name: p.name || m?.name || m?.stageName || 'BTS',
         profileImg: m?.weversePicUrl || m?.portraitUrl || '',
         postText: p.text,
-        postImg: p.imageUrl || m?.bannerUrl || m?.weversePicUrl || '',
+        postImg: p.imageUrl || imgs[0] || m?.bannerUrl || m?.weversePicUrl || '',
+        postImgs: imgs.length > 1 ? imgs : undefined,
         weverseLink: p.link || '',
         emoji: p.emoji || MEMBER_EMOJI[(p.memberId || '').toLowerCase()] || '',
         customDate: p.date || undefined
@@ -242,6 +321,12 @@ export default function InteractiveMediaWall({ config, feed, members, onTileClic
               onClick={() => setSelectedPost(post)}
               className="group relative rounded-2xl border border-white/10 overflow-hidden flex flex-col justify-end h-[280px] cursor-pointer w-[280px] sm:w-[320px] shrink-0 snap-start transition-all duration-300 hover:border-purple-500/50 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]"
             >
+              {/* Batch 179: multi-photo badge — one card holds all photos */}
+              {post.postImgs && post.postImgs.length > 1 && (
+                <span className="absolute top-3 right-3 z-20 flex items-center gap-1 px-2 py-1 rounded-full bg-black/60 border border-white/20 text-white text-[10px] font-bold backdrop-blur-sm pointer-events-none">
+                  <Images className="w-3 h-3" /> {post.postImgs.length}
+                </span>
+              )}
               {/* Post Image as Background */}
               <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl pointer-events-none">
                 <img
@@ -345,15 +430,25 @@ export default function InteractiveMediaWall({ config, feed, members, onTileClic
                 <X className="w-5 h-5" />
               </button>
 
-              {/* Big Post Image */}
-              <div className="w-full md:w-1/2 h-[260px] md:h-[480px] relative overflow-hidden shrink-0 bg-black">
-                <img
-                  src={selectedPost.postImg}
-                  alt={`${selectedPost.name} post full`}
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:hidden" />
+              {/* Big Post Image — Batch 179: multi-photo posts open as a
+                  carousel here (all photos, caption beside it); the pane
+                  is taller on mobile for portrait photos. */}
+              <div className={`w-full md:w-1/2 relative overflow-hidden shrink-0 bg-black ${selectedPost.postImgs && selectedPost.postImgs.length > 1 ? 'h-[420px] md:h-[480px]' : 'h-[260px] md:h-[480px]'}`}>
+                {selectedPost.postImgs && selectedPost.postImgs.length > 1 ? (
+                  <PostCarousel
+                    key={selectedPost.id}
+                    images={selectedPost.postImgs}
+                    alt={`${selectedPost.name} Weverse post`}
+                  />
+                ) : (
+                  <img
+                    src={selectedPost.postImg}
+                    alt={`${selectedPost.name} post full`}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:hidden pointer-events-none" />
               </div>
 
               {/* Post Details (Right side) */}

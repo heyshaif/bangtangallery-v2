@@ -13,6 +13,13 @@ import { getYoutubeEmbedUrl, getYoutubeVideoId } from './youtubeUtils';
 import { getStreamEmbedHTML, resolveEmbedSrc } from '../utils/streamEmbed';
 import MemberEmojiPicker, { loadBiasEmoji } from './MemberEmojiPicker';
 
+// Batch 176: placeholder defaults from normalizeLiveStreamData in
+// firebaseController.ts — keep in sync. A caption equal to one of these
+// means no real caption was set, so the caption block hides it instead
+// of showing stale placeholder text (e.g. 'LOS ANGELES DAY -4').
+const DEFAULT_STREAM_TITLE = 'BTS WORLD TOUR ARIRANG 2026 LIVE STREAM';
+const DEFAULT_STREAM_DESCRIPTION = 'BTS WORLD TOUR ARIRANG 2026 LIVE STREAM LOS ANGELES DAY -4';
+
 interface ChatMessage {
   id: string;
   username: string;
@@ -860,6 +867,11 @@ export default function LiveStreamSection({ playerOnly = false, config }: { play
     );
   }
 
+  // Batch 176: show only a REAL caption — the normalize placeholders
+  // are not a caption and must never display as one.
+  const captionTitle = streamStatus.title && streamStatus.title !== DEFAULT_STREAM_TITLE ? streamStatus.title : '';
+  const captionDescription = streamStatus.description && streamStatus.description !== DEFAULT_STREAM_DESCRIPTION ? streamStatus.description : '';
+
   return (
     <div className="w-full space-y-5 animate-fade-in font-sans pb-10">
       
@@ -1102,16 +1114,16 @@ export default function LiveStreamSection({ playerOnly = false, config }: { play
               STAYS (a Batch-59 removal was reversed the same day —
               the title the owner wants gone is YouTube's own
               in-player header, which no site can remove). */}
-          {(streamStatus.title || streamStatus.description) && (
+          {(captionTitle || captionDescription) && (
             <div className="space-y-1 px-0.5">
-              {streamStatus.title && (
+              {captionTitle && (
                 <h3 className="text-base md:text-lg font-bold text-white leading-snug">
-                  {streamStatus.title} 💜
+                  {captionTitle} 💜
                 </h3>
               )}
-              {streamStatus.description && (
+              {captionDescription && (
                 <p className="text-xs text-gray-400 leading-relaxed">
-                  {streamStatus.description}
+                  {captionDescription}
                 </p>
               )}
             </div>
