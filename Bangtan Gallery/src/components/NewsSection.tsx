@@ -403,9 +403,10 @@ interface NewsSectionProps {
   selectedArticleIdOrSlug?: string | null;
   onSelectArticle?: (slug: string | null) => void;
   relatedTopics?: string[];
+  navHidden?: boolean; // Batch 203 — true while the mobile header is scrolled away
 }
 
-export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectArticle, relatedTopics }: NewsSectionProps) {
+export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectArticle, relatedTopics, navHidden }: NewsSectionProps) {
   const displayArticles = (items && items.length > 0) ? items : NEWS_ARTICLES;
   const getSlug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
@@ -629,7 +630,7 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
           </div>
 
           {/* Search, Categories, and Tags Bar — Batch 186a: sticks under the header while scrolling, so the category buttons + search stay reachable on long news pages */}
-          <div className="news-filterbar sticky top-[63px] lg:top-[112px] z-30 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 py-3">
+          <div className={`news-filterbar sticky ${navHidden ? 'top-0' : 'top-[63px]'} lg:top-[112px] z-30 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 py-3 transition-[top] duration-300`}>
             <div className="flex gap-1.5 flex-wrap overflow-x-auto select-scrollbar py-1">
               {categoryPills.map(cat => (
                 <button

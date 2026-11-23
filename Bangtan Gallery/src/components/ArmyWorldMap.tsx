@@ -199,7 +199,14 @@ export default function ArmyWorldMap() {
           </p>
         </div>
 
-        <div className="mt-5">
+        {/* Batch 204 — the canvas used to stretch the full content width
+            (~1500px on a laptop), which made the map ~640px tall and
+            dominate the whole Home page. The canvas is capped at 4xl
+            now (~896px wide, ~375px tall) and centered; the draw code
+            reads the parent width and the ResizeObserver redraws it,
+            so nothing else changes. Mobile is unaffected (already
+            narrower than the cap). */}
+        <div className="mt-5 max-w-4xl mx-auto">
           <canvas ref={canvasRef} className="block mx-auto max-w-full" aria-label="World map with ARMY country pins" />
         </div>
 

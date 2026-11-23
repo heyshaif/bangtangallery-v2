@@ -1109,6 +1109,34 @@ export function AppContent() {
     prevSelectedMemberRef.current = selectedMember;
   }, [selectedMember]);
 
+  // Batch 203 — mobile scroll-hide, X-style (owner sent a video of the X
+  // app as the reference): on phones, scrolling down hides the header AND
+  // the bottom tab bar together, and scrolling up brings both back
+  // together. Desktop is untouched — the header's hide class is max-lg:
+  // only, and the tab bar is mobile-only anyway. The bars always show at
+  // the very top, and an 8px delta keeps tiny scroll jitters from
+  // flickering them. The ref mirror keeps the listener reading fresh
+  // state without re-subscribing on every toggle.
+  const [navHidden, setNavHidden] = useState(false);
+  const navHiddenRef = useRef(false);
+  const lastScrollYRef = useRef(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const lastY = lastScrollYRef.current;
+      if (y <= 10) {
+        if (navHiddenRef.current) { navHiddenRef.current = false; setNavHidden(false); }
+      } else if (y > lastY + 8 && y > 100) {
+        if (!navHiddenRef.current) { navHiddenRef.current = true; setNavHidden(true); }
+      } else if (y < lastY - 8) {
+        if (navHiddenRef.current) { navHiddenRef.current = false; setNavHidden(false); }
+      }
+      lastScrollYRef.current = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   // Active-tab underline colour follows the visitor's accent colour,
   // like the old sidebar's active indicator did.
   const getNavUnderlineClass = () => {
@@ -1207,7 +1235,7 @@ export function AppContent() {
         preferences.theme === 'light' 
           ? 'bg-white/70 border-slate-200/60 text-slate-800 shadow-[0_8px_32px_0_rgba(31,38,135,0.05)]' 
           : 'bg-[#05000a]/75 border-white/5 text-slate-100 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]'
-      } backdrop-blur-xl border-b transition-all duration-300`}>
+      } backdrop-blur-xl border-b transition-all duration-300 ${navHidden ? 'max-lg:-translate-y-full' : ''}`}>
         <div className="w-full max-w-[1600px] mx-auto px-4 md:px-8 py-4 flex items-center justify-between gap-4">
           
           {/* Logo brand and subtitle */}
@@ -1529,7 +1557,7 @@ export function AppContent() {
       {/* Main Body container (Batch 185: the left sidebar is gone — the nav lives in the top bar now, so the content takes the full width) */}
       <div className="w-full max-w-[1600px] mx-auto px-4 md:px-8 flex-grow flex flex-col pt-3 pb-8 lg:py-8">
         
-        {/* Batch 190 — Mobile "More" bottom sheet (owner: "nich theke... onno bhabe banao"). The old full-screen drawer slid in from the right; the sheet slides UP from the bottom instead, with a dimmed backdrop above it (tap the backdrop to close). Same content as before — search, every section, socials — just a different way in. */}
+        {/* Batch 205 — Mobile "More" center popup (owner picked demo 2: fade + zoom). Replaces the Batch 190 bottom sheet: the menu now appears in the middle of the screen, fading and scaling up, with the same dimmed backdrop (tap it to close). Same content as before — search, every section, socials — just a different way in. */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <React.Fragment key="mobile-sheet">
@@ -1542,22 +1570,16 @@ export function AppContent() {
               className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px] lg:hidden"
             />
             <motion.div
-              initial={{ opacity: 0, y: '100%' }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: '100%' }}
-              transition={{ duration: 0.42, ease: [0.19, 1, 0.22, 1] }}
-              className={`fixed inset-x-0 bottom-0 z-[60] nav-drawer ${
+              initial={{ opacity: 0, scale: 0.85, x: '-50%', y: '-50%' }}
+              animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
+              exit={{ opacity: 0, scale: 0.85, x: '-50%', y: '-50%' }}
+              transition={{ duration: 0.32, ease: [0.34, 1.3, 0.64, 1] }}
+              className={`fixed left-1/2 top-1/2 z-[60] nav-drawer ${
                 preferences.theme === 'light'
                   ? 'bg-white/95 text-slate-900 border-slate-200/50'
                   : 'bg-[#05000a]/98 text-white border-white/10'
-              } backdrop-blur-xl flex flex-col px-6 pb-6 pt-3 max-h-[85dvh] rounded-t-3xl lg:hidden border-t shadow-2xl overflow-hidden`}
+              } backdrop-blur-xl flex flex-col px-6 py-5 w-[calc(100%-2rem)] max-w-sm max-h-[85dvh] rounded-3xl lg:hidden border shadow-2xl overflow-hidden`}
             >
-              {/* Drag handle */}
-              <div className="flex justify-center pt-1 pb-3 shrink-0">
-                <div className={`w-10 h-1.5 rounded-full ${
-                  preferences.theme === 'light' ? 'bg-slate-300' : 'bg-white/20'
-                }`} />
-              </div>
               <div className={`flex items-center justify-between border-b pb-4 mb-4 ${
                 preferences.theme === 'light' ? 'border-slate-200' : 'border-white/10'
               }`}>
@@ -2377,6 +2399,7 @@ export function AppContent() {
               selectedArticleIdOrSlug={selectedNewsSlug}
               onSelectArticle={setSelectedNewsSlug}
               relatedTopics={publishedConfig?.newsRelatedTopics}
+              navHidden={navHidden}
             />
           )}
 
@@ -2603,7 +2626,7 @@ export function AppContent() {
         activeTab={activeTab}
         onNavigate={goToTab}
         onMore={() => setMobileMenuOpen(true)}
-        hidden={mobileMenuOpen}
+        hidden={mobileMenuOpen || navHidden}
       />
 
       <GlobalMiniPlayer 
