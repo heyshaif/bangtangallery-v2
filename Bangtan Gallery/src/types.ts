@@ -151,6 +151,7 @@ export interface SoloRelease {
   releaseDate: string; // ISO 'YYYY-MM-DD', or just 'YYYY' when only the year is verified
   tracks: string[];
   spotifyUrl?: string; // verified open.spotify.com album/track link, or a Spotify search link
+  coverUrl?: string; // Batch 188 — real album cover (Spotify oEmbed / iTunes artwork); shown on the release card instead of the letter tile
 }
 
 export interface ArticleLink {

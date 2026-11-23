@@ -386,7 +386,7 @@ export default function SupportersWall() {
 
             <button
               type="submit"
-              className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5"
+              className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Heart className="w-3.5 h-3.5 fill-white" />
               <span>Record Support</span>

@@ -66,18 +66,18 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
     toggleRepeat,
     playbackError,
     openLyrics,
+    isPlayerOpen,
+    setPlayerOpen,
   } = useAudioPlayer();
 
   // Local Storage states for player presentation choice
-  const [isOpen, setIsOpen] = useState<boolean>(() => {
-    const saved = localStorage.getItem('bts_player_is_open');
-    return saved !== null ? saved === 'true' : true;
-  });
+  // (Batch 193 — the open state now lives in the audio context as
+  // isPlayerOpen, so the floating buttons can react to the bar being open.)
 
   // Force open if on Music page
   useEffect(() => {
     if (activeTab === 'Music') {
-      setIsOpen(true);
+      setPlayerOpen(true);
     }
   }, [activeTab]);
 
@@ -131,22 +131,58 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
   // Dragging: ONLY from the header strip (dragControls), so the
   // buttons and sliders never fight the drag. The offset is
   // remembered across visits; double-clicking the strip resets.
+  // Batch 196 — the old x-bounds (+/-(width/2 - 48)) let the 420px bar
+  // slide most of the way off-screen, and a saved position did exactly
+  // that on the owner's laptop (bar parked off the left edge, looking
+  // "invisible"). The bounds now keep the whole bar on-screen, and any
+  // saved position is clamped to them on mount (and on resize), so a
+  // stale drag can never hide the player again.
+  const playerBounds = () => {
+    const halfBar = Math.min(210, window.innerWidth / 2 - 16);
+    const x = Math.max(0, window.innerWidth / 2 - halfBar - 8);
+    return {
+      left: -x,
+      right: x,
+      top: -(Math.max(0, window.innerHeight - 220)),
+      bottom: 16,
+    };
+  };
+  const clampPos = (p: { x: number; y: number }) => {
+    const b = playerBounds();
+    return {
+      x: Math.min(b.right, Math.max(b.left, p.x)),
+      y: Math.min(b.bottom, Math.max(b.top, p.y)),
+    };
+  };
   const dragControls = useDragControls();
   const [savedPos] = useState(() => {
     try {
       const p = JSON.parse(localStorage.getItem('bts_player_pos') || 'null');
-      if (p && typeof p.x === 'number' && typeof p.y === 'number') return p;
+      if (p && typeof p.x === 'number' && typeof p.y === 'number') {
+        const clamped = clampPos(p);
+        if (clamped.x !== p.x || clamped.y !== p.y) {
+          try { localStorage.setItem('bts_player_pos', JSON.stringify(clamped)); } catch { /* noop */ }
+        }
+        return clamped;
+      }
     } catch { /* noop */ }
     return { x: 0, y: 0 };
   });
   const posX = useMotionValue(savedPos.x);
   const posY = useMotionValue(savedPos.y);
-  const [dragBounds] = useState(() => ({
-    left: -(Math.max(0, window.innerWidth / 2 - 48)),
-    right: Math.max(0, window.innerWidth / 2 - 48),
-    top: -(Math.max(0, window.innerHeight - 220)),
-    bottom: 16,
-  }));
+  const [dragBounds, setDragBounds] = useState(playerBounds);
+  // Re-clamp on resize/rotation: a position that was on-screen can
+  // fall off it when the viewport narrows.
+  useEffect(() => {
+    const onResize = () => {
+      const b = playerBounds();
+      setDragBounds(b);
+      posX.set(Math.min(b.right, Math.max(b.left, posX.get())));
+      posY.set(Math.min(b.bottom, Math.max(b.top, posY.get())));
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   const savePos = () => {
     try { localStorage.setItem('bts_player_pos', JSON.stringify({ x: posX.get(), y: posY.get() })); } catch { /* noop */ }
   };
@@ -158,8 +194,8 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
 
   // Sync to local storage
   useEffect(() => {
-    localStorage.setItem('bts_player_is_open', String(isOpen));
-  }, [isOpen]);
+    localStorage.setItem('bts_player_is_open', String(isPlayerOpen));
+  }, [isPlayerOpen]);
 
   useEffect(() => {
     localStorage.setItem('bts_player_is_minimized', String(isMinimized));
@@ -168,7 +204,7 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
   // Expand player when track starts playing
   useEffect(() => {
     if (currentTrack && isPlaying) {
-      setIsOpen(true);
+      setPlayerOpen(true);
       setIsMinimized(false);
     }
   }, [currentTrack?.id, isPlaying]);
@@ -176,10 +212,12 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
   // Batch 114: closed + nothing playing -> the reopen button
   // fades away after 8 idle seconds. Any tap or key press, a
   // track change, or pressing play brings it back and restarts
-  // the countdown.
+  // the countdown. Batch 196 — the button only fades when NO track
+  // is loaded at all; with a track loaded it is the only way back
+  // to the player, so it always stays visible.
   const [fabHidden, setFabHidden] = useState(false);
   useEffect(() => {
-    if (isOpen || isPlaying) {
+    if (isPlayerOpen || isPlaying || currentTrack) {
       setFabHidden(false);
       return;
     }
@@ -197,7 +235,7 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
       window.removeEventListener('pointerdown', revive);
       window.removeEventListener('keydown', revive);
     };
-  }, [isOpen, isPlaying, currentTrack?.id]);
+  }, [isPlayerOpen, isPlaying, currentTrack?.id]);
 
   if (!currentTrack) return null;
 
@@ -226,7 +264,7 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
   };
 
   // 1. IF FULLY CLOSED: Show a small glowing float icon in the corner
-  if (!isOpen) {
+  if (!isPlayerOpen) {
     return (
       <motion.button
         id="reopen-player-fab"
@@ -235,8 +273,8 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
         style={{ pointerEvents: fabHidden ? 'none' : 'auto' }}
         whileHover={{ scale: 1.1, rotate: 10 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 z-50 p-4 rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-2xl flex items-center justify-center border border-purple-400/40 cursor-pointer group transition-all duration-500 left-1/2 -translate-x-1/2"
+        onClick={() => setPlayerOpen(true)}
+        className="fixed bottom-24 lg:bottom-6 z-50 p-3 lg:p-4 rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-2xl flex items-center justify-center border border-purple-400/40 cursor-pointer group transition-all duration-500 left-1/2 -translate-x-1/2"
         title="Reopen Background Audio Player 🎵"
       >
         <div className="absolute inset-0 rounded-full bg-purple-500/30 animate-ping pointer-events-none" />
@@ -259,7 +297,7 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
       dragMomentum={false}
       onDragEnd={savePos}
       style={{ x: posX, y: posY }}
-      className="fixed bottom-6 z-50 select-none left-0 right-0 mx-auto w-[calc(100%-2rem)] max-w-[420px]"
+      className="fixed bottom-24 lg:bottom-6 z-50 select-none left-0 right-0 mx-auto w-[calc(100%-2rem)] max-w-[420px]"
     >
       <div className="player-dark glass-panel border border-purple-500/35 bg-[#080212]/95 backdrop-blur-2xl rounded-2xl p-4 shadow-[0_0_50px_rgba(168,85,247,0.15)] flex flex-col gap-3.5 relative overflow-hidden">
         
@@ -335,7 +373,7 @@ export default function GlobalMiniPlayer({ onNavigateToMusic, activeTab }: Globa
                 if (isPlaying) {
                   togglePlay();
                 }
-                setIsOpen(false);
+                setPlayerOpen(false);
               }}
               className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-950/20 transition-all cursor-pointer"
               title="Close Player Panel"

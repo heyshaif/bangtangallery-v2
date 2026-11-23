@@ -266,7 +266,7 @@ export default function InteractiveMediaWall({ config, feed, members, onTileClic
                 transition: { duration: 0.25, ease: 'easeOut' }
               }}
               onClick={() => setSelectedProfile(m)}
-              className="group relative rounded-2xl border border-white/10 overflow-hidden flex flex-col justify-end h-[280px] cursor-pointer w-[280px] sm:w-[320px] shrink-0 snap-start transition-all duration-300 hover:border-purple-500/50 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]"
+              className="weverse-card group relative rounded-2xl border border-white/10 overflow-hidden flex flex-col justify-end h-[280px] cursor-pointer w-[280px] sm:w-[320px] shrink-0 snap-start transition-all duration-300 hover:border-purple-500/50 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]"
             >
               {/* Member's own cover banner as the card cover */}
               <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl pointer-events-none">
@@ -279,7 +279,7 @@ export default function InteractiveMediaWall({ config, feed, members, onTileClic
                 />
               </div>
 
-              <div className="relative z-10 p-5 flex flex-col items-start w-full bg-gradient-to-t from-black/85 via-black/30 to-transparent pt-10">
+              <div className="weverse-card-fade on-media relative z-10 p-5 flex flex-col items-start w-full bg-gradient-to-t from-black/85 via-black/30 to-transparent pt-10">
                 <div className="flex items-center gap-2 mb-1">
                   {(m.weversePicUrl || m.portraitUrl) && (
                     <img
@@ -319,7 +319,7 @@ export default function InteractiveMediaWall({ config, feed, members, onTileClic
                 transition: { duration: 0.25, ease: 'easeOut' }
               }}
               onClick={() => setSelectedPost(post)}
-              className="group relative rounded-2xl border border-white/10 overflow-hidden flex flex-col justify-end h-[280px] cursor-pointer w-[280px] sm:w-[320px] shrink-0 snap-start transition-all duration-300 hover:border-purple-500/50 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]"
+              className="weverse-card group relative rounded-2xl border border-white/10 overflow-hidden flex flex-col justify-end h-[280px] cursor-pointer w-[280px] sm:w-[320px] shrink-0 snap-start transition-all duration-300 hover:border-purple-500/50 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]"
             >
               {/* Batch 179: multi-photo badge — one card holds all photos */}
               {post.postImgs && post.postImgs.length > 1 && (
@@ -336,12 +336,12 @@ export default function InteractiveMediaWall({ config, feed, members, onTileClic
                   className="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
                   referrerPolicy="no-referrer"
                 />
-                {/* Dark Overlay (Opacity 30% - 40%) */}
-                <div className="absolute inset-0 bg-black/35 group-hover:bg-black/50 transition-colors duration-500" />
+                {/* Dark Overlay (Opacity 30% - 40%) — Batch 186b: marker class keeps it dark in light mode */}
+                <div className="weverse-photo-dim absolute inset-0 bg-black/35 group-hover:bg-black/50 transition-colors duration-500" />
               </div>
 
-              {/* Foreground Content Card Overlay - Placed at the bottom */}
-              <div className="relative z-10 p-5 flex flex-col items-start w-full bg-gradient-to-t from-black/95 via-black/45 to-transparent pt-10">
+              {/* Foreground Content Card Overlay - Placed at the bottom — Batch 186b: fade + on-media keep it readable over the photo in light mode */}
+              <div className="weverse-card-fade on-media relative z-10 p-5 flex flex-col items-start w-full bg-gradient-to-t from-black/95 via-black/45 to-transparent pt-10">
                 {/* Member Name and Verified Badge */}
                 <div className="flex items-center gap-2 mb-1">
                   {post.profileImg && (

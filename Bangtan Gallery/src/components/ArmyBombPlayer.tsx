@@ -14,19 +14,20 @@ import { useAudioPlayer } from '../context/AudioPlayerContext';
  * It never fights the main music player: starting the bomb pauses
  * the main player, and starting a track stops the bomb.
  * Batch 172 — the bomb sits level with the Ko-fi button (owner,
- * 2026-11-19: "coffee button er same borabor"): both are bottom-6
- * (mobile) / bottom-8 (desktop), the bomb mirrored at left-6 /
- * left-8 against Ko-fi's right-6 / right-8. When a track plays, the
- * bomb still rises on MOBILE (bottom-32, to clear the full-width
- * player bar) but stays low on desktop (md:bottom-8) — the player
- * bar is centred, max 420px wide, so at md+ its left edge is at
- * least 174px in and never reaches the bomb. The move glides
+ * 2026-11-19: "coffee button er same borabor"): both are bottom-24
+ * (mobile, above the Batch 189 bottom tab bar) / bottom-8 (desktop),
+ * the bomb mirrored at left-6 / left-8 against Ko-fi's right-6 /
+ * right-8. Batch 193 — when the player bar is actually OPEN (a track
+ * loaded + the bar showing), BOTH rise together to bottom-40 on
+ * mobile, staying level; on desktop they stay low (md:bottom-8) — the
+ * player bar is centred, max 420px wide, so at md+ its left edge is
+ * at least 174px in and never reaches the bomb. The move glides
  * (transition-all) instead of jumping.
  */
 const BOMB_AUDIO_SRC = '/audio/army-bomb-body-to-body.mp3';
 
 export default function ArmyBombPlayer() {
-  const { isPlaying, togglePlay, currentTrack } = useAudioPlayer();
+  const { isPlaying, togglePlay, currentTrack, isPlayerOpen } = useAudioPlayer();
   const [bombOn, setBombOn] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   // Idle fade (owner rule, 2026-11-06): while the bomb is OFF it
@@ -104,7 +105,12 @@ export default function ArmyBombPlayer() {
       className={`fixed left-6 md:left-8 z-50 select-none transition-all duration-500 ${
         dimmed ? 'opacity-40' : 'opacity-100'
       } ${
-        currentTrack ? 'bottom-32 md:bottom-8' : 'bottom-6 md:bottom-8'
+        // Batch 193 — the bomb rises ONLY while the player bar is actually
+        // open (a track loaded + the bar showing). Rising on currentTrack
+        // alone left it floating high above a closed player, out of line
+        // with Ko-fi. Ko-fi rises with it (App.tsx) so the pair stays
+        // level, per the Batch 172 "same borabor" rule.
+        isPlayerOpen && currentTrack ? 'bottom-40 md:bottom-8' : 'bottom-24 md:bottom-8'
       }`}
     >
       <button
@@ -131,7 +137,7 @@ export default function ArmyBombPlayer() {
             src={bombOn ? '/images/army-bomb-on.png' : '/images/army-bomb-off.png'}
             alt="ARMY Bomb"
             draggable={false}
-            className={`relative h-12 md:h-14 w-auto ${bombOn ? 'bomb-img-on bomb-glow' : ''}`}
+            className={`relative h-10 md:h-14 w-auto ${bombOn ? 'bomb-img-on bomb-glow' : ''}`}
           />
         </span>
       </button>

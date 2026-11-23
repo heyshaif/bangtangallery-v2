@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { Member } from '../types';
 import { Calendar, User, Ruler, Heart, Compass, Award, Music, BookOpen, Clock, ChevronLeft, ChevronDown, Quote, ExternalLink } from 'lucide-react';
+import InstagramCarousel from './InstagramCarousel'; // Batch 188 — this member's own Instagram posts
 
 // Batch 160 — Solo Era: full dates render as "2 Dec 2022"; a
 // year-only value (e.g. '2018', used when only the year was verified)
@@ -182,7 +183,9 @@ export default function MemberProfileDetail({ member, onBack, weverseFeed }: Mem
     setExpandedReleases(prev => ({ ...prev, [id]: !prev[id] }));
 
   return (
-    <div className="w-full max-w-5xl mx-auto rounded-2xl border border-white/5 bg-black/70 backdrop-blur-2xl shadow-2xl overflow-hidden animate-fade-in">
+    // Batch 188 — full-screen profile: the max-w-5xl cap is gone, the profile
+    // spans the full content width like the rest of the site.
+    <div className="w-full mx-auto rounded-2xl border border-white/5 bg-black/70 backdrop-blur-2xl shadow-2xl overflow-hidden animate-fade-in">
       
       {/* Back Header Bar */}
       <div className="p-4 border-b border-white/5 flex items-center bg-black/40">
@@ -302,153 +305,14 @@ export default function MemberProfileDetail({ member, onBack, weverseFeed }: Mem
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Right Columns: Bio, Facts, Timeline and Solo Career */}
-        <div className="lg:col-span-2 space-y-8 font-sans">
-          
-          {/* Introduction Text (Dynamic Highlight Banner) */}
-          {member.introductionText && (
-            <div className="p-5 rounded-xl border border-purple-500/25 bg-gradient-to-r from-purple-950/20 to-indigo-950/20 text-purple-200 text-sm md:text-base italic leading-relaxed font-sans shadow-md">
-              <span className="text-purple-400 text-2xl font-serif leading-none mr-2">&ldquo;</span>
-              {member.introductionText}
-              <span className="text-purple-400 text-2xl font-serif leading-none ml-2">&rdquo;</span>
-            </div>
-          )}
-
-          {/* Biography */}
-          <div className="space-y-3">
-            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-purple-400" /> Biography
-            </h2>
-            <p className="text-gray-300 text-sm md:text-base leading-relaxed p-4 rounded-xl bg-white/[0.01] border border-white/5 whitespace-pre-line">
-              {member.biography}
-            </p>
-          </div>
-
-          {/* Description (Dynamic Bio Appendix) */}
-          {member.description && (
-            <div className="space-y-3 animate-fade-in">
-              <h3 className="text-xs font-mono text-purple-400 uppercase tracking-widest font-bold">Comprehensive Overview</h3>
-              <p className="text-gray-400 text-xs md:text-sm leading-relaxed p-4 rounded-xl bg-black/45 border border-purple-500/10 whitespace-pre-line">
-                {member.description}
-              </p>
-            </div>
-          )}
-
-          {/* Discography & Solo Works — Batch 160 Solo Era: rich album
-              cards with tracklist + Spotify button. When a member has
-              no soloReleases (e.g. a member the owner added by hand),
-              the classic text list is shown instead. */}
-          <div className="space-y-3">
-            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <Music className="w-5 h-5 text-rose-400" /> Solos & Releases
-            </h2>
-            {soloReleases.length > 0 ? (
-              <div className="space-y-3">
-                {soloReleases.map((rel) => {
-                  const relId = rel.id || rel.title;
-                  const expanded = !!expandedReleases[relId];
-                  return (
-                    <div key={relId} className="rounded-xl border border-white/5 bg-white/[0.02] hover:border-purple-500/20 transition-all overflow-hidden">
-                      <button
-                        onClick={() => toggleRelease(relId)}
-                        className="w-full flex items-center gap-3 p-4 text-left cursor-pointer"
-                      >
-                        <span className="shrink-0 w-11 h-11 rounded-lg bg-gradient-to-br from-purple-600/80 to-pink-600/80 flex items-center justify-center text-white font-black text-lg select-none">
-                          {(rel.title || '?').charAt(0)}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block font-sans font-bold text-white text-sm md:text-base truncate">
-                            {rel.title}
-                          </span>
-                          <span className="block text-xs text-gray-400 mt-0.5">
-                            {rel.type} · {formatSoloReleaseDate(rel.releaseDate)} · {rel.tracks?.length || 0} track{(rel.tracks?.length || 0) === 1 ? '' : 's'}
-                          </span>
-                        </span>
-                        <span className="shrink-0 text-[10px] font-mono px-2 py-1 border border-purple-500/20 bg-purple-950/20 text-purple-300 rounded uppercase hidden sm:inline-block">
-                          {rel.type}
-                        </span>
-                        <ChevronDown className={`w-5 h-5 text-purple-400 shrink-0 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
-                      </button>
-                      {expanded && (
-                        <div className="px-4 pb-4 pt-1 border-t border-white/5 animate-fade-in">
-                          <ol className="mt-3 space-y-1.5">
-                            {(rel.tracks || []).map((track, tIdx) => (
-                              <li key={tIdx} className="flex gap-3 text-sm text-gray-300">
-                                <span className="text-purple-400 font-mono font-bold text-xs w-5 shrink-0 pt-0.5 text-right">
-                                  {String(tIdx + 1).padStart(2, '0')}
-                                </span>
-                                <span>{track}</span>
-                              </li>
-                            ))}
-                          </ol>
-                          {rel.spotifyUrl ? (
-                            <a
-                              href={rel.spotifyUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1DB954] hover:bg-[#1ed760] text-black text-xs font-extrabold shadow-md shadow-emerald-900/30 transition-colors"
-                            >
-                              Listen on Spotify <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-                          ) : (
-                            <p className="mt-4 text-[11px] text-gray-500 font-mono">
-                              SoundCloud-only release — not on Spotify.
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {member.soloActivities.map((act, idx) => (
-                  <div key={idx} className="flex items-start gap-2.5 p-3 rounded-lg bg-white/[0.02] border border-white/5 hover:border-purple-500/20 transition-all">
-                    <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-2 flex-shrink-0" />
-                    <span className="text-sm text-gray-300">{act}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Awards */}
-          <div className="space-y-3">
-            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <Award className="w-5 h-5 text-amber-400" /> Key Awards & Honours
-            </h2>
-            <div className="space-y-2">
-              {member.awards.map((aw, idx) => (
-                <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10 text-amber-300 text-sm">
-                  <span>{aw}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Fun Facts Accordion Details */}
-          <div className="space-y-3">
-            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              Fun Trivia Facts
-            </h2>
-            <div className="space-y-2.5">
-              {member.funFacts.map((fact, idx) => (
-                <div key={idx} className="p-3.5 rounded-lg bg-purple-950/5 border border-purple-950/20 text-gray-300 text-xs md:text-sm flex gap-3">
-                  <span className="text-purple-400 font-mono font-bold">#{idx + 1}</span>
-                  <span>{fact}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Internal Member Timeline */}
-          <div className="space-y-4 pt-4 border-t border-white/5">
-            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <Clock className="w-5 h-5 text-emerald-400" /> Career Journey
-            </h2>
+          {/* Batch 192 — Career Journey moved here from the right column:
+              the left column ended halfway down the page, leaving a big
+              empty space under Message to ARMY (owner's screenshot), so
+              the journey fills it, sitting right under the quotes. */}
+          <div className="rounded-xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
+            <h3 className="text-sm font-mono font-bold text-purple-300 flex items-center gap-2 border-b border-white/5 pb-2 uppercase tracking-widest">
+              <Clock className="w-4 h-4" /> Career Journey
+            </h3>
             <div className="space-y-4 pl-2">
               {member.timeline.map((event, idx) => (
                 <div key={idx} className="flex gap-4 relative pb-4 border-l border-white/10 last:border-0 pl-4 last:pb-0">
@@ -464,9 +328,11 @@ export default function MemberProfileDetail({ member, onBack, weverseFeed }: Mem
             </div>
           </div>
 
-          {/* Latest Weverse Posts — added by the site owner from the
-              member's real Weverse posts (Weverse has no auto-feed).
-              Shows only when the owner has added posts for this member. */}
+          {/* Batch 201 — Latest Weverse Posts moved here, right after
+              Career Journey in the left column (owner 2026-11-23).
+              Added by the site owner from the member's real Weverse
+              posts (Weverse has no auto-feed); shows only when the
+              owner has added posts for this member. */}
           {(() => {
             const posts = (Array.isArray(weverseFeed) ? weverseFeed : [])
               .filter((p: any) => p && p.memberId === member.id)
@@ -555,6 +421,166 @@ export default function MemberProfileDetail({ member, onBack, weverseFeed }: Mem
               </div>
             );
           })()}
+        </div>
+
+        {/* Right Columns: Bio, Facts, Timeline and Solo Career */}
+        <div className="lg:col-span-2 space-y-8 font-sans">
+          
+          {/* Introduction Text (Dynamic Highlight Banner) */}
+          {member.introductionText && (
+            <div className="p-5 rounded-xl border border-purple-500/25 bg-gradient-to-r from-purple-950/20 to-indigo-950/20 text-purple-200 text-sm md:text-base italic leading-relaxed font-sans shadow-md">
+              <span className="text-purple-400 text-2xl font-serif leading-none mr-2">&ldquo;</span>
+              {member.introductionText}
+              <span className="text-purple-400 text-2xl font-serif leading-none ml-2">&rdquo;</span>
+            </div>
+          )}
+
+          {/* Biography */}
+          <div className="space-y-3">
+            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-purple-400" /> Biography
+            </h2>
+            <p className="text-gray-300 text-sm md:text-base leading-relaxed p-4 rounded-xl bg-white/[0.01] border border-white/5 whitespace-pre-line">
+              {member.biography}
+            </p>
+          </div>
+
+          {/* Description (Dynamic Bio Appendix) */}
+          {member.description && (
+            <div className="space-y-3 animate-fade-in">
+              <h3 className="text-xs font-mono text-purple-400 uppercase tracking-widest font-bold">Comprehensive Overview</h3>
+              <p className="text-gray-400 text-xs md:text-sm leading-relaxed p-4 rounded-xl bg-black/45 border border-purple-500/10 whitespace-pre-line">
+                {member.description}
+              </p>
+            </div>
+          )}
+
+          {/* Discography & Solo Works — Batch 160 Solo Era: rich album
+              cards with tracklist + Spotify button. When a member has
+              no soloReleases (e.g. a member the owner added by hand),
+              the classic text list is shown instead. */}
+          <div className="space-y-3">
+            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+              <Music className="w-5 h-5 text-rose-400" /> Solos & Releases
+            </h2>
+            {soloReleases.length > 0 ? (
+              <div className="space-y-3">
+                {soloReleases.map((rel) => {
+                  const relId = rel.id || rel.title;
+                  const expanded = !!expandedReleases[relId];
+                  return (
+                    <div key={relId} className="rounded-xl border border-white/5 bg-white/[0.02] hover:border-purple-500/20 transition-all overflow-hidden">
+                      <button
+                        onClick={() => toggleRelease(relId)}
+                        className="w-full flex items-center gap-3 p-4 text-left cursor-pointer"
+                      >
+                        {/* Batch 188 — real album cover; the letter tile stays as the fallback when a release has no cover (e.g. RM's 2015 mixtape) */}
+                        {rel.coverUrl ? (
+                          <img
+                            src={rel.coverUrl}
+                            alt={`${rel.title} cover`}
+                            className="shrink-0 w-11 h-11 rounded-lg object-cover border border-white/10"
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <span className="shrink-0 w-11 h-11 rounded-lg bg-gradient-to-br from-purple-600/80 to-pink-600/80 flex items-center justify-center text-white font-black text-lg select-none">
+                            {(rel.title || '?').charAt(0)}
+                          </span>
+                        )}
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-sans font-bold text-white text-sm md:text-base truncate">
+                            {rel.title}
+                          </span>
+                          <span className="block text-xs text-gray-400 mt-0.5">
+                            {rel.type} · {formatSoloReleaseDate(rel.releaseDate)} · {rel.tracks?.length || 0} track{(rel.tracks?.length || 0) === 1 ? '' : 's'}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-[10px] font-mono px-2 py-1 border border-purple-500/20 bg-purple-950/20 text-purple-300 rounded uppercase hidden sm:inline-block">
+                          {rel.type}
+                        </span>
+                        <ChevronDown className={`w-5 h-5 text-purple-400 shrink-0 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      {expanded && (
+                        <div className="px-4 pb-4 pt-1 border-t border-white/5 animate-fade-in">
+                          <ol className="mt-3 space-y-1.5">
+                            {(rel.tracks || []).map((track, tIdx) => (
+                              <li key={tIdx} className="flex gap-3 text-sm text-gray-300">
+                                <span className="text-purple-400 font-mono font-bold text-xs w-5 shrink-0 pt-0.5 text-right">
+                                  {String(tIdx + 1).padStart(2, '0')}
+                                </span>
+                                <span>{track}</span>
+                              </li>
+                            ))}
+                          </ol>
+                          {rel.spotifyUrl ? (
+                            <a
+                              href={rel.spotifyUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1DB954] hover:bg-[#1ed760] text-black text-xs font-extrabold shadow-md shadow-emerald-900/30 transition-colors"
+                            >
+                              Listen on Spotify <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          ) : (
+                            <p className="mt-4 text-[11px] text-gray-500 font-mono">
+                              SoundCloud-only release — not on Spotify.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {member.soloActivities.map((act, idx) => (
+                  <div key={idx} className="flex items-start gap-2.5 p-3 rounded-lg bg-white/[0.02] border border-white/5 hover:border-purple-500/20 transition-all">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-2 flex-shrink-0" />
+                    <span className="text-sm text-gray-300">{act}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Awards */}
+          <div className="space-y-3">
+            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+              <Award className="w-5 h-5 text-amber-400" /> Key Awards & Honours
+            </h2>
+            <div className="space-y-2">
+              {member.awards.map((aw, idx) => (
+                <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10 text-amber-300 text-sm">
+                  <span>{aw}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Fun Facts Accordion Details */}
+          <div className="space-y-3">
+            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+              Fun Trivia Facts
+            </h2>
+            <div className="space-y-2.5">
+              {member.funFacts.map((fact, idx) => (
+                <div key={idx} className="p-3.5 rounded-lg bg-purple-950/5 border border-purple-950/20 text-gray-300 text-xs md:text-sm flex gap-3">
+                  <span className="text-purple-400 font-mono font-bold">#{idx + 1}</span>
+                  <span>{fact}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Batch 200 — this member's own Instagram posts, embedded side
+              by side, newest first. Moved up here, right after Fun Trivia
+              Facts (owner 2026-11-23), from the bottom of the profile. */}
+          <InstagramCarousel memberId={member.id} memberName={member.name} />
+
+          {/* Batch 192 — Career Journey moved to the left column (it fills the
+              empty space under Message to ARMY). */}
 
           {/* Member Personal Portrait Gallery */}
           <div className="space-y-4">

@@ -108,6 +108,14 @@ export const AWARD_ENTRIES: AwardEntry[] = [
   // ---- MAMA Awards 2026 (Batch 178): Artist of the Year (Daesang); 28th MAMA Awards, Chapter 1, Kyocera Dome Osaka, Nov 20, 2026 ----
   { id: 'aw-mama-2026-aoty', show: 'MAMA Awards', category: 'Artist of the Year', year: 2026, result: 'Won', note: 'Daesang' },
 
+  // ---- MAMA Awards 2026 (Batch 180): Best Male Group; Day 1, Nov 20, 2026 ----
+  { id: 'aw-mama-2026-best-male-group', show: 'MAMA Awards', category: 'Best Male Group', year: 2026, result: 'Won' },
+
+  // ---- MAMA Awards 2026 (Batch 181): Day 2 wins, Nov 21, 2026 — Album of the Year (Daesang, the 81st Daesang), Best Song Top 10 (SWIM), Fans' Choice Male Top 10 ----
+  { id: 'aw-mama-2026-albumoty', show: 'MAMA Awards', category: 'Album of the Year', year: 2026, result: 'Won', note: 'Daesang' },
+  { id: 'aw-mama-2026-swim-top10', show: 'MAMA Awards', category: 'Best Song Top 10', year: 2026, result: 'Won', note: 'SWIM' },
+  { id: 'aw-mama-2026-fc-top10', show: 'MAMA Awards', category: "Fans' Choice Male Top 10", year: 2026, result: 'Won' },
+
   // ---- ARIA Awards 2026 (Batch 173): Most Popular International Artist, fan-voted, for ARIRANG; 40th ARIA Awards, Hordern Pavilion, Sydney, Nov 18, 2026 ----
   { id: 'aw-aria-2026-intl', show: 'ARIA Awards', category: 'Most Popular International Artist', year: 2026, work: 'ARIRANG', result: 'Won', note: 'Fan-voted' },
 
@@ -203,10 +211,10 @@ export const AWARD_ENTRIES: AwardEntry[] = [
   { id: 'aw-grammy-2021-bpdgp', show: 'Grammy Awards', category: 'Best Pop Duo/Group Performance', year: 2021, work: 'Dynamite', result: 'Nominated', note: 'First Grammy nomination' },
 ];
 
-// Trophy-cabinet headline numbers (verified 2026-11-20).
+// Trophy-cabinet headline numbers (verified 2026-11-22; Batch 180: Daesangs 70 -> 80 after the MAMA Artist of the Year win; Batch 181: 80 -> 81 + MAMA Daesangs 22 -> 23 after the MAMA Album of the Year win).
 export const AWARD_STATS = [
-  { value: '70', label: 'Daesangs', sub: 'Most-awarded artist in South Korean history' },
-  { value: '22', label: 'MAMA Daesangs', sub: 'Most in MAMA history' },
+  { value: '81', label: 'Daesangs', sub: 'Most-awarded artist in South Korean history' },
+  { value: '23', label: 'MAMA Daesangs', sub: 'Most in MAMA history' },
   { value: '15', label: 'MMA Daesangs', sub: 'Melon Music Awards' },
   { value: '12', label: 'Billboard Music Awards', sub: 'Including 5× Top Social Artist' },
 ];

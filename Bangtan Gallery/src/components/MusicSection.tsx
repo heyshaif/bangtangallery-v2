@@ -5,7 +5,8 @@ import {
   AlertCircle, Trash2, X, Clipboard, ExternalLink, Calendar, User,
   Star, Pin, Pause, RotateCcw, RotateCw, Volume2, VolumeX, SkipBack, SkipForward,
   ChevronDown, ChevronUp, UploadCloud, CheckCircle2,
-  Mic, Radio, Music2, Wand2, RefreshCw, Send, Clock, FileText, Shuffle
+  Mic, Radio, Music2, Wand2, RefreshCw, Send, Clock, FileText, Shuffle,
+  SlidersHorizontal
 } from 'lucide-react';
 import { useBackend } from '../context/BackendContext';
 import { useAudioPlayer, QueueItem } from '../context/AudioPlayerContext';
@@ -139,6 +140,9 @@ export default function MusicSection({ config: passedConfig }: { config?: any })
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEra, setSelectedEra] = useState('All Eras');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false); // Batch 104
+  // Batch 195 — mobile: the search/filter panel starts hidden behind
+  // a drop-down toggle (owner 2026-11-23); desktop ignores this.
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Submit Modal state
   // Submit Modal state
@@ -771,6 +775,27 @@ export default function MusicSection({ config: passedConfig }: { config?: any })
           )}
         </div>
 
+        {/* Batch 195 — mobile: the controls hide behind a drop-down
+            toggle (owner 2026-11-23) so the track list starts higher.
+            The grid-rows trick animates the drop; on desktop
+            (lg:grid-rows-[1fr]) the panel is always open. The dot
+            shows when any filter is active. */}
+        <button
+          onClick={() => setFiltersOpen(o => !o)}
+          aria-expanded={filtersOpen}
+          className="lg:hidden w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-black/30 border border-purple-500/15 text-stone-200 cursor-pointer"
+        >
+          <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider font-mono">
+            <SlidersHorizontal className="w-4 h-4 text-purple-400" />
+            Search &amp; Filters
+            {(searchQuery || selectedEra !== 'All Eras' || showFavoritesOnly) && (
+              <span className="w-2 h-2 rounded-full bg-purple-400" title="A filter is active" />
+            )}
+          </span>
+          <ChevronDown className={`w-4 h-4 text-purple-400 transition-transform duration-300 ${filtersOpen ? 'rotate-180' : ''}`} />
+        </button>
+        <div className={`grid transition-all duration-300 ease-in-out lg:grid-rows-[1fr] ${filtersOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+          <div className="overflow-hidden min-h-0">
         {/* Central Controls: Search, Era Filter and Share Button */}
         <div className="bg-black/30 border border-purple-500/10 backdrop-blur-md p-4 sm:p-6 rounded-3xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-2xl">
           
@@ -838,6 +863,8 @@ export default function MusicSection({ config: passedConfig }: { config?: any })
               <Plus className="w-4 h-4" />
               <span>Submit Track</span>
             </button>
+          </div>
+        </div>
           </div>
         </div>
 

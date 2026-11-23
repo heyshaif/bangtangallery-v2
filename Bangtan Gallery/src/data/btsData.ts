@@ -38,9 +38,9 @@ export const MEMBERS: Member[] = [
     // 'RM' has no Spotify release (SoundCloud only) — no link.
     soloReleases: [
       { id: 'sr-rm', title: 'RM', type: 'Mixtape', releaseDate: '2015-03-20', tracks: ['Voice', 'Do You', 'Awakening', 'Monster', 'Throw Away', 'Joke', 'God Rap', 'Rush (feat. Krizz Kaliko)', 'Life', 'Adrift', 'I Believe'] },
-      { id: 'sr-mono', title: 'mono.', type: 'Mixtape', releaseDate: '2018-10-23', tracks: ['Tokyo', 'Seoul', 'Moonchild', 'Badbye (with eAeon)', 'Uhgood', 'Everythingoes (with Nell)', 'Forever Rain'], spotifyUrl: 'https://open.spotify.com/album/1vsTrL1h2bRHP1kUPvlIyb' },
-      { id: 'sr-indigo', title: 'Indigo', type: 'Studio Album', releaseDate: '2022-12-02', tracks: ['Yun (with Erykah Badu)', 'Still Life (with Anderson .Paak)', 'All Day (with Tablo)', 'Forgotten (with Kim Sa-wol)', 'Closer (with Paul Blanco, Mahalia)', 'Change Pt.2', 'Lonely', 'Hectic (with Colde)', 'Wild Flower (with Youjeen)', 'No.2 (with Park Ji-yoon)'], spotifyUrl: 'https://open.spotify.com/album/08HCdXZVN72S2vpIT9DKhU' },
-      { id: 'sr-rpwp', title: 'Right Place, Wrong Person', type: 'Studio Album', releaseDate: '2024-05-24', tracks: ['Right People, Wrong Place', 'Nuts', 'Out of Love', 'Domodachi (feat. Little Simz)', '? (Interlude) (with Domi and JD Beck)', 'Groin', 'Heaven', 'Lost!', 'Around the World in a Day (feat. Moses Sumney)', 'ㅠㅠ (Credit Roll)', 'Come Back to Me'], spotifyUrl: 'https://open.spotify.com/album/512dQp7hBbDDurodCqSw5I' }
+      { id: 'sr-mono', title: 'mono.', type: 'Mixtape', releaseDate: '2018-10-23', tracks: ['Tokyo', 'Seoul', 'Moonchild', 'Badbye (with eAeon)', 'Uhgood', 'Everythingoes (with Nell)', 'Forever Rain'], spotifyUrl: 'https://open.spotify.com/album/1vsTrL1h2bRHP1kUPvlIyb', coverUrl: 'https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02080a745e13dec66b01f7b318' },
+      { id: 'sr-indigo', title: 'Indigo', type: 'Studio Album', releaseDate: '2022-12-02', tracks: ['Yun (with Erykah Badu)', 'Still Life (with Anderson .Paak)', 'All Day (with Tablo)', 'Forgotten (with Kim Sa-wol)', 'Closer (with Paul Blanco, Mahalia)', 'Change Pt.2', 'Lonely', 'Hectic (with Colde)', 'Wild Flower (with Youjeen)', 'No.2 (with Park Ji-yoon)'], spotifyUrl: 'https://open.spotify.com/album/08HCdXZVN72S2vpIT9DKhU', coverUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e0236661930d6c586e412d7d4b2' },
+      { id: 'sr-rpwp', title: 'Right Place, Wrong Person', type: 'Studio Album', releaseDate: '2024-05-24', tracks: ['Right People, Wrong Place', 'Nuts', 'Out of Love', 'Domodachi (feat. Little Simz)', '? (Interlude) (with Domi and JD Beck)', 'Groin', 'Heaven', 'Lost!', 'Around the World in a Day (feat. Moses Sumney)', 'ㅠㅠ (Credit Roll)', 'Come Back to Me'], spotifyUrl: 'https://open.spotify.com/album/512dQp7hBbDDurodCqSw5I', coverUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e027093cd0ee6043740f73e54d9' }
     ],
     discography: [
       'Indigo (Album - 2022)',
@@ -105,9 +105,9 @@ export const MEMBERS: Member[] = [
     // could not be verified, so its Spotify button opens a Spotify
     // search instead of a guessed link.
     soloReleases: [
-      { id: 'sr-astronaut', title: 'The Astronaut', type: 'Single', releaseDate: '2022-10-28', tracks: ['The Astronaut'], spotifyUrl: 'https://open.spotify.com/search/The%20Astronaut%20Jin' },
-      { id: 'sr-happy', title: 'Happy', type: 'Mini Album', releaseDate: '2024-11-15', tracks: ['Running Wild', "I'll Be There", 'Another Level', 'Falling', 'Heart on the Window (with Wendy)', 'I Will Come to You'], spotifyUrl: 'https://open.spotify.com/album/0fKlaQuBMQYFo5aIFoGIXt' },
-      { id: 'sr-echo', title: 'Echo', type: 'Mini Album', releaseDate: '2025-05-16', tracks: ["Don't Say You Love Me", 'Nothing Without Your Love', 'Loser (feat. YENA)', 'Rope It', 'With the Clouds', 'Background', 'To Me, Today'], spotifyUrl: 'https://open.spotify.com/album/3DmDoHxAeEiDFNWrHSKAdQ' }
+      { id: 'sr-astronaut', title: 'The Astronaut', type: 'Single', releaseDate: '2022-10-28', tracks: ['The Astronaut'], spotifyUrl: 'https://open.spotify.com/search/The%20Astronaut%20Jin', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/1b/38/ea/1b38eacd-158d-5040-8887-2786d2a641bc/192641874338_Cover.jpg/600x600bb.jpg' },
+      { id: 'sr-happy', title: 'Happy', type: 'Mini Album', releaseDate: '2024-11-15', tracks: ['Running Wild', "I'll Be There", 'Another Level', 'Falling', 'Heart on the Window (with Wendy)', 'I Will Come to You'], spotifyUrl: 'https://open.spotify.com/album/0fKlaQuBMQYFo5aIFoGIXt', coverUrl: 'https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e021dcf069284321bef1306d6ec' },
+      { id: 'sr-echo', title: 'Echo', type: 'Mini Album', releaseDate: '2025-05-16', tracks: ["Don't Say You Love Me", 'Nothing Without Your Love', 'Loser (feat. YENA)', 'Rope It', 'With the Clouds', 'Background', 'To Me, Today'], spotifyUrl: 'https://open.spotify.com/album/3DmDoHxAeEiDFNWrHSKAdQ', coverUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e0289228504f700641956e29f5d' }
     ],
     discography: [
       'The Astronaut (Single - 2022)',
@@ -169,9 +169,9 @@ export const MEMBERS: Member[] = [
     ],
     // Batch 160 — Solo Era seed (as Agust D).
     soloReleases: [
-      { id: 'sr-agustd', title: 'Agust D', type: 'Mixtape', releaseDate: '2016-08-16', tracks: ['Intro: DT sugA (feat. DJ Friz)', 'Agust D', 'Give It to Me', 'Skit', '724148', '140503 at Dawn', 'The Last', 'Tony Montana (feat. Yankie)', 'Interlude: Dream, Reality', 'So Far Away (feat. Suran)'], spotifyUrl: 'https://open.spotify.com/album/1qHUxg0YIm6caZQrDJvDdk' },
-      { id: 'sr-d2', title: 'D-2', type: 'Mixtape', releaseDate: '2020-05-22', tracks: ['Moonlight', 'Daechwita', 'What Do You Think?', 'Strange (feat. RM)', '28 (feat. Niihwa)', 'Burn It (feat. Max)', 'People', 'Honsool', 'Interlude: Set Me Free', 'Dear My Friend (feat. Kim Jong-wan)'], spotifyUrl: 'https://open.spotify.com/album/1Pp8t7yn2E3rz3R7ZqPn1O' },
-      { id: 'sr-dday', title: 'D-DAY', type: 'Studio Album', releaseDate: '2023-04-21', tracks: ['D-Day', 'Haegeum', 'Huh?! (feat. j-hope)', 'Amygdala', 'SDL', 'People Pt.2 (feat. IU)', 'Polar Night', 'Interlude: Dawn', 'Snooze (feat. Ryuichi Sakamoto & Woosung)', 'Life Goes On'], spotifyUrl: 'https://open.spotify.com/album/446ROKmKfpEwkbi2SjELVX' }
+      { id: 'sr-agustd', title: 'Agust D', type: 'Mixtape', releaseDate: '2016-08-16', tracks: ['Intro: DT sugA (feat. DJ Friz)', 'Agust D', 'Give It to Me', 'Skit', '724148', '140503 at Dawn', 'The Last', 'Tony Montana (feat. Yankie)', 'Interlude: Dream, Reality', 'So Far Away (feat. Suran)'], spotifyUrl: 'https://open.spotify.com/album/1qHUxg0YIm6caZQrDJvDdk', coverUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02d50c63294b5dd4f6b7f79429' },
+      { id: 'sr-d2', title: 'D-2', type: 'Mixtape', releaseDate: '2020-05-22', tracks: ['Moonlight', 'Daechwita', 'What Do You Think?', 'Strange (feat. RM)', '28 (feat. Niihwa)', 'Burn It (feat. Max)', 'People', 'Honsool', 'Interlude: Set Me Free', 'Dear My Friend (feat. Kim Jong-wan)'], spotifyUrl: 'https://open.spotify.com/album/1Pp8t7yn2E3rz3R7ZqPn1O', coverUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e026c0e2c778e672701e1a254c6' },
+      { id: 'sr-dday', title: 'D-DAY', type: 'Studio Album', releaseDate: '2023-04-21', tracks: ['D-Day', 'Haegeum', 'Huh?! (feat. j-hope)', 'Amygdala', 'SDL', 'People Pt.2 (feat. IU)', 'Polar Night', 'Interlude: Dawn', 'Snooze (feat. Ryuichi Sakamoto & Woosung)', 'Life Goes On'], spotifyUrl: 'https://open.spotify.com/album/446ROKmKfpEwkbi2SjELVX', coverUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02fa9247b68471b82d2125651e' }
     ],
     discography: [
       'D-DAY (Agust D Album - 2023)',
@@ -233,9 +233,9 @@ export const MEMBERS: Member[] = [
     // Batch 160 — Solo Era seed. Hope World's exact day was not
     // verified, so only the year is stored (shown as '2018').
     soloReleases: [
-      { id: 'sr-hopeworld', title: 'Hope World', type: 'Mixtape', releaseDate: '2018', tracks: ['Hope World', 'P.O.P (Piece of Peace) Pt.1', 'Daydream', 'Base Line', 'Hangsang (feat. Supreme Boi)', 'Airplane', 'Blue Side (Outro)'], spotifyUrl: 'https://open.spotify.com/album/1bJ8O4jIyqSdunqT9RWXc9' },
-      { id: 'sr-jitb', title: 'Jack in the Box', type: 'Studio Album', releaseDate: '2022-07-15', tracks: ['Intro', "Pandora's Box", 'More', 'Stop', '= (Equal Sign)', 'Music Box: Reflection', 'What If...', 'Safety Zone', 'Future', 'Arson'], spotifyUrl: 'https://open.spotify.com/album/0FrC9lzgVhziJenigsrXdl' },
-      { id: 'sr-hots', title: 'HOPE ON THE STREET VOL.1', type: 'Special Album', releaseDate: '2024-03-29', tracks: ['On the Street (Solo Version)', 'I Wonder... (with Jung Kook)', 'Lock / Unlock (with benny blanco & Nile Rodgers)', "I Don't Know (with Huh Yunjin)", 'What If... (Dance Mix)', 'Neuron (with Gaeko & Yoon Mi-rae)'], spotifyUrl: 'https://open.spotify.com/album/5mqxdPWQirLBE7vdDMhlB4' }
+      { id: 'sr-hopeworld', title: 'Hope World', type: 'Mixtape', releaseDate: '2018', tracks: ['Hope World', 'P.O.P (Piece of Peace) Pt.1', 'Daydream', 'Base Line', 'Hangsang (feat. Supreme Boi)', 'Airplane', 'Blue Side (Outro)'], spotifyUrl: 'https://open.spotify.com/album/1bJ8O4jIyqSdunqT9RWXc9', coverUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e021a8ce1bb033dcde4d553a29d' },
+      { id: 'sr-jitb', title: 'Jack in the Box', type: 'Studio Album', releaseDate: '2022-07-15', tracks: ['Intro', "Pandora's Box", 'More', 'Stop', '= (Equal Sign)', 'Music Box: Reflection', 'What If...', 'Safety Zone', 'Future', 'Arson'], spotifyUrl: 'https://open.spotify.com/album/0FrC9lzgVhziJenigsrXdl', coverUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02ce5bba40b16f887e0461c6e2' },
+      { id: 'sr-hots', title: 'HOPE ON THE STREET VOL.1', type: 'Special Album', releaseDate: '2024-03-29', tracks: ['On the Street (Solo Version)', 'I Wonder... (with Jung Kook)', 'Lock / Unlock (with benny blanco & Nile Rodgers)', "I Don't Know (with Huh Yunjin)", 'What If... (Dance Mix)', 'Neuron (with Gaeko & Yoon Mi-rae)'], spotifyUrl: 'https://open.spotify.com/album/5mqxdPWQirLBE7vdDMhlB4', coverUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02c38c67ad56a314ba5669242d' }
     ],
     discography: [
       'Jack In The Box (Album - 2022)',
@@ -298,8 +298,8 @@ export const MEMBERS: Member[] = [
     ],
     // Batch 160 — Solo Era seed.
     soloReleases: [
-      { id: 'sr-face', title: 'FACE', type: 'Studio Album', releaseDate: '2023-03-24', tracks: ['Face-Off', 'Interlude: Dive', 'Like Crazy', 'Alone', 'Set Me Free Pt.2', 'Like Crazy (English version)'], spotifyUrl: 'https://open.spotify.com/album/4xc3Lc9yASZgEJGH7acWMB' },
-      { id: 'sr-muse', title: 'MUSE', type: 'Studio Album', releaseDate: '2024-07-19', tracks: ['Rebirth (Intro)', 'Interlude: Showtime', 'Smeraldo Garden Marching Band (feat. Loco)', 'Slow Dance (feat. Sofia Carson)', 'Be Mine', 'Who', 'Closer Than This'], spotifyUrl: 'https://open.spotify.com/album/15XcLhiVMlSOipUddTNDnr' }
+      { id: 'sr-face', title: 'FACE', type: 'Studio Album', releaseDate: '2023-03-24', tracks: ['Face-Off', 'Interlude: Dive', 'Like Crazy', 'Alone', 'Set Me Free Pt.2', 'Like Crazy (English version)'], spotifyUrl: 'https://open.spotify.com/album/4xc3Lc9yASZgEJGH7acWMB', coverUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e022b46078245d0120690eb560d' },
+      { id: 'sr-muse', title: 'MUSE', type: 'Studio Album', releaseDate: '2024-07-19', tracks: ['Rebirth (Intro)', 'Interlude: Showtime', 'Smeraldo Garden Marching Band (feat. Loco)', 'Slow Dance (feat. Sofia Carson)', 'Be Mine', 'Who', 'Closer Than This'], spotifyUrl: 'https://open.spotify.com/album/15XcLhiVMlSOipUddTNDnr', coverUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02f02c451189a709b9a952aaec' }
     ],
     discography: [
       'FACE (Album - 2023)',
@@ -360,8 +360,8 @@ export const MEMBERS: Member[] = [
     ],
     // Batch 160 — Solo Era seed.
     soloReleases: [
-      { id: 'sr-layover', title: 'Layover', type: 'Mini Album', releaseDate: '2023-09-08', tracks: ['Rainy Days', 'Blue', 'Love Me Again', 'Slow Dancing', 'For Us', 'Slow Dancing (Piano Ver.)'], spotifyUrl: 'https://open.spotify.com/album/1ZBDI1LqnuAKdrePUF2D5m' },
-      { id: 'sr-friends', title: 'FRI(END)S', type: 'Single', releaseDate: '2024-03-15', tracks: ['FRI(END)S'], spotifyUrl: 'https://open.spotify.com/album/7v4sqd0NZ9Fm8HnwCcCGIs' }
+      { id: 'sr-layover', title: 'Layover', type: 'Mini Album', releaseDate: '2023-09-08', tracks: ['Rainy Days', 'Blue', 'Love Me Again', 'Slow Dancing', 'For Us', 'Slow Dancing (Piano Ver.)'], spotifyUrl: 'https://open.spotify.com/album/1ZBDI1LqnuAKdrePUF2D5m', coverUrl: 'https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e022f1a5b69c2bd76474bca8035' },
+      { id: 'sr-friends', title: 'FRI(END)S', type: 'Single', releaseDate: '2024-03-15', tracks: ['FRI(END)S'], spotifyUrl: 'https://open.spotify.com/album/7v4sqd0NZ9Fm8HnwCcCGIs', coverUrl: 'https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02377ee031d0a3da40db19ccf4' }
     ],
     discography: [
       'Layover (Album - 2023)',
@@ -425,7 +425,7 @@ export const MEMBERS: Member[] = [
     // Spotify ID for GOLDEN (5p7b6f70DScE0K758u1Www) 404s — the link
     // below is the verified one.
     soloReleases: [
-      { id: 'sr-golden', title: 'GOLDEN', type: 'Studio Album', releaseDate: '2023-11-03', tracks: ['3D (feat. Jack Harlow)', 'Closer to You (feat. Major Lazer)', 'Seven (feat. Latto) [Explicit]', 'Seven (feat. Latto) [Clean]', 'Standing Next to You', 'Yes or No', "Please Don't Change (feat. DJ Snake)", 'Hate You', 'Somebody', 'Too Sad to Dance', 'Shot Glass of Tears'], spotifyUrl: 'https://open.spotify.com/album/5pSk3c3wVwnb2arb6ohCPU' }
+      { id: 'sr-golden', title: 'GOLDEN', type: 'Studio Album', releaseDate: '2023-11-03', tracks: ['3D (feat. Jack Harlow)', 'Closer to You (feat. Major Lazer)', 'Seven (feat. Latto) [Explicit]', 'Seven (feat. Latto) [Clean]', 'Standing Next to You', 'Yes or No', "Please Don't Change (feat. DJ Snake)", 'Hate You', 'Somebody', 'Too Sad to Dance', 'Shot Glass of Tears'], spotifyUrl: 'https://open.spotify.com/album/5pSk3c3wVwnb2arb6ohCPU', coverUrl: 'https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02741fd4807f442af3f7359316' }
     ],
     discography: [
       'GOLDEN (Album - 2023)',

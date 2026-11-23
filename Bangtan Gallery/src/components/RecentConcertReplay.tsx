@@ -422,7 +422,7 @@ export default function RecentConcertReplay({
                     href={selectedConcert.telegramDownloadUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full lg:min-w-[220px] px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-mono text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl shadow-cyan-600/25 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer text-center"
+                    className="w-full lg:min-w-[220px] px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-mono text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl shadow-purple-600/25 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer text-center"
                   >
                     <Download className="w-4 h-4 shrink-0" />
                     <span>{selectedConcert.downloadText || 'DOWNLOAD'} (TELEGRAM)</span>

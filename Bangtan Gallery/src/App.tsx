@@ -56,13 +56,14 @@ import { motion, AnimatePresence } from 'motion/react';
 // Lucide Icons
 import {
   Home, Users, UserRound, Music, Video as VideoIcon, Image as ImageIcon, Clock, BookOpen, Gift, Calendar, Download,
-  Heart, HelpCircle, Mail, Settings as SettingsIcon, Menu, X, Search, Globe, Cloud, Sun, Moon,
+  Heart, HelpCircle, Mail, Settings as SettingsIcon, X, Search, Globe, Cloud, Sun, Moon,
   CheckCircle, Palette, MessageSquareHeart, Flame, ArrowUp, Zap, UserCheck, Smile, Gamepad2,
   Instagram, Twitter, Youtube, Coffee, Github, Linkedin, Facebook, Send, MoreHorizontal, Pin, Wand2, Lock,
-  Radio, Vote, Disc, Ticket, BookMarked, Trophy, PartyPopper
+  Radio, Vote, Disc, Ticket, BookMarked, Trophy, PartyPopper, ChevronDown
 } from 'lucide-react';
 import { AudioPlayerProvider, useAudioPlayer } from './context/AudioPlayerContext';
 import GlobalMiniPlayer from './components/GlobalMiniPlayer';
+import MobileTabBar from './components/MobileTabBar'; // Batch 189 — mobile bottom tab bar
 import LyricsViewer from './components/LyricsViewer';
 import BirthdayCountdown from './components/BirthdayCountdown';
 import BirthdayWish from './components/BirthdayWish';
@@ -988,7 +989,10 @@ export function AppContent() {
   const handleQuickAccess = (tabName: string) => {
     setSelectedMember(null);
     setActiveTab(tabName);
-    window.scrollTo({ top: 350, behavior: 'smooth' });
+    // Batch 191 — the tab-change effect below resets the scroll to 0 the
+    // instant the new tab renders; this deliberate landing (just below the
+    // header) waits a beat so it still wins afterwards.
+    setTimeout(() => window.scrollTo({ top: 350, behavior: 'smooth' }), 50);
   };
 
   const handleNewsClick = (article: any) => {
@@ -1046,6 +1050,76 @@ export function AppContent() {
     if (item.name === 'FAQ') return settings.showFAQ !== false;
     return true;
   });
+
+  // Batch 185 — the desktop nav moved from the left sidebar to a top bar
+  // under the header (owner: "nav bar upore koro"). The slim top row shows
+  // 8 primary tabs (names verbatim from navItems); the rest live under the
+  // "More" dropdown. Nothing is renamed. Mobile keeps the hamburger drawer.
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const PRIMARY_NAV_NAMES = ['Home', 'Members', 'Music', 'News', 'Gallery', 'Events', 'Play Game', 'Live Stream'];
+  const primaryNavItems = navItems.filter(item => PRIMARY_NAV_NAMES.includes(item.name));
+  const moreNavItems = navItems.filter(item => !PRIMARY_NAV_NAMES.includes(item.name));
+
+  // Shared tab navigation for the top bar + More dropdown: same behaviour
+  // as the old sidebar buttons.
+  const goToTab = (name: string) => {
+    setSelectedMember(null);
+    setMoreMenuOpen(false);
+    if (name === activeTab) {
+      // Batch 191 — tapping the tab you are already on scrolls back to the
+      // top, app-style (the tab-change effect below cannot fire: the tab
+      // did not change).
+      window.scrollTo({ top: 0 });
+      return;
+    }
+    setActiveTab(name);
+    if (name === 'Music') {
+      audioPlayer.startPlayingFirstTime();
+    }
+  };
+
+  // Close the More dropdown whenever the tab changes from anywhere
+  // (search, quick access, URL) so it never stays open on a new page.
+  useEffect(() => { setMoreMenuOpen(false); }, [activeTab]);
+
+  // Batch 191 — every tab switch starts at the top of the new page. Before
+  // this, the window kept its scroll offset across tabs: a visitor who had
+  // scrolled halfway down Home landed halfway down Music and had to scroll
+  // back up by hand. The first render is skipped so a shared link's native
+  // anchor behaviour on load is never overridden. Deliberate landings keep
+  // working: quick access waits 50ms and still lands at 350, and the Time
+  // Capsule jump (500ms) still lands on the capsule.
+  const tabScrollFirstRender = useRef(true);
+  useEffect(() => {
+    if (tabScrollFirstRender.current) {
+      tabScrollFirstRender.current = false;
+      return;
+    }
+    window.scrollTo({ top: 0 });
+  }, [activeTab]);
+
+  // Batch 191 — opening a member profile also starts at the top. Closing
+  // one deliberately does NOT scroll, so the visitor keeps their place in
+  // the member grid.
+  const prevSelectedMemberRef = useRef(selectedMember);
+  useEffect(() => {
+    if (selectedMember && !prevSelectedMemberRef.current) {
+      window.scrollTo({ top: 0 });
+    }
+    prevSelectedMemberRef.current = selectedMember;
+  }, [selectedMember]);
+
+  // Active-tab underline colour follows the visitor's accent colour,
+  // like the old sidebar's active indicator did.
+  const getNavUnderlineClass = () => {
+    switch (preferences.accentColor) {
+      case 'crimson': return 'bg-rose-500';
+      case 'indigo': return 'bg-indigo-500';
+      case 'amber': return 'bg-amber-500';
+      case 'violet': return 'bg-violet-500';
+      default: return 'bg-purple-500';
+    }
+  };
 
   // Helper to determine accent background color
   const getAccentColorClass = () => {
@@ -1367,191 +1441,123 @@ export function AppContent() {
               <span className="hidden xl:inline">Theme Studio</span>
             </button>
 
-            {/* Mobile menu drawer trigger */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`p-2 rounded-lg transition-colors cursor-pointer block lg:hidden ${
-                preferences.theme === 'light'
-                  ? 'hover:bg-slate-100 text-slate-600'
-                  : 'hover:bg-white/5 text-purple-300'
-              }`}
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+            {/* Batch 189 — the hamburger is gone: on mobile the bottom tab bar's
+                "More" tab opens the drawer now. */}
           </div>
 
         </div>
-      </header>
 
-      {/* Main Body container */}
-      <div className="w-full max-w-[1600px] mx-auto px-4 md:px-8 flex-grow flex flex-col lg:flex-row gap-8 pt-3 pb-8 lg:py-8">
-        
-        {/* Left PERSISTENT Desktop Sidebar (Column span 1) */}
-        <aside className="w-64 shrink-0 hidden lg:flex flex-col gap-4">
-          <div className="sticky top-24 p-5 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl flex flex-col gap-6 shadow-2xl relative">
-
-
-            <nav className="flex flex-col gap-1.5 bg-transparent">
-              {navItems.map(item => {
-                const isActive = activeTab === item.name;
-                
-                // Immersive UI Active status class builder
-                let dotColor = 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]';
-                switch (preferences.accentColor) {
-                  case 'crimson':
-                    dotColor = 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]';
-                    break;
-                  case 'indigo':
-                    dotColor = 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]';
-                    break;
-                  case 'amber':
-                    dotColor = 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]';
-                    break;
-                  case 'violet':
-                    dotColor = 'bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.8)]';
-                    break;
-                  default:
-                    dotColor = 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]';
-                }
-
-                return (
-                  <button
-                    key={item.name}
-                    onClick={() => {
-                      setSelectedMember(null);
-                      setActiveTab(item.name);
-                      if (item.name === 'Music') {
-                        audioPlayer.startPlayingFirstTime();
-                      }
-                    }}
-                    className="flex items-center h-10 px-4 rounded-lg font-medium transition-all text-left cursor-pointer group relative overflow-hidden"
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeSidebarIndicator"
-                        className={`absolute inset-0 border-l-2 ${
-                          preferences.accentColor === 'crimson' ? 'bg-rose-600/20 border-rose-500' :
-                          preferences.accentColor === 'indigo' ? 'bg-indigo-600/20 border-indigo-500' :
-                          preferences.accentColor === 'amber' ? 'bg-amber-600/20 border-amber-500' :
-                          preferences.accentColor === 'violet' ? 'bg-violet-600/20 border-violet-500' :
-                          'bg-purple-600/20 border-purple-500'
-                        } rounded-r-lg z-0`}
-                        transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                      />
-                    )}
-                    <span className={`relative z-10 font-sans text-sm flex items-center gap-2.5 transition-colors duration-200 ${
-                      isActive ? 'font-semibold text-white' : 'text-slate-400 group-hover:text-white'
-                    }`}>
-                      {isActive ? (
-                        <span className={`w-2 h-2 rounded-full ${dotColor} shrink-0 animate-pulse`} style={{ content: '""' }} />
-                      ) : (
-                        <span className="text-slate-500 group-hover:text-slate-300 transition-colors shrink-0">{item.icon}</span>
-                      )}
-                      <span>{item.name}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            <div className="border-t border-white/10 pt-4 mt-2 space-y-4">
-              <div>
-                <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-slate-500 block mb-2 text-center">
-                  Official Socials
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5 justify-center max-w-[190px] mx-auto">
-                  <a
-                    href={publishedConfig?.socialLinks?.telegramChannel || publishedConfig?.socialLinks?.telegram || "https://t.me/arirang_army7"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-950/40 border border-white/5 hover:border-rose-500/30 flex items-center justify-center theme-icon transition-all group cursor-pointer"
-                    title="Telegram Channel (Broadcasts)"
-                  >
-                    <Send className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
-                  <a
-                    href={publishedConfig?.socialLinks?.telegramCommunity || publishedConfig?.socialLinks?.telegramChat || "https://t.me/arirang_army7chat"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-950/40 border border-white/5 hover:border-rose-500/30 flex items-center justify-center theme-icon transition-all group cursor-pointer"
-                    title="Telegram Community Chat (ARMY Group)"
-                  >
-                    <MessageSquareHeart className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
-                  <a
-                    href={publishedConfig?.socialLinks?.twitter || "https://x.com/arirang_army_7"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-950/40 border border-white/5 hover:border-rose-500/30 flex items-center justify-center theme-icon transition-all group cursor-pointer"
-                    title="X (Twitter) Official"
-                  >
-                    <Twitter className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
-                  <a
-                    href={publishedConfig?.socialLinks?.kofi || publishedConfig?.footer?.kofiUrl || "https://ko-fi.com/bangtangallery"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-950/40 border border-white/5 hover:border-rose-500/30 flex items-center justify-center theme-icon transition-all group cursor-pointer"
-                    title="Support on Ko-fi"
-                  >
-                    <Coffee className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
-                  <a
-                    href={publishedConfig?.socialLinks?.instagram || "https://instagram.com/arirang_army_7"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-950/40 border border-white/5 hover:border-rose-500/30 flex items-center justify-center theme-icon transition-all group cursor-pointer"
-                    title="Instagram Official"
-                  >
-                    <Instagram className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
-                  <a
-                    href={publishedConfig?.socialLinks?.youtube || "https://www.youtube.com/user/BANGTANTV"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-950/40 border border-white/5 hover:border-rose-500/30 flex items-center justify-center theme-icon transition-all group cursor-pointer"
-                    title="YouTube Official"
-                  >
-                    <Youtube className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
-                  <a
-                    href={publishedConfig?.socialLinks?.facebook || "https://www.facebook.com/bangtan.official"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-950/40 border border-white/5 hover:border-rose-500/30 flex items-center justify-center theme-icon transition-all group cursor-pointer"
-                    title="Facebook Official"
-                  >
-                    <Facebook className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
-                  <a
-                    href={publishedConfig?.socialLinks?.weverse || "https://weverse.io/bts/feed"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-950/40 border border-white/5 hover:border-rose-500/30 flex items-center justify-center theme-icon transition-all group cursor-pointer"
-                    title="Weverse Official"
-                  >
-                    <MoreHorizontal className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  </a>
+        {/* Batch 185 — Desktop top nav bar (replaces the left sidebar): 8 primary tabs + More dropdown. Mobile uses the bottom tab bar (Batch 189). */}
+        <nav className={`topnav-bar hidden lg:block border-t ${preferences.theme === 'light' ? 'border-slate-200/60' : 'border-white/5'}`}>
+          <div className="w-full max-w-[1600px] mx-auto px-4 md:px-8 flex items-center gap-1">
+            {primaryNavItems.map(item => {
+              const isActive = activeTab === item.name;
+              return (
+                <button
+                  key={item.name}
+                  onClick={() => goToTab(item.name)}
+                  className={`topnav-tab ${isActive ? 'topnav-tab-active ' : ''}relative px-3 py-2.5 text-sm transition-colors cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? preferences.theme === 'light'
+                        ? 'text-slate-900 font-semibold'
+                        : 'text-white font-semibold'
+                      : preferences.theme === 'light'
+                        ? 'text-slate-500 hover:text-slate-900'
+                        : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {item.name}
+                  {isActive && (
+                    <span className={`absolute left-3 right-3 bottom-0 h-0.5 rounded-full ${getNavUnderlineClass()}`} />
+                  )}
+                </button>
+              );
+            })}
+            {/* More dropdown — the remaining nav tabs */}
+            <div className="relative">
+              <button
+                onClick={() => setMoreMenuOpen(v => !v)}
+                className={`topnav-tab ${moreNavItems.some(i => activeTab === i.name) ? 'topnav-tab-active ' : ''}flex items-center gap-1 px-3 py-2.5 text-sm transition-colors cursor-pointer whitespace-nowrap ${
+                  moreNavItems.some(i => activeTab === i.name)
+                    ? preferences.theme === 'light'
+                      ? 'text-slate-900 font-semibold'
+                      : 'text-white font-semibold'
+                    : preferences.theme === 'light'
+                      ? 'text-slate-500 hover:text-slate-900'
+                      : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                More <ChevronDown className={`w-3.5 h-3.5 transition-transform ${moreMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {moreMenuOpen && (
+                <div className={`topnav-dropdown absolute right-0 top-full mt-1 w-56 rounded-2xl border p-2 shadow-2xl z-50 backdrop-blur-xl ${
+                  preferences.theme === 'light'
+                    ? 'border-slate-200 bg-white/95 text-slate-800'
+                    : 'border-white/10 bg-[#05000a]/95 text-white'
+                }`}>
+                  {moreNavItems.map(item => {
+                    const isActive = activeTab === item.name;
+                    return (
+                      <button
+                        key={item.name}
+                        onClick={() => goToTab(item.name)}
+                        className={`topnav-dropitem ${isActive ? 'topnav-dropitem-active ' : ''}w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-left cursor-pointer transition-colors ${
+                          isActive
+                            ? 'bg-purple-600/20 text-white font-semibold'
+                            : preferences.theme === 'light'
+                              ? 'text-slate-700 hover:bg-slate-100'
+                              : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                        }`}
+                      >
+                        <span className="shrink-0">{item.icon}</span>
+                        <span>{item.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-              </div>
+              )}
             </div>
           </div>
-        </aside>
+        </nav>
+      </header>
 
-        {/* Mobile menu drawer Overlay */}
+      {/* Batch 185 — backdrop closing the More dropdown (below the header, desktop only) */}
+      {moreMenuOpen && (
+        <div className="fixed inset-0 z-30 hidden lg:block" onClick={() => setMoreMenuOpen(false)} />
+      )}
+
+      {/* Main Body container (Batch 185: the left sidebar is gone — the nav lives in the top bar now, so the content takes the full width) */}
+      <div className="w-full max-w-[1600px] mx-auto px-4 md:px-8 flex-grow flex flex-col pt-3 pb-8 lg:py-8">
+        
+        {/* Batch 190 — Mobile "More" bottom sheet (owner: "nich theke... onno bhabe banao"). The old full-screen drawer slid in from the right; the sheet slides UP from the bottom instead, with a dimmed backdrop above it (tap the backdrop to close). Same content as before — search, every section, socials — just a different way in. */}
         <AnimatePresence>
           {mobileMenuOpen && (
+            <React.Fragment key="mobile-sheet">
             <motion.div
-              initial={{ opacity: 0, x: '100%', filter: 'blur(8px)' }}
-              animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, x: '100%', filter: 'blur(8px)' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px] lg:hidden"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: '100%' }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: '100%' }}
               transition={{ duration: 0.42, ease: [0.19, 1, 0.22, 1] }}
-              className={`fixed inset-0 z-50 nav-drawer ${
+              className={`fixed inset-x-0 bottom-0 z-[60] nav-drawer ${
                 preferences.theme === 'light'
                   ? 'bg-white/95 text-slate-900 border-slate-200/50'
                   : 'bg-[#05000a]/98 text-white border-white/10'
-              } backdrop-blur-xl flex flex-col p-6 block lg:hidden border-l shadow-2xl`}
+              } backdrop-blur-xl flex flex-col px-6 pb-6 pt-3 max-h-[85dvh] rounded-t-3xl lg:hidden border-t shadow-2xl overflow-hidden`}
             >
+              {/* Drag handle */}
+              <div className="flex justify-center pt-1 pb-3 shrink-0">
+                <div className={`w-10 h-1.5 rounded-full ${
+                  preferences.theme === 'light' ? 'bg-slate-300' : 'bg-white/20'
+                }`} />
+              </div>
               <div className={`flex items-center justify-between border-b pb-4 mb-4 ${
                 preferences.theme === 'light' ? 'border-slate-200' : 'border-white/10'
               }`}>
@@ -1632,12 +1638,11 @@ export function AppContent() {
                   <button
                     key={item.name}
                     onClick={() => {
-                      setSelectedMember(null);
-                      setActiveTab(item.name);
+                      // Batch 191 — route through goToTab so the sheet's taps
+                      // get the same top-of-page landing (and same-tab tap =
+                      // scroll to top) as the tab bar and top nav.
+                      goToTab(item.name);
                       setMobileMenuOpen(false);
-                      if (item.name === 'Music') {
-                        audioPlayer.startPlayingFirstTime();
-                      }
                     }}
                     className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-left cursor-pointer transition-all ${
                       isActive 
@@ -1737,6 +1742,7 @@ export function AppContent() {
             </div>
 
             </motion.div>
+            </React.Fragment>
           )}
         </AnimatePresence>
 
@@ -1782,16 +1788,21 @@ export function AppContent() {
 
                     const featuredArticle = displayNews[0] || fallbackFeatured;
                     // Batch 145 (owner): the Home "Latest Updates" rail
-                    // shows exactly 3 — the owner's Admin Panel picks
+                    // leads with the owner's Admin Panel picks
                     // (config homeLatestIds, in pick order, the hero
-                    // article excluded) when any are set, otherwise
-                    // the newest 3 after the featured article.
+                    // article excluded). Batch 202 — the rail holds 5
+                    // on laptop and 3 on mobile (owner 2026-11-23):
+                    // the picks first, then the newest articles after
+                    // the featured fill the rest.
                     const pickedIds: string[] = Array.isArray((publishedConfig as any)?.homeLatestIds) ? (publishedConfig as any).homeLatestIds : [];
                     const pickedLatest = pickedIds
                       .map((id: string) => displayNews.find((n: any) => n.id === id))
                       .filter((n: any) => n && n.id !== featuredArticle.id)
                       .slice(0, 3);
-                    const latestNewsList = pickedLatest.length > 0 ? pickedLatest : displayNews.slice(1, 4);
+                    const newestFill = displayNews.filter(
+                      (n: any) => n.id !== featuredArticle.id && !pickedLatest.some((p: any) => p.id === n.id)
+                    );
+                    const latestNewsList = [...pickedLatest, ...newestFill].slice(0, 5);
 
                     return (
                       <div className="space-y-8">
@@ -1908,11 +1919,11 @@ export function AppContent() {
                               {/* News items list mapping */}
                               <div className="space-y-4">
                                 {latestNewsList.length > 0 ? (
-                                  latestNewsList.map((item: any) => (
+                                  latestNewsList.map((item: any, idx: number) => (
                                     <div 
                                       key={item.id}
                                       onClick={() => handleNewsClick(item)}
-                                      className="group/item cursor-pointer flex gap-3 py-1.5 items-center border-b last:border-0 border-slate-500/10 transition-colors"
+                                      className={`group/item cursor-pointer gap-3 py-1.5 items-center border-b last:border-0 border-slate-500/10 transition-colors ${idx >= 3 ? 'hidden lg:flex' : 'flex'} ${idx === 2 ? 'max-lg:border-b-0' : ''}`}
                                     >
                                       {item.imageUrl && (
                                         <img 
@@ -1944,6 +1955,60 @@ export function AppContent() {
                                 )}
                               </div>
                             </div>
+                            {/* Batch 198 — laptop only: the next upcoming
+                                event fills the empty space under Latest
+                                Updates (owner 2026-11-23). It mirrors
+                                Events — the event stays there too — and
+                                auto-advances: after Dec 3 passes, the
+                                next one shows. Mobile keeps the rail as
+                                before (hidden lg:block). */}
+                            {(() => {
+                              const eventsList: any[] = Array.isArray((publishedConfig as any)?.events) ? (publishedConfig as any).events : [];
+                              const now = Date.now();
+                              const next = eventsList
+                                .map((evt: any) => ({ evt, t: new Date(evt.countdownTarget || evt.dDayTarget || evt.date).getTime() }))
+                                .filter((x: any) => !isNaN(x.t) && x.t >= now)
+                                .sort((a: any, b: any) => a.t - b.t)[0];
+                              if (!next) return null;
+                              const { evt, t } = next;
+                              const daysLeft = Math.ceil((t - now) / 86400000);
+                              const when = daysLeft <= 0 ? 'Today!' : daysLeft === 1 ? 'Tomorrow' : `In ${daysLeft} days`;
+                              return (
+                                <div
+                                  onClick={() => handleQuickAccess('Events')}
+                                  className="hidden lg:block mt-6 pt-5 border-t border-slate-500/10 cursor-pointer group/event"
+                                >
+                                  <div className="flex justify-between items-center pb-3">
+                                    <h3 className={`text-sm font-black uppercase tracking-wider ${
+                                      preferences.theme === 'light' ? 'text-slate-800' : 'text-slate-100'
+                                    }`}>
+                                      Up Next
+                                    </h3>
+                                    <span className="text-[9px] uppercase tracking-wider font-mono text-purple-400 group-hover/event:underline">
+                                      All Events &rarr;
+                                    </span>
+                                  </div>
+                                  <div className="rounded-2xl border border-purple-500/15 bg-purple-500/5 p-4 space-y-1.5 group-hover/event:border-purple-500/30 transition-colors">
+                                    <span className="text-[8px] font-extrabold uppercase tracking-widest text-rose-500 block">
+                                      &#128293; {when}
+                                    </span>
+                                    <h4 className={`text-sm font-bold leading-snug ${
+                                      preferences.theme === 'light' ? 'text-slate-800' : 'text-slate-100'
+                                    }`}>
+                                      {evt.title}
+                                    </h4>
+                                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                                      {evt.date}{evt.location ? ` \u2022 ${evt.location}` : ''}
+                                    </p>
+                                    {evt.details && (
+                                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                                        {evt.details}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                           )}
                         </div>
@@ -2383,8 +2448,8 @@ export function AppContent() {
         </main>
       </div>
 
-      {/* Footer System */}
-      <footer className="mt-20 border-t border-white/10 bg-black/45 backdrop-blur-xl py-12 text-sm text-slate-400 font-sans">
+      {/* Footer System — Batch 189: extra bottom padding on mobile so the footer clears the fixed bottom tab bar */}
+      <footer className="mt-20 border-t border-white/10 bg-black/45 backdrop-blur-xl pt-12 pb-28 lg:pb-12 text-sm text-slate-400 font-sans">
         <div className="w-full max-w-[1600px] mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
           
           <div className="space-y-4">
@@ -2531,6 +2596,16 @@ export function AppContent() {
       </footer>
 
       {/* Persistent Mini Controller for Background Audio Playback */}
+      {/* Batch 189 — mobile bottom tab bar (owner picked option A). The four
+          direct tabs honour the admin sidebar settings, like navItems does. */}
+      <MobileTabBar
+        tabs={['Home', 'Members', 'Music', 'News'].filter((n) => navItems.some((i) => i.name === n))}
+        activeTab={activeTab}
+        onNavigate={goToTab}
+        onMore={() => setMobileMenuOpen(true)}
+        hidden={mobileMenuOpen}
+      />
+
       <GlobalMiniPlayer 
         onNavigateToMusic={() => {
           setSelectedMember(null);
@@ -2563,15 +2638,20 @@ export function AppContent() {
         const kofiUrl = publishedConfig?.socialLinks?.kofi || publishedConfig?.footer?.kofiUrl || "https://ko-fi.com/bangtangallery";
         if (!kofiUrl || kofiUrl.trim() === "") return null;
         return (
-          <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 pointer-events-auto">
+          <div className={`fixed right-6 md:right-8 z-50 pointer-events-auto transition-all duration-500 ${
+            // Batch 193 — rises WITH the ARMY Bomb while the player bar is
+            // open, so the pair stays level (Batch 172 rule); otherwise
+            // sits at bottom-24, level with the bomb and the music FAB.
+            audioPlayer.isPlayerOpen && audioPlayer.currentTrack ? 'bottom-40 md:bottom-8' : 'bottom-24 md:bottom-8'
+          }`}>
             <a
               href={kofiUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-12 h-12 rounded-full bg-gradient-to-r from-[#ff5e5b] to-[#ea3834] text-white flex items-center justify-center shadow-[0_8px_30px_rgba(255,94,91,0.4)] hover:shadow-[0_8px_40px_rgba(236,72,153,0.5)] border border-white/10 hover:border-white/25 transition-all hover:scale-110 active:scale-95 cursor-pointer group"
+              className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-r from-[#ff5e5b] to-[#ea3834] text-white flex items-center justify-center shadow-[0_8px_30px_rgba(255,94,91,0.4)] hover:shadow-[0_8px_40px_rgba(236,72,153,0.5)] border border-white/10 hover:border-white/25 transition-all hover:scale-110 active:scale-95 cursor-pointer group"
               title="Support on Ko-fi"
             >
-              <Coffee className="w-5 h-5 text-white animate-bounce" style={{ animationDuration: '2.5s' }} />
+              <Coffee className="w-4 h-4 md:w-5 md:h-5 text-white animate-bounce" style={{ animationDuration: '2.5s' }} />
             </a>
           </div>
         );

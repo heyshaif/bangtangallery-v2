@@ -429,6 +429,86 @@ body {
   border-color: rgba(15, 23, 42, 0.08) !important;
 }
 
+/* Batch 194 — the desktop top nav bar (Batch 185) in the light theme:
+   liquid glass. Replaces the Batch 186 solid-white fix, which never
+   actually worked: the blanket .light button rule (line 306) is
+   (0,5,1) — its four :not()s each add a class — so it beat the
+   (0,3,0) overrides and every tab + dropdown item rendered as its own
+   pale lavender pill (the "tiles" in the owner's screenshots). These
+   selectors mirror the blanket's own :not() chain, reaching (0,7,0)
+   ((0,8,0) on :hover), so they win outright. The bar is one continuous
+   translucent sheet — no per-tab boxes — with a glossy top highlight;
+   the active tab is a liquid pill and its underline is hidden in light
+   mode only (dark/arirang keep it). No vertical margin on the tabs:
+   the header must stay 112px tall for the Batch 186a filter bar. */
+.light .topnav-bar {
+  background-color: rgba(255, 255, 255, 0.62) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.35) 55%, rgba(240, 232, 255, 0.55)) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  border-top-color: rgba(255, 255, 255, 0.65) !important;
+  border-bottom: 1px solid rgba(147, 51, 234, 0.10) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 28px rgba(124, 58, 237, 0.10) !important;
+}
+.light .topnav-bar .topnav-tab:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600) {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: #64748b !important;
+  border-color: transparent !important;
+  border-radius: 9999px !important;
+}
+.light .topnav-bar .topnav-tab:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600):hover {
+  background-color: rgba(147, 51, 234, 0.08) !important;
+  color: #0f172a !important;
+}
+.light .topnav-bar .topnav-tab-active:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600) {
+  background-color: rgba(167, 139, 250, 0.28) !important;
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.65), rgba(167, 139, 250, 0.18) 60%, rgba(217, 70, 239, 0.14)) !important;
+  color: #6d28d9 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(147, 51, 234, 0.12), 0 4px 14px rgba(147, 51, 234, 0.16) !important;
+}
+/* The underline span is redundant under the liquid pill — hidden in
+   light mode only. */
+.light .topnav-bar .topnav-tab-active > span {
+  display: none !important;
+}
+.light .topnav-dropdown {
+  background-color: rgba(255, 255, 255, 0.72) !important;
+  background-image: linear-gradient(165deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.55) 50%, rgba(240, 232, 255, 0.65)) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 24px 48px rgba(76, 29, 149, 0.22) !important;
+}
+.light .topnav-dropdown .topnav-dropitem:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600) {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: #334155 !important;
+  border-color: transparent !important;
+}
+.light .topnav-dropdown .topnav-dropitem:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600):hover {
+  background-color: rgba(147, 51, 234, 0.09) !important;
+  color: #0f172a !important;
+}
+.light .topnav-dropdown .topnav-dropitem-active:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600) {
+  background-color: rgba(167, 139, 250, 0.30) !important;
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(167, 139, 250, 0.20) 60%, rgba(217, 70, 239, 0.16)) !important;
+  color: #6d28d9 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 4px 12px rgba(147, 51, 234, 0.14) !important;
+}
+
+/* Batch 186a — the sticky news filter bar needs a solid background in every
+   theme, or the articles scroll visibly underneath it while it is stuck. */
+.news-filterbar {
+  background-color: #05000a;
+}
+.light .news-filterbar {
+  background-color: #faf8fd;
+}
+.arirang .news-filterbar {
+  background-color: #0a0206;
+}
+
 /* ARIRANG Mode overrides: Dark mode's near-black glass look kept, with the
    purple/pink accent family shifted to a SOFT red/rose (deliberately subtle),
    deep panels tinted maroon, and white text left untouched. */
@@ -1079,4 +1159,111 @@ a.spotify-badge:hover { background-color: rgba(29, 185, 84, 0.32); }
 .music-disc-spinning,
 .music-track-row:hover .music-disc {
   animation: jewel-spin 6s linear infinite;
+}
+
+/* Batch 186b — Weverse photo cards in the light theme (reported 2026-11-23:
+   cards blank white in the white theme). Two blanket rules caused it:
+   `.light [class*="bg-black/"] -> #ffffff` painted the cards' photo overlay
+   (bg-black/35) opaque white, hiding every post photo; and the round-2
+   gradient-flattening rule (`.light [class*="from-black"]:not(absolute)`)
+   turned the bottom fade white too. These scoped overrides restore the dark
+   overlay + fade inside Weverse cards only. The fade rule is (0,4,0) and
+   sits after the blanket rules, so it wins the !important tie-break; the
+   overlay rule is (0,3,0) + !important against the blanket's (0,2,0)
+   non-important rule. The .on-media marker on the fade div (existing
+   rescue) keeps the name/date white over the photo. Dark mode untouched. */
+.light .weverse-card .weverse-photo-dim {
+  background-color: rgba(0, 0, 0, 0.35) !important;
+}
+.light .weverse-card .weverse-card-fade[class*="from-black"] {
+  background-image: linear-gradient(to top, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.4) 55%, transparent) !important;
+  background-color: transparent !important;
+}
+
+/* Batch 194 — mobile bottom tab bar, light theme: liquid glass
+   (replaces the Batch 189 solid white). Same material as the laptop
+   top bar: translucent + blur + glossy highlights; the active tab is
+   a liquid pill and its dot is hidden in light mode only. The :not()
+   chain mirrors the blanket .light button rule (line 306, (0,5,1))
+   so these (0,7,0) selectors win outright — see the Batch 194 note
+   on the top nav. Tabs are inset 4px/3px so the pills float (Batch
+   197 — the pill was too fat at 6px padding; now ~42px tall). */
+.light .mobile-tabbar .mobile-tabbar-inner {
+  background-color: rgba(255, 255, 255, 0.62) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.35) 55%, rgba(240, 232, 255, 0.55)) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  border-top-color: rgba(255, 255, 255, 0.65) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 -10px 28px rgba(124, 58, 237, 0.10) !important;
+}
+.light .mobile-tabbar .mobile-tabbar-tab:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600) {
+  background-color: transparent !important;
+  background-image: none !important;
+  margin: 4px 3px !important;
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+}
+.light .mobile-tabbar .mobile-tabbar-tab svg {
+  color: #5d4d6e !important;
+}
+.light .mobile-tabbar .mobile-tabbar-tab span {
+  color: #5d4d6e !important;
+}
+.light .mobile-tabbar .mobile-tabbar-tab-active:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600) {
+  background-color: rgba(167, 139, 250, 0.28) !important;
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.65), rgba(167, 139, 250, 0.18) 60%, rgba(217, 70, 239, 0.14)) !important;
+  border-radius: 16px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(147, 51, 234, 0.12), 0 4px 14px rgba(147, 51, 234, 0.16) !important;
+}
+.light .mobile-tabbar .mobile-tabbar-tab-active svg,
+.light .mobile-tabbar .mobile-tabbar-tab-active span {
+  color: #6d28d9 !important;
+}
+/* The dot is redundant under the liquid pill — hidden in light mode. */
+.light .mobile-tabbar .mobile-tabbar-tab-active span:last-of-type {
+  display: none !important;
+}
+
+/* Batch 197 — no blue backgrounds in the light theme (owner rule,
+   2026-11-23), and gradient-button text stays readable. The flagged
+   case was the RECORD SUPPORT button (purple→indigo gradient): the
+   blanket .light button rule turned its text purple while the
+   gradient survived, so the label was unreadable — and indigo reads
+   as blue to the owner, so its gradient is purple→pink in JSX now.
+   (1) Every gradient button keeps white text (and white icons /
+   labels) in light mode — the :not() chain reaches (0,6,1), beating
+   the blanket (0,5,1). (2) Solid blue/sky/cyan/indigo backgrounds
+   become a light purple tint; the token match (class start or after
+   a space) skips hover: variants. (3) Bright blue gradient stops
+   become purple→pink by overriding Tailwind v4's --tw-gradient-*
+   variables (resolved at use time, so the override recomputes the
+   gradient). Dark navy stops (800/900/950, photo-legibility fades)
+   and opacity-modified stops (from-blue-500/10 quote tints) are
+   deliberately left alone — the space-prefixed token match excludes
+   the /opacity forms. */
+.light button[class*="bg-gradient-to-"]:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600),
+.light button[class*="bg-gradient-to-"]:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600) span,
+.light button[class*="bg-gradient-to-"]:not(.bg-purple-600):not(.bg-white):not(.bg-red-600):not(.bg-emerald-600) svg {
+  color: #ffffff !important;
+}
+.light [class^="bg-blue-"], .light [class*=" bg-blue-"],
+.light [class^="bg-sky-"], .light [class*=" bg-sky-"],
+.light [class^="bg-cyan-"], .light [class*=" bg-cyan-"],
+.light [class^="bg-indigo-"], .light [class*=" bg-indigo-"] {
+  background-color: rgba(147, 51, 234, 0.10) !important;
+}
+.light [class*=" from-blue-500 "], .light [class$=" from-blue-500"],
+.light [class*=" from-blue-600 "], .light [class$=" from-blue-600"],
+.light [class*=" from-sky-600 "], .light [class$=" from-sky-600"],
+.light [class*=" from-cyan-600 "], .light [class$=" from-cyan-600"] {
+  --tw-gradient-from: #9333ea !important;
+}
+.light [class*=" via-blue-600 "], .light [class$=" via-blue-600"],
+.light [class*=" via-indigo-600 "], .light [class$=" via-indigo-600"] {
+  --tw-gradient-via: #a855f7 !important;
+}
+.light [class*=" to-blue-600 "], .light [class$=" to-blue-600"],
+.light [class*=" to-indigo-600 "], .light [class$=" to-indigo-600"],
+.light [class*=" to-indigo-700 "], .light [class$=" to-indigo-700"] {
+  --tw-gradient-to: #db2777 !important;
 }

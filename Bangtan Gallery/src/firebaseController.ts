@@ -122,7 +122,12 @@ function getFromLocalCache(collectionName: string, docId: string): any {
 // like "all admin posts vanished". The published config is therefore served
 // from memory/localStorage for a short TTL and re-read only when stale.
 const PUBLISHED_TTL_MS = 300000; // 5 minutes (Batch 148: raised from 2 min — admin changes reach open pages within ~5 min, and per-visitor config reads drop ~2.5x)
-let publishedMemoryCache: { data: any; at: number } | null = null;
+// Batch 182: when the published config is served from the DB2 mirror
+// during a main-DB outage, it is cached for 15 minutes instead of 5 —
+// the mirror only changes when the owner publishes, so a longer TTL is
+// safe and keeps the site fast while the main quota is dead.
+const PUBLISHED_OUTAGE_TTL_MS = 900000;
+let publishedMemoryCache: { data: any; at: number; ttlMs: number } | null = null;
 
 // Batch 175: the public /api/live/status endpoint is polled every 3.5s by
 // the Live Stream section. When the main DB read fails (quota outage) it
@@ -132,14 +137,46 @@ let publishedMemoryCache: { data: any; at: number } | null = null;
 const DB2_LIVE_FALLBACK_TTL_MS = 60000;
 let db2LiveFallbackCache: { data: any | null; at: number } | null = null;
 
-function rememberPublished(data: any) {
-  publishedMemoryCache = { data, at: Date.now() };
+// Batch 182 — outage circuit breaker: when the main Firestore read
+// fails (the daily quota is exhausted), the failure is remembered for
+// 10 minutes — in memory and in localStorage, so it survives reloads —
+// and the next published-config fetch skips the doomed main read and
+// goes straight to the DB2 mirror. A successful main read clears the
+// breaker, so the site returns to the main DB as soon as it is back.
+const MAIN_OUTAGE_WINDOW_MS = 600000; // 10 minutes
+const MAIN_OUTAGE_KEY = 'bg_main_outage_until';
+let mainOutageUntil = 0;
+
+function isMainOutage(): boolean {
+  if (Date.now() < mainOutageUntil) return true;
+  try {
+    const stored = Number(localStorage.getItem(MAIN_OUTAGE_KEY) || 0);
+    if (stored && Date.now() < stored) {
+      mainOutageUntil = stored;
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+function markMainOutage() {
+  mainOutageUntil = Date.now() + MAIN_OUTAGE_WINDOW_MS;
+  try { localStorage.setItem(MAIN_OUTAGE_KEY, String(mainOutageUntil)); } catch {}
+}
+
+function clearMainOutage() {
+  mainOutageUntil = 0;
+  try { localStorage.removeItem(MAIN_OUTAGE_KEY); } catch {}
+}
+
+function rememberPublished(data: any, ttlMs: number = PUBLISHED_TTL_MS) {
+  publishedMemoryCache = { data, at: Date.now(), ttlMs };
   saveToLocalCache('config', 'published', data);
   try { localStorage.setItem('fs_cache_config_published_at', String(Date.now())); } catch {}
 }
 
 function getFreshPublishedCache(): any | null {
-  if (publishedMemoryCache && Date.now() - publishedMemoryCache.at < PUBLISHED_TTL_MS) {
+  if (publishedMemoryCache && Date.now() - publishedMemoryCache.at < publishedMemoryCache.ttlMs) {
     return publishedMemoryCache.data;
   }
   try {
@@ -147,7 +184,7 @@ function getFreshPublishedCache(): any | null {
     if (at && Date.now() - at < PUBLISHED_TTL_MS) {
       const data = getFromLocalCache('config', 'published');
       if (data) {
-        publishedMemoryCache = { data, at };
+        publishedMemoryCache = { data, at, ttlMs: PUBLISHED_TTL_MS };
         return data;
       }
     }
@@ -1480,6 +1517,19 @@ export async function handleApiRequest(urlStr: string, method: string, body: any
     // reads); only re-read from Firestore when it is stale.
     const fresh = getFreshPublishedCache();
     if (fresh) return migrateMemberPhotos(fresh);
+    // Batch 182 — outage circuit breaker: while a main-DB failure is
+    // remembered, skip the doomed main read entirely and go straight to
+    // the DB2 mirror (cached 15 min), then to the local cache.
+    if (isMainOutage()) {
+      const mirrored = await readPublishedFromDb2();
+      if (mirrored) {
+        rememberPublished(mirrored, PUBLISHED_OUTAGE_TTL_MS);
+        return migrateMemberPhotos(mirrored);
+      }
+      const cached = getFromLocalCache('config', 'published');
+      if (cached) return migrateMemberPhotos(cached);
+      return defaultWebsiteConfig;
+    }
     try {
       // Raw read on purpose (Batch 149): the offline-safe wrapper hid
       // Firestore failures behind the local cache, so this handler
@@ -1489,6 +1539,8 @@ export async function handleApiRequest(urlStr: string, method: string, body: any
       // to the DB2 mirror (the newest published copy, kept in the
       // second Firebase project), then to this browser's local cache.
       const pubSnap = await fbGetDoc(doc(db, 'config', 'published'));
+      // Batch 182: a successful main read clears the outage breaker.
+      clearMainOutage();
       if (pubSnap.exists()) {
         const data = pubSnap.data();
         rememberPublished(data);
@@ -1496,9 +1548,11 @@ export async function handleApiRequest(urlStr: string, method: string, body: any
       }
     } catch (e) {
       console.warn('[PUBLISHED FALLBACK] Main Firestore read failed; trying the DB2 mirror, then local cache.', e);
+      // Batch 182: remember the failure so the next fetch skips main.
+      markMainOutage();
       const mirrored = await readPublishedFromDb2();
       if (mirrored) {
-        rememberPublished(mirrored);
+        rememberPublished(mirrored, PUBLISHED_OUTAGE_TTL_MS);
         return migrateMemberPhotos(mirrored);
       }
       const cached = getFromLocalCache('config', 'published');

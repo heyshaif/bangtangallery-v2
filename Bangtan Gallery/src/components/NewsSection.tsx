@@ -516,7 +516,8 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
       }
 
       if (match[1] && match[2]) {
-        // Markdown [label](url)
+        // Markdown [label](url) — Batch 199: a plain inline
+        // hyperlink, NOT a button chip (owner 2026-11-23).
         const label = match[1];
         const url = match[2];
         parts.push(
@@ -525,7 +526,7 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-bold text-purple-300 hover:text-white bg-purple-950/70 hover:bg-purple-900 border border-purple-500/30 px-2 py-0.5 rounded-lg transition-all hover:scale-105 active:scale-95 mx-1 underline decoration-purple-400/50 cursor-pointer shadow-sm"
+            className="inline-flex items-center gap-1 font-semibold text-purple-400 hover:text-purple-200 underline decoration-purple-500/40 hover:decoration-purple-300 transition-colors cursor-pointer"
           >
             <span>{label}</span>
             <ExternalLink className="w-3 h-3 text-purple-400 shrink-0" />
@@ -627,8 +628,8 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
             </p>
           </div>
 
-          {/* Search, Categories, and Tags Bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+          {/* Search, Categories, and Tags Bar — Batch 186a: sticks under the header while scrolling, so the category buttons + search stay reachable on long news pages */}
+          <div className="news-filterbar sticky top-[63px] lg:top-[112px] z-30 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 py-3">
             <div className="flex gap-1.5 flex-wrap overflow-x-auto select-scrollbar py-1">
               {categoryPills.map(cat => (
                 <button
@@ -708,6 +709,14 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
                   </div>
                 )}
 
+                {/* Batch 186 — Banner ad under the hero (moved here from the grid so the grid rows stay even) */}
+                <div>
+                  <p className="text-center text-[9px] font-mono tracking-[0.25em] text-zinc-500 pb-1.5">ADVERTISEMENT</p>
+                  <div className="w-full flex justify-center">
+                    <AdsterraAd type={5} />
+                  </div>
+                </div>
+
                 {/* Sub-grid of Remaining Articles */}
                 {gridArticles.length > 0 && (
                   <div className="space-y-5">
@@ -761,14 +770,12 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
                             </div>
                           </div>
                           
-                          {index === 1 && (
-                            <div className="col-span-2 flex justify-center py-2">
-                              <AdsterraAd type={5} />
-                            </div>
-                          )}
+                          {/* Batch 186 — the ad is a grid cell now (same size as a card), so the
+                              grid stays even: no more broken rows or a lone skyscraper mid-grid. */}
                           {index === 3 && (
-                            <div className="col-span-2 flex justify-center py-2">
-                              <AdsterraAd type={6} />
+                            <div className="rounded-xl border border-white/5 bg-black/45 overflow-hidden flex flex-col items-center justify-center gap-2 p-4 min-h-[280px]">
+                              <p className="text-[9px] font-mono tracking-[0.25em] text-zinc-500">ADVERTISEMENT</p>
+                              <AdsterraAd type={8} />
                             </div>
                           )}
                         </React.Fragment>
@@ -778,8 +785,9 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
                 )}
               </div>
 
-              {/* Right Column: Trending Sidebar, Tags, ads */}
-              <div className="lg:col-span-1 space-y-6">
+              {/* Right Column: Trending Sidebar, Tags, ads — Batch 186: sticky, so the rail
+                  follows the scroll instead of ending early and leaving an empty right side */}
+              <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-32 self-start">
                 {/* Trending News Widget */}
                 <div className="side-widget p-5 rounded-2xl border border-purple-500/10 bg-purple-950/10 space-y-4">
                   <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-purple-300 border-b border-purple-500/10 pb-2">
@@ -803,6 +811,14 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Batch 186 — Sidebar skyscraper ad (moved here from the grid) */}
+                <div className="space-y-1.5">
+                  <p className="text-center text-[9px] font-mono tracking-[0.25em] text-zinc-500">ADVERTISEMENT</p>
+                  <div className="w-full flex justify-center">
+                    <AdsterraAd type={6} />
                   </div>
                 </div>
 
@@ -874,8 +890,9 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
           )}
         </>
       ) : (
-        /* Upgraded Magazine Article Detail View */
-        <div className="news-article-view w-full max-w-4xl mx-auto rounded-2xl border border-white/5 bg-gradient-to-b from-[#100824] to-[#04010a] overflow-hidden p-5 md:p-6 space-y-4 animate-fade-in font-sans">
+        /* Batch 186 — full-page article: wide reading column + sticky right rail */
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start animate-fade-in">
+          <div className="news-article-view lg:col-span-3 w-full rounded-2xl border border-white/5 bg-gradient-to-b from-[#100824] to-[#04010a] overflow-hidden p-5 md:p-6 space-y-4 font-sans">
           {/* Back Button */}
           <button
             onClick={handleBackToGrid}
@@ -996,6 +1013,62 @@ export default function NewsSection({ items, selectedArticleIdOrSlug, onSelectAr
 
               {/* Fandom Interactive Comments & Nested Replies */}
               <NewsCommentsSection articleId={selectedArticle.id} articleTitle={selectedArticle.title} />
+            </div>
+          </div>
+          </div>
+
+          {/* Batch 186 — sticky article rail: Trending, ad, tags (same widgets as the portal) */}
+          <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-32 self-start">
+            {/* Trending News Widget */}
+            <div className="side-widget p-5 rounded-2xl border border-purple-500/10 bg-purple-950/10 space-y-4">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-purple-300 border-b border-purple-500/10 pb-2">
+                Trending
+              </h3>
+              <div className="space-y-4">
+                {trendingArticles.map((art, tIdx) => (
+                  <div
+                    key={art.id}
+                    onClick={() => handleReadArticle(art)}
+                    className="flex gap-3 group cursor-pointer"
+                  >
+                    <span className="text-xl font-serif font-black text-purple-500/30 group-hover:text-purple-400 transition-colors shrink-0 leading-none">
+                      {String(tIdx + 1).padStart(2, '0')}
+                    </span>
+                    <div className="min-w-0">
+                      <span className="text-[8px] font-mono text-purple-400 uppercase tracking-widest font-bold block">{art.category}</span>
+                      <h4 className="text-[11px] font-sans font-bold text-white group-hover:text-purple-300 transition-colors line-clamp-2 mt-0.5 leading-snug">
+                        {art.title}
+                      </h4>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Sidebar skyscraper ad */}
+            <div className="space-y-1.5">
+              <p className="text-center text-[9px] font-mono tracking-[0.25em] text-zinc-500">ADVERTISEMENT</p>
+              <div className="w-full flex justify-center">
+                <AdsterraAd type={6} />
+              </div>
+            </div>
+
+            {/* Popular Tags Widget */}
+            <div className="side-widget p-5 rounded-2xl border border-purple-500/10 bg-purple-950/10 space-y-3">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-purple-300 border-b border-purple-500/10 pb-2">
+                Popular Tags
+              </h3>
+              <div className="flex flex-wrap gap-1.5">
+                {popularTags.map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => { setSearchTerm(tag.replace('#', '')); handleBackToGrid(); }}
+                    className="tag-chip px-2 py-0.5 text-[9px] font-mono text-purple-300 bg-purple-950/40 border border-purple-500/15 rounded hover:bg-purple-900/40 hover:text-white transition-all cursor-pointer"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

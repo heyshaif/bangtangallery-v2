@@ -1143,7 +1143,7 @@ export default function LiveStreamSection({ playerOnly = false, config }: { play
               href="https://t.me/arirang_army7"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-mono text-xs font-bold flex items-center gap-2 shadow-md shadow-cyan-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-mono text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
               title="Visit Telegram Channel"
             >
               <Send className="w-3.5 h-3.5 -rotate-12" />

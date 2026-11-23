@@ -43,6 +43,12 @@ interface AudioPlayerContextType {
   setWholeQueue: (items: QueueItem[], index: number) => void;
   spotifyPanelActive: boolean;
   setSpotifyPanelActive: (active: boolean) => void;
+  // Batch 193 — the mini player bar open (vs the round reopen FAB). Lifted
+  // here from GlobalMiniPlayer so the ARMY Bomb + Ko-fi buttons can rise
+  // only while the bar is actually open, instead of whenever a track is
+  // loaded (which left the bomb floating high above a closed player).
+  isPlayerOpen: boolean;
+  setPlayerOpen: (open: boolean) => void;
   playbackError: string | null;
   lyricsTrack: Track | null;
   openLyrics: (track: Track) => void;
@@ -73,6 +79,13 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [lyricsTrack, setLyricsTrack] = useState<Track | null>(null);
+
+  // Batch 193 — mini player open state, lifted from GlobalMiniPlayer.
+  // Same localStorage key + default (open) as before.
+  const [isPlayerOpen, setPlayerOpen] = useState<boolean>(() => {
+    const saved = localStorage.getItem('bts_player_is_open');
+    return saved !== null ? saved === 'true' : true;
+  });
   const openLyrics = (track: Track) => setLyricsTrack(track);
   const closeLyrics = () => setLyricsTrack(null);
 
@@ -557,6 +570,8 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
         setWholeQueue,
         spotifyPanelActive,
         setSpotifyPanelActive,
+        isPlayerOpen,
+        setPlayerOpen,
         playbackError,
         lyricsTrack,
         openLyrics,
